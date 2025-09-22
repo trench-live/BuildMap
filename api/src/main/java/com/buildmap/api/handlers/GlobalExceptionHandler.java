@@ -1,0 +1,127 @@
+package com.buildmap.api.handlers;
+
+import com.buildmap.api.exceptions.*;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.jpa.JpaSystemException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.stream.Collectors;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    // Error messages
+    private static final String TELEGRAM_ID_CONSTRAINT = "users.telegram_id";
+    private static final String DATABASE_OPERATION_FAILED = "Database operation failed";
+    private static final String TELEGRAM_ID_EXISTS = "User with this Telegram ID already exists";
+    private static final String VALIDATION_FAILED = "Validation failed";
+    private static final String INVALID_REQUEST_FORMAT = "Invalid request format";
+    private static final String INVALID_ENUM_VALUE = "Invalid enum value";
+    private static final String VALIDATION_ERROR = "Validation error";
+    private static final String INVALID_ROLE = "Invalid role";
+    private static final String USER_NOT_FOUND = "User not found";
+    private static final String CONFLICT = "Conflict";
+    private static final String DATABASE_ERROR = "Database error";
+    private static final String INTERNAL_ERROR = "Internal error";
+    private static final String UNEXPECTED_ERROR = "An unexpected error occurred";
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleHttpMessageNotReadableException(
+            HttpMessageNotReadableException ex) {
+
+        InvalidFormatException invalidFormatException =
+                ExceptionHelper.findCause(ex, InvalidFormatException.class);
+
+        if (isEnumFormatException(invalidFormatException)) {
+            return handleEnumFormatException(invalidFormatException);
+        }
+
+        return buildResponse(HttpStatus.BAD_REQUEST, INVALID_REQUEST_FORMAT);
+    }
+
+    private boolean isEnumFormatException(InvalidFormatException ex) {
+        return ex != null && ExceptionHelper.isEnumType(ex.getTargetType());
+    }
+
+    private ResponseEntity<ApiError> handleEnumFormatException(InvalidFormatException ex) {
+        Object invalidValue = ex.getValue() != null ? ex.getValue() : "unknown";
+        String errorMessage = ExceptionHelper.formatEnumErrorMessage(
+                ex.getTargetType(), invalidValue);
+
+        return buildResponse(HttpStatus.BAD_REQUEST, INVALID_ENUM_VALUE, errorMessage);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> handleValidationExceptions(
+            MethodArgumentNotValidException ex) {
+
+        String errorMessage = ex.getBindingResult().getAllErrors().stream()
+                .map(this::getErrorMessage)
+                .collect(Collectors.joining("; "));
+
+        return buildResponse(HttpStatus.BAD_REQUEST, VALIDATION_FAILED, errorMessage);
+    }
+
+    private String getErrorMessage(Object error) {
+        if (error instanceof FieldError fieldError) {
+            return fieldError.getField() + ": " + fieldError.getDefaultMessage();
+        }
+        return error.toString();
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ApiError> handleValidationException(ValidationException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, VALIDATION_ERROR, ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidRoleException.class)
+    public ResponseEntity<ApiError> handleInvalidRoleException(InvalidRoleException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, INVALID_ROLE, ex.getMessage());
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ApiError> handleUserNotFoundException(UserNotFoundException ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, USER_NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(TelegramIdExistsException.class)
+    public ResponseEntity<ApiError> handleTelegramIdExistsException(TelegramIdExistsException ex) {
+        return buildResponse(HttpStatus.CONFLICT, CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(JpaSystemException.class)
+    public ResponseEntity<ApiError> handleJpaSystemException(JpaSystemException ex) {
+        String message = isTelegramIdConstraintViolation(ex)
+                ? TELEGRAM_ID_EXISTS
+                : DATABASE_OPERATION_FAILED;
+
+        return buildResponse(HttpStatus.CONFLICT, DATABASE_ERROR, message);
+    }
+
+    private boolean isTelegramIdConstraintViolation(JpaSystemException ex) {
+        return ex.getMessage() != null &&
+                ex.getMessage().contains(TELEGRAM_ID_CONSTRAINT);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiError> handleGeneralException(Exception ex) {
+        ex.printStackTrace();
+
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, INTERNAL_ERROR, UNEXPECTED_ERROR);
+    }
+
+    private ResponseEntity<ApiError> buildResponse(HttpStatus status, String error) {
+        return buildResponse(status, error, error);
+    }
+
+    private ResponseEntity<ApiError> buildResponse(HttpStatus status, String error, String message) {
+        return ResponseEntity.status(status)
+                .body(ApiError.of(status, error, message));
+    }
+}
