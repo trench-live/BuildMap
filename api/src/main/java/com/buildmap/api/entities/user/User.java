@@ -1,6 +1,6 @@
 package com.buildmap.api.entities.user;
 
-import com.buildmap.api.entities.MappingArea;
+import com.buildmap.api.entities.mapping_area.MappingArea;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
