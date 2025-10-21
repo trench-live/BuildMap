@@ -29,15 +29,30 @@ public class MappingArea {
 
     private String image; // SVG format image, maybe store link here and process on frontend
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "mapping_area_users",
+            joinColumns = @JoinColumn(name = "mapping_area_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private List<User> users = new ArrayList<>();
 
     @OneToMany(mappedBy = "mappingArea", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Fulcrum> fulcrums = new ArrayList<>();
 
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
+
+    // Методы для управления пользователями
+    public void addUser(User user) {
+        users.add(user);
+        user.getMappingAreas().add(this);
+    }
+
+    public void removeUser(User user) {
+        users.remove(user);
+        user.getMappingAreas().remove(this);
+    }
 
     // Методы для управления точками опоры
     public void addFulcrum(Fulcrum fulcrum) {

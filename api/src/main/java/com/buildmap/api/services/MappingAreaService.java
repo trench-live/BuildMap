@@ -1,7 +1,8 @@
 package com.buildmap.api.services;
 
+import com.buildmap.api.dto.mapping_area.MappingAreaSaveDto;
+import com.buildmap.api.dto.mapping_area.mappers.MappingAreaMapper;
 import com.buildmap.api.entities.mapping_area.MappingArea;
-import com.buildmap.api.entities.mapping_area.fulcrum.Fulcrum;
 import com.buildmap.api.exceptions.MappingAreaNotFoundException;
 import com.buildmap.api.repos.MappingAreaRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,8 +15,14 @@ import java.util.List;
 public class MappingAreaService {
 
     private final MappingAreaRepository mappingAreaRepository;
+    private final MappingAreaMapper mappingAreaMapper;
 
     public MappingArea create(MappingArea mappingArea) {
+        return mappingAreaRepository.save(mappingArea);
+    }
+
+    public MappingArea create(MappingAreaSaveDto mappingAreaDto) {
+        MappingArea mappingArea = mappingAreaMapper.toEntity(mappingAreaDto);
         return mappingAreaRepository.save(mappingArea);
     }
 
@@ -38,12 +45,19 @@ public class MappingAreaService {
                 mappingAreaRepository.findByUserIdAndDeletedFalse(userId);
     }
 
+    @Deprecated
     public MappingArea update(Long id, MappingArea mappingArea) {
         if (!mappingAreaRepository.existsById(id)) {
             throw new MappingAreaNotFoundException(id);
         }
         mappingArea.setId(id);
         return mappingAreaRepository.save(mappingArea);
+    }
+
+    public MappingArea update(Long id, MappingAreaSaveDto mappingAreaDto) {
+        MappingArea existingArea = getById(id);
+        mappingAreaMapper.updateEntity(mappingAreaDto, existingArea);
+        return mappingAreaRepository.save(existingArea);
     }
 
     public void safeDelete(Long id) {

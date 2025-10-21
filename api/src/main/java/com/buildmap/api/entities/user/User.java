@@ -30,7 +30,7 @@ public class User {
     @Column(nullable = false)
     private Role role = Role.USER;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
     private List<MappingArea> mappingAreas;
 
     @Column(name = "is_deleted", nullable = false)

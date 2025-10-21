@@ -5,14 +5,19 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class MappingAreaSaveDto {
     @NotBlank
     @Size(max = 100)
     private String name;
+
     @Size(max = 500)
     private String description;
+
     private String image;
+
     @NotNull
-    private Long userId;
+    private List<Long> userIds;
 }
