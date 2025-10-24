@@ -1,23 +1,29 @@
 package com.buildmap.api.dto.fulcrum;
 
-import com.buildmap.api.dto.fulcrum.connections.FulcrumConnectionDto;
 import com.buildmap.api.entities.mapping_area.fulcrum.FulcrumType;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-import java.util.List;
-
 @Data
-public class FulcrumDto {
-    private Long id;
+public class FulcrumSaveDto {
+    @NotBlank
+    @Size(max = 50)
     private String name;
-    private String description;
-    private Double x;
-    private Double y;
-    private Double z;
-    private FulcrumType type;
-    private String qrCodeId;
-    private Long mappingAreaId;
-    private boolean deleted;
 
-    private List<FulcrumConnectionDto> connections;
+    @Size(max = 200)
+    private String description;
+
+    @NotNull
+    private Double x;
+
+    @NotNull
+    private Double y;
+
+    @NotNull
+    private Double z;
+
+    @NotNull
+    private FulcrumType type;
 }

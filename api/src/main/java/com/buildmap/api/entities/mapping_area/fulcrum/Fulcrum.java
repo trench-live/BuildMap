@@ -25,7 +25,7 @@ public class Fulcrum {
     @Size(max = 200, message = "Description must be less than 200 characters")
     private String description;
 
-    // Координаты точки в системе координат здания
+    // Coordinates
     @Column(nullable = false)
     private Double X;
 
@@ -48,14 +48,12 @@ public class Fulcrum {
     @JoinColumn(name = "mapping_area_id", nullable = false)
     private MappingArea mappingArea;
 
-    // Связи с другими точками (ребра графа)
-    @ManyToMany
-    @JoinTable(
+    @ElementCollection
+    @CollectionTable(
             name = "fulcrum_connections",
-            joinColumns = @JoinColumn(name = "fulcrum_id"),
-            inverseJoinColumns = @JoinColumn(name = "connected_fulcrum_id")
+            joinColumns = @JoinColumn(name = "fulcrum_id")
     )
-    private List<Fulcrum> connectedFulcrums = new ArrayList<>();
+    private List<FulcrumConnection> connections = new ArrayList<>();
 
     // Веса соединений (расстояния или время перемещения)
     @ElementCollection
@@ -68,23 +66,14 @@ public class Fulcrum {
 
     // Методы для управления соединениями
     public void addConnection(Fulcrum connectedFulcrum, Double weight) {
-        this.connectedFulcrums.add(connectedFulcrum);
-        this.connectionWeights.add(weight);
-        connectedFulcrum.getConnectedFulcrums().add(this);
-        connectedFulcrum.getConnectionWeights().add(weight);
+        FulcrumConnection connection = new FulcrumConnection();
+        connection.setConnectedFulcrum(connectedFulcrum);
+        connection.setWeight(weight != null ? weight : 1.0);
+        this.connections.add(connection);
     }
 
     public void removeConnection(Fulcrum connectedFulcrum) {
-        int index = this.connectedFulcrums.indexOf(connectedFulcrum);
-        if (index != -1) {
-            this.connectedFulcrums.remove(index);
-            this.connectionWeights.remove(index);
-
-            int otherIndex = connectedFulcrum.getConnectedFulcrums().indexOf(this);
-            if (otherIndex != -1) {
-                connectedFulcrum.getConnectedFulcrums().remove(otherIndex);
-                connectedFulcrum.getConnectionWeights().remove(otherIndex);
-            }
-        }
+        connections.removeIf(conn ->
+                conn.getConnectedFulcrum().getId().equals(connectedFulcrum.getId()));
     }
 }
