@@ -3,12 +3,15 @@ package com.buildmap.api.services;
 import com.buildmap.api.dto.fulcrum.FulcrumSaveDto;
 import com.buildmap.api.dto.fulcrum.connections.FulcrumConnectionSaveDto;
 import com.buildmap.api.dto.fulcrum.mappers.FulcrumMapper;
+import com.buildmap.api.entities.mapping_area.Floor;
+import com.buildmap.api.entities.mapping_area.MappingArea;
 import com.buildmap.api.entities.mapping_area.fulcrum.Fulcrum;
+import com.buildmap.api.entities.mapping_area.fulcrum.FulcrumConnection;
 import com.buildmap.api.exceptions.FulcrumNotFoundException;
 import com.buildmap.api.repos.FulcrumRepository;
-import com.buildmap.api.repos.MappingAreaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -18,25 +21,28 @@ public class FulcrumService {
 
     private final FulcrumRepository fulcrumRepository;
     private final FulcrumMapper fulcrumMapper;
-    private final MappingAreaService mappingAreaService;
+    private final FloorService floorService;
 
-    @Deprecated
-    public Fulcrum create(Fulcrum fulcrum) {
-        return fulcrumRepository.save(fulcrum);
-    }
+    @Transactional
+    public Fulcrum create(FulcrumSaveDto fulcrumDto) {
+        // Просто проверяем существование этажа (для валидации)
 
-    public Fulcrum create(FulcrumSaveDto fulcrumDto, Long areaId) {
-        Fulcrum fulcrum = fulcrumMapper.toEntity(fulcrumDto, areaId);
+        Fulcrum fulcrum = fulcrumMapper.toEntity(fulcrumDto);
         return fulcrumRepository.save(fulcrum);
     }
 
     public List<Fulcrum> getAllByAreaId(Long areaId, Boolean deleted) {
-        if (deleted == null)
-            return fulcrumRepository.findByMappingAreaId(areaId);
-
+        if (deleted == null) return fulcrumRepository.findByFloorMappingAreaId(areaId);
         return deleted ?
-                fulcrumRepository.findByMappingAreaIdAndDeletedTrue(areaId) :
-                fulcrumRepository.findByMappingAreaIdAndDeletedFalse(areaId);
+                fulcrumRepository.findByFloorMappingAreaIdAndDeletedTrue(areaId) :
+                fulcrumRepository.findByFloorMappingAreaIdAndDeletedFalse(areaId);
+    }
+
+    public List<Fulcrum> getAllByFloorId(Long floorId, Boolean deleted) {
+        if (deleted == null) return fulcrumRepository.findByFloorId(floorId);
+        return deleted ?
+                fulcrumRepository.findByFloorIdAndDeletedTrue(floorId) :
+                fulcrumRepository.findByFloorIdAndDeletedFalse(floorId);
     }
 
     public Fulcrum getById(Long id) {
@@ -44,47 +50,55 @@ public class FulcrumService {
                 .orElseThrow(() -> new FulcrumNotFoundException(id));
     }
 
-    @Deprecated
-    public Fulcrum update(Long id, Fulcrum fulcrum) {
-        if (!fulcrumRepository.existsById(id)) {
-            throw new FulcrumNotFoundException(id);
-        }
-        fulcrum.setId(id);
-        return fulcrumRepository.save(fulcrum);
-    }
-
+    @Transactional
     public Fulcrum update(Long id, FulcrumSaveDto fulcrumDto) {
         Fulcrum existingFulcrum = getById(id);
         fulcrumMapper.updateEntity(fulcrumDto, existingFulcrum);
         return fulcrumRepository.save(existingFulcrum);
     }
 
+    @Transactional
     public void safeDelete(Long id) {
         Fulcrum fulcrum = getById(id);
         fulcrum.setDeleted(true);
         fulcrumRepository.save(fulcrum);
     }
 
+    @Transactional
     public void delete(Long id) {
-        if (!fulcrumRepository.existsById(id)) {
-            throw new FulcrumNotFoundException(id);
-        }
         fulcrumRepository.deleteById(id);
     }
 
+    @Transactional
     public void addConnection(Long fulcrumId, FulcrumConnectionSaveDto connectionDto) {
         Fulcrum fulcrum = getById(fulcrumId);
         Fulcrum connectedFulcrum = getById(connectionDto.getConnectedFulcrumId());
+
+        // Проверяем, что связь не существует
+        boolean connectionExists = fulcrum.getConnections().stream()
+                .anyMatch(conn -> conn.getConnectedFulcrum().getId().equals(connectedFulcrum.getId()));
+
+        if (connectionExists) {
+            throw new IllegalArgumentException("Connection already exists");
+        }
 
         fulcrum.addConnection(connectedFulcrum, connectionDto.getWeight());
         fulcrumRepository.save(fulcrum);
     }
 
+    @Transactional
     public void removeConnection(Long fulcrumId, Long connectedFulcrumId) {
         Fulcrum fulcrum = getById(fulcrumId);
         Fulcrum connectedFulcrum = getById(connectedFulcrumId);
 
         fulcrum.removeConnection(connectedFulcrum);
+        fulcrumRepository.save(fulcrum);
+    }
+
+    @Transactional
+    public void removeAllConnections(Long fulcrumId) {
+        Fulcrum fulcrum = getById(fulcrumId);
+        fulcrum.getConnections().clear();
         fulcrumRepository.save(fulcrum);
     }
 }

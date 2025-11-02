@@ -8,7 +8,13 @@ import java.util.List;
 
 @Repository
 public interface FulcrumRepository extends JpaRepository<Fulcrum, Long> {
-    List<Fulcrum> findByMappingAreaId(Long mappingAreaId);
-    List<Fulcrum> findByMappingAreaIdAndDeletedTrue(Long mappingAreaId);
-    List<Fulcrum> findByMappingAreaIdAndDeletedFalse(Long mappingAreaId);
+
+    // Заменяем mappingAreaId на floor.mappingArea.id
+    List<Fulcrum> findByFloorMappingAreaId(Long mappingAreaId);
+    List<Fulcrum> findByFloorMappingAreaIdAndDeletedTrue(Long mappingAreaId);
+    List<Fulcrum> findByFloorMappingAreaIdAndDeletedFalse(Long mappingAreaId);
+
+    List<Fulcrum> findByFloorId(Long floorId);
+    List<Fulcrum> findByFloorIdAndDeletedTrue(Long floorId);
+    List<Fulcrum> findByFloorIdAndDeletedFalse(Long floorId);
 }

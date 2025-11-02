@@ -1,8 +1,6 @@
 package com.buildmap.api.entities.mapping_area;
 
-import com.buildmap.api.entities.mapping_area.fulcrum.Fulcrum;
 import com.buildmap.api.entities.user.User;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -27,8 +25,6 @@ public class MappingArea {
     @Size(max = 500, message = "Description must be less than 500 characters")
     private String description;
 
-    private String image; // SVG format image, maybe store link here and process on frontend
-
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "mapping_area_users",
@@ -37,13 +33,13 @@ public class MappingArea {
     )
     private List<User> users = new ArrayList<>();
 
-    @OneToMany(mappedBy = "mappingArea", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Fulcrum> fulcrums = new ArrayList<>();
+    @OneToMany(mappedBy = "mappingArea", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("level ASC")
+    private List<Floor> floors = new ArrayList<>();
 
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
 
-    // Методы для управления пользователями
     public void addUser(User user) {
         users.add(user);
         user.getMappingAreas().add(this);
@@ -54,14 +50,13 @@ public class MappingArea {
         user.getMappingAreas().remove(this);
     }
 
-    // Методы для управления точками опоры
-    public void addFulcrum(Fulcrum fulcrum) {
-        fulcrums.add(fulcrum);
-        fulcrum.setMappingArea(this);
+    public void addFloor(Floor floor) {
+        floors.add(floor);
+        floor.setMappingArea(this);
     }
 
-    public void removeFulcrum(Fulcrum fulcrum) {
-        fulcrums.remove(fulcrum);
-        fulcrum.setMappingArea(null);
+    public void removeFloor(Floor floor) {
+        floors.remove(floor);
+        floor.setMappingArea(null);
     }
 }

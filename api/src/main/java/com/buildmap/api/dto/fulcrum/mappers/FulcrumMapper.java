@@ -3,7 +3,7 @@ package com.buildmap.api.dto.fulcrum.mappers;
 import com.buildmap.api.dto.fulcrum.FulcrumDto;
 import com.buildmap.api.dto.fulcrum.FulcrumSaveDto;
 import com.buildmap.api.dto.fulcrum.connections.FulcrumConnectionDto;
-import com.buildmap.api.entities.mapping_area.MappingArea;
+import com.buildmap.api.entities.mapping_area.Floor;
 import com.buildmap.api.entities.mapping_area.fulcrum.Fulcrum;
 import com.buildmap.api.entities.mapping_area.fulcrum.FulcrumConnection;
 import org.mapstruct.Mapper;
@@ -17,7 +17,8 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = "spring")
 public interface FulcrumMapper {
 
-    @Mapping(target = "mappingAreaId", source = "mappingArea.id")
+    @Mapping(target = "mappingAreaId", expression = "java(entity.getMappingArea() != null ? entity.getMappingArea().getId() : null)")
+    @Mapping(target = "floorId", source = "floor.id")
     @Mapping(target = "connections", source = "connections", qualifiedByName = "connectionsToDtos")
     @Mapping(target = "qrCodeId", expression = "java(generateQrCodeUrl(entity))")
     FulcrumDto toDto(Fulcrum entity);
@@ -27,22 +28,23 @@ public interface FulcrumMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "qrCodeId", ignore = true)
-    @Mapping(target = "mappingArea", expression = "java(createMappingAreaProxy(areaId))")
+    @Mapping(target = "floor", source = "floorId", qualifiedByName = "floorIdToFloor")
     @Mapping(target = "connections", ignore = true)
-    Fulcrum toEntity(FulcrumSaveDto dto, Long areaId);
+    Fulcrum toEntity(FulcrumSaveDto dto);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "qrCodeId", ignore = true)
-    @Mapping(target = "mappingArea", ignore = true)
+    @Mapping(target = "floor", ignore = true)
     @Mapping(target = "connections", ignore = true)
     void updateEntity(FulcrumSaveDto dto, @MappingTarget Fulcrum entity);
 
-    default MappingArea createMappingAreaProxy(Long areaId) {
-        if (areaId == null) return null;
-        MappingArea mappingArea = new MappingArea();
-        mappingArea.setId(areaId);
-        return mappingArea;
+    @Named("floorIdToFloor")
+    default Floor floorIdToFloor(Long floorId) {
+        if (floorId == null) return null;
+        Floor floor = new Floor();
+        floor.setId(floorId);
+        return floor;
     }
 
     @Named("connectionsToDtos")
@@ -58,17 +60,9 @@ public interface FulcrumMapper {
                 .collect(Collectors.toList());
     }
 
-    @Named("mappingAreaIdToMappingArea")
-    default MappingArea mappingAreaIdToMappingArea(Long mappingAreaId) {
-        if (mappingAreaId == null) return null;
-        MappingArea mappingArea = new MappingArea();
-        mappingArea.setId(mappingAreaId);
-        return mappingArea;
-    }
-
     default String generateQrCodeUrl(Fulcrum entity) {
-        if (entity.getMappingArea() == null) return null;
-        return String.format("area/%d/fulcrum/%d",
-                entity.getMappingArea().getId(), entity.getId());
+        if (entity.getFloor() == null) return null;
+        return String.format("fulcrum/%d",
+                entity.getId());
     }
 }

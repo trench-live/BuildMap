@@ -1,5 +1,6 @@
 package com.buildmap.api.entities.mapping_area.fulcrum;
 
+import com.buildmap.api.entities.mapping_area.Floor;
 import com.buildmap.api.entities.mapping_area.MappingArea;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -25,28 +26,22 @@ public class Fulcrum {
     @Size(max = 200, message = "Description must be less than 200 characters")
     private String description;
 
-    // Coordinates
     @Column(nullable = false)
-    private Double X;
+    private Double x;
 
     @Column(nullable = false)
-    private Double Y;
+    private Double y;
 
-    @Column(nullable = false)
-    private Double Z;
-
-    // Тип точки (лестница, лифт, комната, холл и т.д.)
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private FulcrumType type;
 
-    // Уникальный идентификатор для QR-кода
     @Column(unique = true)
     private String qrCodeId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "mapping_area_id", nullable = false)
-    private MappingArea mappingArea;
+    @JoinColumn(name = "floor_id", nullable = false)
+    private Floor floor;
 
     @ElementCollection
     @CollectionTable(
@@ -55,16 +50,17 @@ public class Fulcrum {
     )
     private List<FulcrumConnection> connections = new ArrayList<>();
 
-    // Веса соединений (расстояния или время перемещения)
-    @ElementCollection
-    @CollectionTable(name = "connection_weights", joinColumns = @JoinColumn(name = "fulcrum_id"))
-    @Column(name = "weight")
-    private List<Double> connectionWeights = new ArrayList<>();
-
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
 
-    // Методы для управления соединениями
+    public MappingArea getMappingArea() {
+        return floor != null ? floor.getMappingArea() : null;
+    }
+
+    public Integer getLevel() {
+        return floor != null ? floor.getLevel() : null;
+    }
+
     public void addConnection(Fulcrum connectedFulcrum, Double weight) {
         FulcrumConnection connection = new FulcrumConnection();
         connection.setConnectedFulcrum(connectedFulcrum);
@@ -75,5 +71,13 @@ public class Fulcrum {
     public void removeConnection(Fulcrum connectedFulcrum) {
         connections.removeIf(conn ->
                 conn.getConnectedFulcrum().getId().equals(connectedFulcrum.getId()));
+    }
+
+    public Double getConnectionWeight(Fulcrum connectedFulcrum) {
+        return connections.stream()
+                .filter(conn -> conn.getConnectedFulcrum().getId().equals(connectedFulcrum.getId()))
+                .findFirst()
+                .map(FulcrumConnection::getWeight)
+                .orElse(null);
     }
 }

@@ -1,20 +1,30 @@
 package com.buildmap.api.controllers;
 
-import com.buildmap.api.dto.path.PathResponse;
+import com.buildmap.api.dto.route.RouteDto;
+import com.buildmap.api.dto.route.RouteRequestDto;
+import com.buildmap.api.services.navigation.NavigationService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/mapping-area/{areaId}/navigation")
+@RequestMapping("/api/navigation") // Упрощаем путь
+@RequiredArgsConstructor
 public class NavigationController {
 
-    @GetMapping("/path")
-    public ResponseEntity<PathResponse> findPath(
-            @PathVariable Long areaId,
-            @RequestParam Long from,
-            @RequestParam Long to) {
+    private final NavigationService navigationService;
 
-        // Простая заглушка без логики
-        return ResponseEntity.ok(PathResponse.createStub(from, to));
+    @PostMapping("/path")
+    public ResponseEntity<RouteDto> findShortestPath(@Valid @RequestBody RouteRequestDto request) {
+        RouteDto routeDto = navigationService.findShortestPath(request);
+        return ResponseEntity.ok(routeDto);
+    }
+
+    // Endpoint для отладки
+    @GetMapping("/debug/graph/{areaId}")
+    public ResponseEntity<String> debugGraph(@PathVariable Long areaId) {
+        navigationService.testGraphBuilding(areaId);
+        return ResponseEntity.ok("Graph debug completed. Check console logs.");
     }
 }

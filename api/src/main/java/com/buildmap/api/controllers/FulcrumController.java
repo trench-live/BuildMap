@@ -4,7 +4,9 @@ import com.buildmap.api.dto.fulcrum.FulcrumDto;
 import com.buildmap.api.dto.fulcrum.FulcrumSaveDto;
 import com.buildmap.api.dto.fulcrum.connections.FulcrumConnectionSaveDto;
 import com.buildmap.api.dto.fulcrum.mappers.FulcrumMapper;
+import com.buildmap.api.entities.mapping_area.Floor;
 import com.buildmap.api.entities.mapping_area.fulcrum.Fulcrum;
+import com.buildmap.api.services.FloorService;
 import com.buildmap.api.services.FulcrumService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,23 +17,33 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/mapping-area/{areaId}/fulcrum")
+@RequestMapping("/api/fulcrum") // Упрощаем путь
 @RequiredArgsConstructor
 public class FulcrumController {
 
     private final FulcrumService fulcrumService;
     private final FulcrumMapper fulcrumMapper;
+    private final FloorService floorService;
 
     @PostMapping
-    public ResponseEntity<FulcrumDto> create(
-            @PathVariable Long areaId,
-            @Valid @RequestBody FulcrumSaveDto fulcrumDto) {
-        Fulcrum created = fulcrumService.create(fulcrumDto, areaId);
+    public ResponseEntity<FulcrumDto> create(@Valid @RequestBody FulcrumSaveDto fulcrumDto) {
+        // Проверяем существование этажа
+        Floor floor = floorService.getById(fulcrumDto.getFloorId());
+
+        Fulcrum created = fulcrumService.create(fulcrumDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(fulcrumMapper.toDto(created));
     }
 
-    @GetMapping
-    public ResponseEntity<List<FulcrumDto>> getAll(
+    @GetMapping("/floor/{floorId}") // Точки конкретного этажа
+    public ResponseEntity<List<FulcrumDto>> getByFloorId(
+            @PathVariable Long floorId,
+            @RequestParam(name = "deleted", required = false) Boolean deleted) {
+        List<Fulcrum> fulcrums = fulcrumService.getAllByFloorId(floorId, deleted);
+        return ResponseEntity.ok(fulcrumMapper.toDtoList(fulcrums));
+    }
+
+    @GetMapping("/area/{areaId}") // Все точки зоны (всех этажей)
+    public ResponseEntity<List<FulcrumDto>> getByAreaId(
             @PathVariable Long areaId,
             @RequestParam(name = "deleted", required = false) Boolean deleted) {
         List<Fulcrum> fulcrums = fulcrumService.getAllByAreaId(areaId, deleted);
@@ -39,20 +51,13 @@ public class FulcrumController {
     }
 
     @GetMapping("/{fulcrumId}")
-    public ResponseEntity<FulcrumDto> getById(
-            @PathVariable Long areaId,
-            @PathVariable Long fulcrumId) {
+    public ResponseEntity<FulcrumDto> getById(@PathVariable Long fulcrumId) {
         Fulcrum fulcrum = fulcrumService.getById(fulcrumId);
-        // Проверяем принадлежность к зоне
-        if (!fulcrum.getMappingArea().getId().equals(areaId)) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok(fulcrumMapper.toDto(fulcrum));
     }
 
     @PutMapping("/{fulcrumId}")
     public ResponseEntity<FulcrumDto> update(
-            @PathVariable Long areaId,
             @PathVariable Long fulcrumId,
             @Valid @RequestBody FulcrumSaveDto fulcrumDto) {
         Fulcrum updated = fulcrumService.update(fulcrumId, fulcrumDto);
@@ -60,33 +65,27 @@ public class FulcrumController {
     }
 
     @DeleteMapping("/{fulcrumId}")
-    public ResponseEntity<Void> safeDelete(
-            @PathVariable Long areaId,
-            @PathVariable Long fulcrumId) {
+    public ResponseEntity<Void> safeDelete(@PathVariable Long fulcrumId) {
         fulcrumService.safeDelete(fulcrumId);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/force/{fulcrumId}")
-    public ResponseEntity<Void> forceDelete(
-            @PathVariable Long areaId,
-            @PathVariable Long fulcrumId) {
+    public ResponseEntity<Void> forceDelete(@PathVariable Long fulcrumId) {
         fulcrumService.delete(fulcrumId);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("{fulcrumId}/connection")
+    @PostMapping("/{fulcrumId}/connection")
     public ResponseEntity<Void> addConnection(
-            @PathVariable String areaId,
             @PathVariable Long fulcrumId,
             @RequestBody @Valid FulcrumConnectionSaveDto connectionDto) {
         fulcrumService.addConnection(fulcrumId, connectionDto);
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("{fulcrumId}/connection/{connectedFulcrumId}")
+    @DeleteMapping("/{fulcrumId}/connection/{connectedFulcrumId}")
     public ResponseEntity<Void> removeConnection(
-            @PathVariable String areaId,
             @PathVariable Long fulcrumId,
             @PathVariable Long connectedFulcrumId) {
         fulcrumService.removeConnection(fulcrumId, connectedFulcrumId);

@@ -16,18 +16,19 @@ import java.util.stream.Collectors;
 public interface MappingAreaMapper {
 
     @Mapping(target = "userIds", source = "users", qualifiedByName = "usersToUserIds")
+        // Убираем маппинг fulcrums - его больше нет в MappingArea
     MappingAreaDto toDto(MappingArea entity);
 
     List<MappingAreaDto> toDtoList(List<MappingArea> entities);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "fulcrums", ignore = true)
+    @Mapping(target = "floors", ignore = true) // Добавляем игнор floors
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "users", source = "userIds", qualifiedByName = "userIdsToUsers")
     MappingArea toEntity(MappingAreaSaveDto dto);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "fulcrums", ignore = true)
+    @Mapping(target = "floors", ignore = true) // Добавляем игнор floors
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "users", source = "userIds", qualifiedByName = "userIdsToUsers")
     void updateEntity(MappingAreaSaveDto dto, @MappingTarget MappingArea entity);

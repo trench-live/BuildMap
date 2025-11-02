@@ -22,8 +22,8 @@ public class FulcrumSaveDto {
     private Double y;
 
     @NotNull
-    private Double z;
+    private FulcrumType type;
 
     @NotNull
-    private FulcrumType type;
+    private Long floorId;
 }

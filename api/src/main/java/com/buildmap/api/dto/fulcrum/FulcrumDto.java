@@ -13,11 +13,10 @@ public class FulcrumDto {
     private String description;
     private Double x;
     private Double y;
-    private Double z;
     private FulcrumType type;
     private String qrCodeId;
     private Long mappingAreaId;
+    private Long floorId;
     private boolean deleted;
-
     private List<FulcrumConnectionDto> connections;
 }
