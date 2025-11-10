@@ -4,6 +4,7 @@ import com.buildmap.api.dto.user.UserSaveDto;
 import com.buildmap.api.dto.user.mappers.UserMapper;
 import com.buildmap.api.entities.user.Role;
 import com.buildmap.api.entities.user.User;
+import com.buildmap.api.exceptions.TelegramIdExistsException;
 import com.buildmap.api.exceptions.UserNotFoundException;
 import com.buildmap.api.repos.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,10 @@ public class UserService {
     }
 
     public User create(User user) {
+        if (user.getTelegramId() != null &&
+                userRepository.existsByTelegramIdAndDeletedFalse(user.getTelegramId())) {
+            throw new TelegramIdExistsException(user.getTelegramId());
+        }
         return userRepository.save(user);
     }
 

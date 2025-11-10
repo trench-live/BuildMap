@@ -2,6 +2,7 @@ package com.buildmap.api.controllers;
 
 import com.buildmap.api.dto.floor.FloorDto;
 import com.buildmap.api.dto.floor.FloorSaveDto;
+import com.buildmap.api.dto.floor.FloorUpdateDto;
 import com.buildmap.api.dto.floor.mappers.FloorMapper;
 import com.buildmap.api.entities.mapping_area.Floor;
 import com.buildmap.api.services.FloorService;
@@ -44,8 +45,8 @@ public class FloorController {
     @PutMapping("/{floorId}")
     public ResponseEntity<FloorDto> update(
             @PathVariable Long floorId,
-            @Valid @RequestBody FloorSaveDto floorDto) {
-        Floor updated = floorService.update(floorId, floorDto);
+            @Valid @RequestBody FloorUpdateDto floorUpdateDto) {
+        Floor updated = floorService.update(floorId, floorUpdateDto);
         return ResponseEntity.ok(floorMapper.toDto(updated));
     }
 

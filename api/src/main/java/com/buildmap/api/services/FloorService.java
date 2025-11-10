@@ -1,9 +1,11 @@
 package com.buildmap.api.services;
 
 import com.buildmap.api.dto.floor.FloorSaveDto;
+import com.buildmap.api.dto.floor.FloorUpdateDto;
 import com.buildmap.api.dto.floor.mappers.FloorMapper;
 import com.buildmap.api.entities.mapping_area.Floor;
 import com.buildmap.api.entities.mapping_area.MappingArea;
+import com.buildmap.api.exceptions.FloorAlreadyExistsException;
 import com.buildmap.api.exceptions.FloorNotFoundException;
 import com.buildmap.api.repos.FloorRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,14 +24,11 @@ public class FloorService {
 
     @Transactional
     public Floor create(FloorSaveDto floorDto) {
-        // Проверяем существование MappingArea
         MappingArea mappingArea = mappingAreaService.getById(floorDto.getMappingAreaId());
 
-        // Проверяем уникальность уровня в зоне
         if (floorRepository.existsByMappingAreaIdAndLevelAndDeletedFalse(
                 floorDto.getMappingAreaId(), floorDto.getLevel())) {
-            throw new IllegalArgumentException("Floor with level " + floorDto.getLevel() +
-                    " already exists in this mapping area");
+            throw new FloorAlreadyExistsException(floorDto.getMappingAreaId(), floorDto.getLevel());
         }
 
         Floor floor = floorMapper.toEntity(floorDto);
@@ -51,19 +50,17 @@ public class FloorService {
     }
 
     @Transactional
-    public Floor update(Long id, FloorSaveDto floorDto) {
+    public Floor update(Long id, FloorUpdateDto floorUpdateDto) {
         Floor existingFloor = getById(id);
 
-        // Если меняется уровень, проверяем уникальность
-        if (!existingFloor.getLevel().equals(floorDto.getLevel())) {
+        if (floorUpdateDto.getLevel() != null && !existingFloor.getLevel().equals(floorUpdateDto.getLevel())) {
             if (floorRepository.existsByMappingAreaIdAndLevelAndDeletedFalse(
-                    existingFloor.getMappingArea().getId(), floorDto.getLevel())) {
-                throw new IllegalArgumentException("Floor with level " + floorDto.getLevel() +
-                        " already exists in this mapping area");
+                    existingFloor.getMappingArea().getId(), floorUpdateDto.getLevel())) {
+                throw new FloorAlreadyExistsException(existingFloor.getMappingArea().getId(), floorUpdateDto.getLevel());
             }
         }
 
-        floorMapper.updateEntity(floorDto, existingFloor);
+        floorMapper.updateEntityFromUpdateDto(floorUpdateDto, existingFloor);
         return floorRepository.save(existingFloor);
     }
 

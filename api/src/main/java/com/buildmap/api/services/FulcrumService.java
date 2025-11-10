@@ -7,6 +7,7 @@ import com.buildmap.api.entities.mapping_area.Floor;
 import com.buildmap.api.entities.mapping_area.MappingArea;
 import com.buildmap.api.entities.mapping_area.fulcrum.Fulcrum;
 import com.buildmap.api.entities.mapping_area.fulcrum.FulcrumConnection;
+import com.buildmap.api.exceptions.ConnectionAlreadyExistsException;
 import com.buildmap.api.exceptions.FulcrumNotFoundException;
 import com.buildmap.api.repos.FulcrumRepository;
 import lombok.RequiredArgsConstructor;
@@ -74,12 +75,11 @@ public class FulcrumService {
         Fulcrum fulcrum = getById(fulcrumId);
         Fulcrum connectedFulcrum = getById(connectionDto.getConnectedFulcrumId());
 
-        // Проверяем, что связь не существует
         boolean connectionExists = fulcrum.getConnections().stream()
                 .anyMatch(conn -> conn.getConnectedFulcrum().getId().equals(connectedFulcrum.getId()));
 
         if (connectionExists) {
-            throw new IllegalArgumentException("Connection already exists");
+            throw new ConnectionAlreadyExistsException(fulcrumId, connectedFulcrum.getId());
         }
 
         fulcrum.addConnection(connectedFulcrum, connectionDto.getWeight());
