@@ -1,0 +1,16 @@
+.svg-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    transition: transform 0.1s ease-out;
+}
+
+.svg-content svg {
+    display: block;
+    max-width: none;
+}
+
+.svg-content image {
+    pointer-events: none;
+}

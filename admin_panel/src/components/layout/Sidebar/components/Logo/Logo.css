@@ -1,0 +1,17 @@
+.logo {
+    padding: 20px;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: center;
+}
+
+.logo h1 {
+    color: #1890ff;
+    font-size: 1.2em;
+    white-space: nowrap;
+    margin: 0;
+    transition: font-size 0.3s;
+}
+
+.logo h1.collapsed {
+    font-size: 1em;
+}

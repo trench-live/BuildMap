@@ -1,0 +1,31 @@
+.modal-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.modal-actions-center {
+    justify-content: center;
+}
+
+.modal-actions-left {
+    justify-content: flex-start;
+}
+
+.modal-actions-right {
+    justify-content: flex-end;
+}
+
+.modal-actions-space-between {
+    justify-content: space-between;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .modal-actions {
+        flex-direction: column;
+    }
+
+    .modal-actions button {
+        width: 100%;
+    }
+}

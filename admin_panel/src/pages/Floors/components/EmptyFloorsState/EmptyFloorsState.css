@@ -1,0 +1,9 @@
+.empty-floors {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.empty-floors p {
+    margin-bottom: 16px;
+}

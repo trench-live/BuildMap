@@ -1,0 +1,19 @@
+.warning-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.delete-target {
+    font-weight: bold;
+    margin: 10px 0;
+    font-size: 16px;
+    color: #333;
+    word-break: break-word;
+}
+
+.delete-warning {
+    color: #666;
+    font-size: 14px;
+    margin: 10px 0 20px 0;
+    line-height: 1.4;
+}

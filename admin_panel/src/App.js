@@ -1,13 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
-import Layout from './components/layout/Layout';
-import Dashboard from './pages/Dashboard';
-import Areas from './pages/Areas';
-import Floors from './pages/Floors';
-import Editor from './pages/Editor';
-import Users from './pages/Users';
-import Login from './pages/Login';
+import Layout from './components/layout/Layout/Layout';
+import Dashboard from './pages/Dashboard/Dashboard';
+import Areas from './pages/Areas/Areas';
+import Floors from './pages/Floors/Floors';
+import Login from './pages/Login/Login';
 import './styles/global.css';
 
 // Компонент для защищенных маршрутов
@@ -63,8 +61,6 @@ const LayoutWithRoutes = () => {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/areas" element={<Areas />} />
                 <Route path="/floors" element={<Floors />} />
-                <Route path="/editor" element={<Editor />} />
-                <Route path="/users" element={<Users />} />
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>
         </Layout>
