@@ -1,0 +1,75 @@
+.fulcrum-point {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid #3b82f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    user-select: none;
+}
+
+.fulcrum-point:hover {
+    transform: translate(-50%, -50%) scale(1.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    z-index: 20;
+}
+
+.fulcrum-point.hovered {
+    transform: translate(-50%, -50%) scale(1.1);
+    z-index: 15;
+}
+
+.fulcrum-point.selected {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+}
+
+.fulcrum-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.fulcrum-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 8px 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    white-space: nowrap;
+    z-index: 30;
+    margin-bottom: 8px;
+}
+
+.fulcrum-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: white;
+}
+
+/* Варианты для разных типов fulcrum */
+.fulcrum-point.room { border-color: #10b981; }
+.fulcrum-point.corridor { border-color: #6b7280; }
+.fulcrum-point.stairs { border-color: #f59e0b; }
+.fulcrum-point.elevator { border-color: #8b5cf6; }
+.fulcrum-point.entrance { border-color: #ef4444; }
+.fulcrum-point.hall { border-color: #ec4899; }
+.fulcrum-point.restroom { border-color: #06b6d4; }
+.fulcrum-point.kitchen { border-color: #f97316; }
+.fulcrum-point.reception { border-color: #14b8a6; }
+.fulcrum-point.emergency_exit { border-color: #dc2626; }
+.fulcrum-point.landmark { border-color: #fbbf24; }

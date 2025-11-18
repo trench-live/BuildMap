@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { floorAPI } from '../../../../services/api';
+import { EDITOR_MODES } from '../types/editorTypes';
 
 export const useFloorEditor = (floor, onSave, onClose) => {
     const [editorState, setEditorState] = useState({
@@ -8,10 +9,59 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         scale: 1,
         offset: { x: 0, y: 0 },
         isDragging: false,
-        lastMousePos: { x: 0, y: 0 }
+        lastMousePos: { x: 0, y: 0 },
+        mode: EDITOR_MODES.VIEW,
+        selectedFulcrum: null,
+        selectedConnection: null,
+        dragStartFulcrum: null
     });
 
     const [isSaving, setIsSaving] = useState(false);
+    const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+    // Функция для центрирования и подбора масштаба
+    // Функция для центрирования и подбора масштаба
+    const centerAndFitImage = useCallback((svgContent, containerWidth, containerHeight) => {
+        if (!svgContent || !containerWidth || !containerHeight) return;
+
+        // Создаем временный элемент для получения размеров SVG
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = svgContent;
+        const svgElement = tempDiv.querySelector('svg');
+
+        if (!svgElement) return;
+
+        // Получаем размеры SVG
+        const viewBox = svgElement.getAttribute('viewBox');
+        let svgWidth, svgHeight;
+
+        if (viewBox) {
+            const [, , width, height] = viewBox.split(' ').map(Number);
+            svgWidth = width;
+            svgHeight = height;
+        } else {
+            svgWidth = svgElement.width.baseVal.value || 800;
+            svgHeight = svgElement.height.baseVal.value || 600;
+        }
+
+        // Рассчитываем масштаб, чтобы вместить SVG в контейнер
+        const scaleX = containerWidth / svgWidth;
+        const scaleY = containerHeight / svgHeight;
+        const scale = Math.min(scaleX, scaleY) * 0.9; // 90% от максимального размера для отступов
+
+        // Рассчитываем смещение для центрирования
+        const offsetX = (containerWidth - svgWidth * scale) / 2;
+        const offsetY = (containerHeight - svgHeight * scale) / 2;
+
+        setEditorState(prev => ({
+            ...prev,
+            scale: scale,
+            offset: { x: offsetX, y: offsetY }
+        }));
+
+        // Очищаем временный элемент
+        tempDiv.remove();
+    }, []);
 
     // Инициализация состояния при изменении floor
     useEffect(() => {
@@ -21,10 +71,31 @@ export const useFloorEditor = (floor, onSave, onClose) => {
                 svgContent: floor.svgPlan || '',
                 backgroundImage: null,
                 scale: 1,
-                offset: { x: 0, y: 0 }
+                offset: { x: 0, y: 0 },
+                mode: EDITOR_MODES.VIEW,
+                selectedFulcrum: null,
+                selectedConnection: null,
+                dragStartFulcrum: null
             }));
+
+            // Если есть SVG контент, центрируем его после загрузки
+            if (floor.svgPlan && containerSize.width > 0 && containerSize.height > 0) {
+                setTimeout(() => {
+                    centerAndFitImage(floor.svgPlan, containerSize.width, containerSize.height);
+                }, 100);
+            }
         }
-    }, [floor]);
+    }, [floor, containerSize, centerAndFitImage]);
+
+    // Функция для обновления размеров контейнера
+    const updateContainerSize = useCallback((width, height) => {
+        setContainerSize({ width, height });
+
+        // Если есть SVG контент, пересчитываем центрирование
+        if (editorState.svgContent && width > 0 && height > 0) {
+            centerAndFitImage(editorState.svgContent, width, height);
+        }
+    }, [editorState.svgContent, centerAndFitImage]);
 
     // Сохранение этажа
     const handleSave = useCallback(async () => {
@@ -63,14 +134,18 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         }));
     }, []);
 
-    // Сброс вида
+    // Сброс вида к центрированному
     const handleResetView = useCallback(() => {
-        setEditorState(prev => ({
-            ...prev,
-            scale: 1,
-            offset: { x: 0, y: 0 }
-        }));
-    }, []);
+        if (editorState.svgContent && containerSize.width > 0 && containerSize.height > 0) {
+            centerAndFitImage(editorState.svgContent, containerSize.width, containerSize.height);
+        } else {
+            setEditorState(prev => ({
+                ...prev,
+                scale: 1,
+                offset: { x: 0, y: 0 }
+            }));
+        }
+    }, [editorState.svgContent, containerSize, centerAndFitImage]);
 
     // Очистка холста
     const handleClearCanvas = useCallback(() => {
@@ -83,6 +158,38 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         }
     }, []);
 
+    // Установка режима редактора
+    const setMode = useCallback((mode, data = null) => {
+        setEditorState(prev => ({
+            ...prev,
+            mode,
+            ...(data && { selectedFulcrum: data }),
+            ...(mode === EDITOR_MODES.VIEW && {
+                selectedFulcrum: null,
+                selectedConnection: null,
+                dragStartFulcrum: null
+            })
+        }));
+    }, []);
+
+    // Начало перетаскивания для создания связи
+    const startConnectionDrag = useCallback((fulcrum) => {
+        setEditorState(prev => ({
+            ...prev,
+            mode: EDITOR_MODES.CREATE_CONNECTION,
+            dragStartFulcrum: fulcrum
+        }));
+    }, []);
+
+    // Завершение перетаскивания связи
+    const endConnectionDrag = useCallback(() => {
+        setEditorState(prev => ({
+            ...prev,
+            mode: EDITOR_MODES.VIEW,
+            dragStartFulcrum: null
+        }));
+    }, []);
+
     return {
         editorState,
         setEditorState,
@@ -90,6 +197,11 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         handleSave,
         handleZoom,
         handleResetView,
-        handleClearCanvas
+        handleClearCanvas,
+        setMode,
+        startConnectionDrag,
+        endConnectionDrag,
+        updateContainerSize,
+        containerSize
     };
 };

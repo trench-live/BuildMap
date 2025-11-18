@@ -1,0 +1,103 @@
+.connection-modal {
+    max-width: 440px;
+}
+
+.connection-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    gap: 12px;
+}
+
+.fulcrum-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.fulcrum-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.fulcrum-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.fulcrum-name {
+    font-weight: 600;
+    color: #374151;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fulcrum-type {
+    font-size: 12px;
+    color: #6b7280;
+    text-transform: lowercase;
+}
+
+.connection-arrow {
+    color: #9ca3af;
+    font-weight: bold;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.form-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.hint {
+    font-weight: normal;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group input.error {
+    border-color: #ef4444;
+}
+
+.error-message {
+    display: block;
+    color: #ef4444;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.weight-examples {
+    margin-top: 4px;
+}
+
+.weight-examples small {
+    color: #6b7280;
+    font-style: italic;
+}

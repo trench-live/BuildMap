@@ -1,33 +1,41 @@
 .editor-toolbar {
     display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
+    gap: 16px;
+}
+
+.toolbar-left {
+    display: flex;
     align-items: center;
     gap: 16px;
-    padding: 16px 20px;
-    border-bottom: 1px solid #e0e0e0;
-    background: #f8f9fa;
-    flex-wrap: wrap;
 }
 
-.toolbar-actions {
-    margin-left: auto;
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .editor-toolbar {
-        gap: 12px;
-        padding: 12px 16px;
-    }
+.toolbar-group {
+    display: flex;
+    gap: 8px;
+}
 
-    .toolbar-actions {
-        margin-left: 0;
-        width: 100%;
-        display: flex;
-        justify-content: center;
-    }
+.toolbar-stats {
+    display: flex;
+    gap: 12px;
+    padding: 4px 12px;
+    background: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
 
-    .toolbar-actions .toolbar-btn {
-        flex: 1;
-        max-width: 200px;
-    }
+.stat-item {
+    font-size: 14px;
+    font-weight: 500;
+    color: #64748b;
 }

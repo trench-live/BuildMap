@@ -1,9 +1,14 @@
 import { useCallback, useEffect } from 'react';
-import { calculateZoom, calculateOffset, calculateZoomToPoint } from '../utils/canvasUtils';
+import { calculateZoom, calculateOffset, calculateZoomToPoint } from '../utils';
 
 export const useSvgCanvas = (editorState, setEditorState) => {
     // Обработка начала перетаскивания
     const handleMouseDown = useCallback((e) => {
+        // Если создаем связь, не перетаскиваем канвас
+        if (editorState.mode === 'create_connection') {
+            return;
+        }
+
         if (e.button !== 0) return;
 
         setEditorState(prev => ({
@@ -13,7 +18,7 @@ export const useSvgCanvas = (editorState, setEditorState) => {
         }));
 
         e.preventDefault();
-    }, [setEditorState]);
+    }, [setEditorState, editorState.mode]);
 
     // Обработка перемещения мыши
     const handleMouseMove = useCallback((e) => {

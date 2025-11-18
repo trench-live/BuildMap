@@ -1,5 +1,5 @@
 import React from 'react';
-import ToolbarGroup from '../ToolbarGroup/ToolbarGroup';
+import Button from '../../../../common/Modal/components/Button/Button';
 import './EditorToolbar.css';
 
 const EditorToolbar = ({
@@ -11,74 +11,89 @@ const EditorToolbar = ({
                            onSave,
                            scale,
                            hasContent,
-                           isSaving
+                           isSaving,
+                           fulcrumsCount = 0,
+                           connectionsCount = 0
                        }) => {
+    const handleImageUploadClick = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*,.svg';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                onImageUpload(file); // Передаем файл, а не event
+            }
+        };
+        input.click();
+    };
+
     return (
         <div className="editor-toolbar">
-            {/* Группа загрузки изображения */}
-            <ToolbarGroup>
-                <input
-                    type="file"
-                    id="floor-image-upload"
-                    className="file-input"
-                    accept="image/jpeg,image/png,image/svg+xml,image/gif"
-                    onChange={onImageUpload}
-                />
-                <label htmlFor="floor-image-upload" className="toolbar-btn">
-                    📁 Загрузить изображение
-                </label>
-            </ToolbarGroup>
+            <div className="toolbar-left">
+                <div className="toolbar-group">
+                    <Button
+                        variant="secondary"
+                        size="small"
+                        onClick={handleImageUploadClick}
+                    >
+                        📁 Загрузить изображение
+                    </Button>
+                </div>
 
-            {/* Группа масштабирования */}
-            <ToolbarGroup>
-                <button
-                    className="toolbar-btn"
-                    onClick={onZoomOut}
-                    disabled={scale <= 0.1}
-                    title="Уменьшить (25%)"
-                >
-                    🔍−
-                </button>
-                <span className="scale-display">{Math.round(scale * 100)}%</span>
-                <button
-                    className="toolbar-btn"
-                    onClick={onZoomIn}
-                    disabled={scale >= 5}
-                    title="Увеличить (25%)"
-                >
-                    🔍+
-                </button>
-                <button
-                    className="toolbar-btn"
-                    onClick={onResetView}
-                    title="Сбросить вид к 100%"
-                >
-                    🎯 Сброс
-                </button>
-            </ToolbarGroup>
+                <div className="toolbar-group">
+                    <Button
+                        variant="secondary"
+                        size="small"
+                        onClick={onZoomIn}
+                        disabled={!hasContent}
+                    >
+                        🔍 Увеличить
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        size="small"
+                        onClick={onZoomOut}
+                        disabled={!hasContent}
+                    >
+                        🔎 Уменьшить
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        size="small"
+                        onClick={onResetView}
+                        disabled={!hasContent}
+                    >
+                        🏠 Сбросить вид
+                    </Button>
+                </div>
 
-            {/* Группа действий */}
-            <ToolbarGroup>
-                <button
-                    className="toolbar-btn toolbar-btn-danger"
-                    onClick={onClearCanvas}
-                    disabled={!hasContent}
-                    title="Очистить холст"
-                >
-                    🗑️ Очистить
-                </button>
-            </ToolbarGroup>
+                <div className="toolbar-stats">
+                    <span className="stat-item">📏 {Math.round(scale * 100)}%</span>
+                    <span className="stat-item">📍 {fulcrumsCount}</span>
+                    <span className="stat-item">🔗 {connectionsCount}</span>
+                </div>
+            </div>
 
-            {/* Группа сохранения */}
-            <div className="toolbar-actions">
-                <button
-                    className="toolbar-btn toolbar-btn-primary"
-                    onClick={onSave}
-                    disabled={!hasContent || isSaving}
-                    title="Сохранить изменения"
-                >
-                    {isSaving ? '💾 Сохранение...' : '💾 Сохранить'}
-                </button>
+            <div className="toolbar-right">
+                <div className="toolbar-group">
+                    <Button
+                        variant="secondary"
+                        size="small"
+                        onClick={onClearCanvas}
+                        disabled={!hasContent}
+                    >
+                        🗑️ Очистить
+                    </Button>
+                    <Button
+                        variant="primary"
+                        size="small"
+                        onClick={onSave}
+                        disabled={isSaving || !hasContent}
+                    >
+                        {isSaving ? '💾 Сохранение...' : '💾 Сохранить'}
+                    </Button>
+                </div>
             </div>
         </div>
     );
