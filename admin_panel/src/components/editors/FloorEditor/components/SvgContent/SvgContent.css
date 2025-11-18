@@ -2,15 +2,12 @@
     position: absolute;
     top: 0;
     left: 0;
-    transform-origin: 0 0;
-    transition: transform 0.1s ease-out;
+    width: 100%;
+    height: 100%;
 }
 
 .svg-content svg {
+    width: 100%;
+    height: 100%;
     display: block;
-    max-width: none;
-}
-
-.svg-content image {
-    pointer-events: none;
 }

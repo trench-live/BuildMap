@@ -1,7 +1,7 @@
 import React from 'react';
 import './FulcrumConnection.css';
 
-const FulcrumConnection = ({ from, to, weight, onContextMenu }) => {
+const FulcrumConnection = ({ fromFulcrum, toFulcrum, weight, onContextMenu }) => {
     const handleContextMenu = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -11,17 +11,17 @@ const FulcrumConnection = ({ from, to, weight, onContextMenu }) => {
     };
 
     // Расчет середины линии для отображения веса
-    const midX = (from.x + to.x) / 2;
-    const midY = (from.y + to.y) / 2;
+    const midX = (fromFulcrum.x + toFulcrum.x) / 2;
+    const midY = (fromFulcrum.y + toFulcrum.y) / 2;
 
     return (
         <div className="fulcrum-connection">
             <svg className="connection-svg">
                 <line
-                    x1={from.x}
-                    y1={from.y}
-                    x2={to.x}
-                    y2={to.y}
+                    x1={fromFulcrum.x}
+                    y1={fromFulcrum.y}
+                    x2={toFulcrum.x}
+                    y2={toFulcrum.y}
                     stroke="#6b7280"
                     strokeWidth="2"
                     className="connection-line"
@@ -34,6 +34,7 @@ const FulcrumConnection = ({ from, to, weight, onContextMenu }) => {
                 style={{
                     left: `${midX}px`,
                     top: `${midY}px`,
+                    position: 'absolute'
                 }}
                 onContextMenu={handleContextMenu}
             >

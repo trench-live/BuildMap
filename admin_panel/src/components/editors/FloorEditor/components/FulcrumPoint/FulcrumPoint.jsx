@@ -4,7 +4,6 @@ import './FulcrumPoint.css';
 
 const FulcrumPoint = ({
                           fulcrum,
-                          position,
                           isSelected = false,
                           isHovered = false,
                           onMouseEnter,
@@ -36,9 +35,10 @@ const FulcrumPoint = ({
         <div
             className={pointClass}
             style={{
-                left: `${position.x}px`,
-                top: `${position.y}px`,
-                transform: 'translate(-50%, -50%)'
+                left: `${fulcrum.x}px`,
+                top: `${fulcrum.y}px`,
+                transform: 'translate(-50%, -50%)',
+                position: 'absolute'
             }}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
