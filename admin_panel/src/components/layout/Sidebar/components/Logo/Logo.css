@@ -1,17 +1,38 @@
 .logo {
     padding: 20px;
     border-bottom: 1px solid #f0f0f0;
-    text-align: center;
 }
 
-.logo h1 {
-    color: #1890ff;
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+}
+
+.logo-svg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.logo-image {
+    width: 32px;
+    height: 32px;
+    transition: all 0.3s ease;
+}
+
+.logo-text {
+    color: #2C2C2C;
     font-size: 1.2em;
     white-space: nowrap;
     margin: 0;
-    transition: font-size 0.3s;
+    transition: all 0.3s ease;
 }
 
-.logo h1.collapsed {
-    font-size: 1em;
+/* Для collapsed состояния */
+.logo.collapsed .logo-image {
+    width: 24px;
+    height: 24px;
 }
