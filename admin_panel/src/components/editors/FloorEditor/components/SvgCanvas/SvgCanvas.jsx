@@ -20,6 +20,7 @@ const SvgCanvas = ({
                    }) => {
     const containerRef = useRef(null);
     const [hoveredFulcrum, setHoveredFulcrum] = useState(null);
+    const [hoveredConnection, setHoveredConnection] = useState(null);
     const [tempConnection, setTempConnection] = useState(null);
     const [isCreatingConnection, setIsCreatingConnection] = useState(false);
 
@@ -156,6 +157,56 @@ const SvgCanvas = ({
         handleCanvasMouseDown(e);
     };
 
+    // Обработчик контекстного меню для связей
+    const handleConnectionContextMenu = (connection, event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (onConnectionContextMenu) {
+            onConnectionContextMenu(connection, event);
+        }
+    };
+
+    const getGroupedConnections = useCallback(() => {
+        const grouped = [];
+        const processedPairs = new Set();
+
+        connections.forEach(connection => {
+            const pairKey = [connection.from, connection.to].sort().join('-');
+
+            // Проверяем есть ли обратная связь
+            const reverseConnection = connections.find(conn =>
+                conn.from === connection.to && conn.to === connection.from
+            );
+
+            if (!processedPairs.has(pairKey)) {
+                if (reverseConnection) {
+                    // Двунаправленная связь - одна группа
+                    grouped.push({
+                        type: 'bidirectional',
+                        connections: [connection, reverseConnection],
+                        from: connection.from,
+                        to: connection.to,
+                        weights: [connection.weight, reverseConnection.weight]
+                    });
+                } else {
+                    // Однонаправленная связь
+                    grouped.push({
+                        type: 'unidirectional',
+                        connections: [connection],
+                        from: connection.from,
+                        to: connection.to,
+                        weights: [connection.weight]
+                    });
+                }
+                processedPairs.add(pairKey);
+            }
+        });
+
+        return grouped;
+    }, [connections]);
+
+    const groupedConnections = getGroupedConnections();
+
     // Добавляем обработчики wheel и mouse move
     useEffect(() => {
         const container = containerRef.current;
@@ -201,49 +252,125 @@ const SvgCanvas = ({
                             isDragging={editorState.isDragging}
                         />
 
+                        {/* Временная связь при создании - ПЕРЕМЕЩАЕМ ВНУТРЬ трансформируемого контейнера */}
+                        {tempConnection && (
+                            <div className="temp-connection">
+                                <svg className="connection-svg">
+                                    <line
+                                        x1={tempConnection.fromPos.x}
+                                        y1={tempConnection.fromPos.y}
+                                        x2={tempConnection.toPos.x}
+                                        y2={tempConnection.toPos.y}
+                                        stroke="#3b82f6"
+                                        strokeWidth="2"
+                                        strokeDasharray="4,4"
+                                    />
+                                </svg>
+                            </div>
+                        )}
+
                         {/* Overlay для fulcrums и connections */}
                         <div className="fulcrums-overlay">
-                            {/* Временная связь при создании */}
-                            {tempConnection && (
-                                <div className="temp-connection">
-                                    <svg className="connection-svg">
-                                        <line
-                                            x1={tempConnection.fromPos.x}
-                                            y1={tempConnection.fromPos.y}
-                                            x2={tempConnection.toPos.x}
-                                            y2={tempConnection.toPos.y}
-                                            stroke="#3b82f6"
-                                            strokeWidth="2"
-                                            strokeDasharray="4,4"
-                                        />
-                                    </svg>
-                                </div>
-                            )}
-
-                            {/* Постоянные связи */}
-                            {connections.map((connection, index) => {
-                                const fromFulcrum = fulcrums.find(f => f.id === connection.from);
-                                const toFulcrum = fulcrums.find(f => f.id === connection.to);
-
+                            {/* 1. Сначала все линии и стрелочки */}
+                            {groupedConnections.map((group, index) => {
+                                const fromFulcrum = fulcrums.find(f => f.id === group.from);
+                                const toFulcrum = fulcrums.find(f => f.id === group.to);
                                 if (!fromFulcrum || !toFulcrum) return null;
 
                                 return (
                                     <FulcrumConnection
-                                        key={`${connection.from}-${connection.to}-${index}`}
+                                        key={`line-${group.from}-${group.to}-${index}`}
+                                        connection={group.connections[0]} // Передаем первую связь для данных
                                         fromFulcrum={fromFulcrum}
                                         toFulcrum={toFulcrum}
-                                        weight={connection.weight}
-                                        onContextMenu={(e) => onConnectionContextMenu && onConnectionContextMenu(connection, e)}
+                                        weight={group.weights[0]}
+                                        isHovered={hoveredConnection === group.connections[0]}
+                                        connectionType={group.type} // Передаем тип связи
+                                        onMouseEnter={() => setHoveredConnection(group.connections[0])}
+                                        onMouseLeave={() => setHoveredConnection(null)}
+                                        onContextMenu={handleConnectionContextMenu}
+                                        showWeight={false}
                                     />
                                 );
                             })}
 
-                            {/* Точки fulcrum */}
+                            {/* 2. Затем веса */}
+                            {groupedConnections.map((group, index) => {
+                                const fromFulcrum = fulcrums.find(f => f.id === group.from);
+                                const toFulcrum = fulcrums.find(f => f.id === group.to);
+                                if (!fromFulcrum || !toFulcrum) return null;
+
+                                if (group.type === 'bidirectional') {
+                                    // Правильно определяем какой вес к какому направлению
+                                    const connectionAtoB = group.connections.find(conn => conn.from === group.from && conn.to === group.to);
+                                    const connectionBtoA = group.connections.find(conn => conn.from === group.to && conn.to === group.from);
+
+                                    return (
+                                        <>
+                                            {/* Вес для направления A→B (ближе к A) */}
+                                            <div
+                                                key={`weight-${group.from}-${group.to}-A`}
+                                                className="connection-weight-standalone"
+                                                style={{
+                                                    left: `${fromFulcrum.x + (toFulcrum.x - fromFulcrum.x) * 0.7}px`,
+                                                    top: `${fromFulcrum.y + (toFulcrum.y - fromFulcrum.y) * 0.7}px`,
+                                                    position: 'absolute',
+                                                    transform: 'translate(-50%, -50%)',
+                                                    zIndex: 25
+                                                }}
+                                                onMouseEnter={() => setHoveredConnection(connectionAtoB)}
+                                                onMouseLeave={() => setHoveredConnection(null)}
+                                                onContextMenu={(e) => handleConnectionContextMenu(connectionAtoB, e)}
+                                            >
+                                                {connectionAtoB?.weight}
+                                            </div>
+                                            {/* Вес для направления B→A (ближе к B) */}
+                                            <div
+                                                key={`weight-${group.from}-${group.to}-B`}
+                                                className="connection-weight-standalone"
+                                                style={{
+                                                    left: `${fromFulcrum.x + (toFulcrum.x - fromFulcrum.x) * 0.3}px`,
+                                                    top: `${fromFulcrum.y + (toFulcrum.y - fromFulcrum.y) * 0.3}px`,
+                                                    position: 'absolute',
+                                                    transform: 'translate(-50%, -50%)',
+                                                    zIndex: 25
+                                                }}
+                                                onMouseEnter={() => setHoveredConnection(connectionBtoA)}
+                                                onMouseLeave={() => setHoveredConnection(null)}
+                                                onContextMenu={(e) => handleConnectionContextMenu(connectionBtoA, e)}
+                                            >
+                                                {connectionBtoA?.weight}
+                                            </div>
+                                        </>
+                                    );
+                                } else {
+                                    // Для однонаправленных - один квадратик
+                                    return (
+                                        <div
+                                            key={`weight-${group.from}-${group.to}`}
+                                            className="connection-weight-standalone"
+                                            style={{
+                                                left: `${fromFulcrum.x + (toFulcrum.x - fromFulcrum.x) * 0.7}px`,
+                                                top: `${fromFulcrum.y + (toFulcrum.y - fromFulcrum.y) * 0.7}px`,
+                                                position: 'absolute',
+                                                transform: 'translate(-50%, -50%)',
+                                                zIndex: 25
+                                            }}
+                                            onMouseEnter={() => setHoveredConnection(group.connections[0])}
+                                            onMouseLeave={() => setHoveredConnection(null)}
+                                            onContextMenu={(e) => handleConnectionContextMenu(group.connections[0], e)}
+                                        >
+                                            {group.weights[0]}
+                                        </div>
+                                    );
+                                }
+                            })}
+
+                            {/* 3. Точки fulcrum - самые верхние */}
                             {fulcrums.map(fulcrum => (
                                 <FulcrumPoint
                                     key={fulcrum.id}
                                     fulcrum={fulcrum}
-                                    isSelected={editorState.selectedFulcrum?.id === fulcrum.id}
                                     isHovered={hoveredFulcrum?.id === fulcrum.id}
                                     onMouseEnter={() => setHoveredFulcrum(fulcrum)}
                                     onMouseLeave={() => setHoveredFulcrum(null)}

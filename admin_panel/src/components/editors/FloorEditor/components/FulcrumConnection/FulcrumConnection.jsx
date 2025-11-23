@@ -1,45 +1,75 @@
 import React from 'react';
 import './FulcrumConnection.css';
 
-const FulcrumConnection = ({ fromFulcrum, toFulcrum, weight, onContextMenu }) => {
+const FulcrumConnection = ({
+                               connection,
+                               fromFulcrum,
+                               toFulcrum,
+                               weight,
+                               isHovered = false,
+                               connectionType = 'unidirectional',
+                               showWeight = false, // Добавляем этот пропс
+                               onMouseEnter,
+                               onMouseLeave,
+                               onContextMenu
+                           }) => {
     const handleContextMenu = (e) => {
         e.preventDefault();
         e.stopPropagation();
         if (onContextMenu) {
-            onContextMenu(e);
+            onContextMenu(connection, e);
         }
     };
 
-    // Расчет середины линии для отображения веса
-    const midX = (fromFulcrum.x + toFulcrum.x) / 2;
-    const midY = (fromFulcrum.y + toFulcrum.y) / 2;
+    const handleMouseEnter = (e) => {
+        e.stopPropagation();
+        if (onMouseEnter) onMouseEnter();
+    };
+
+    const handleMouseLeave = (e) => {
+        e.stopPropagation();
+        if (onMouseLeave) onMouseLeave();
+    };
+
+    if (!fromFulcrum || !toFulcrum) return null;
+
+    // Расчет длины и угла линии
+    const dx = toFulcrum.x - fromFulcrum.x;
+    const dy = toFulcrum.y - fromFulcrum.y;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+    const connectionClass = `fulcrum-connection ${isHovered ? 'hovered' : ''} ${connectionType}`;
 
     return (
-        <div className="fulcrum-connection">
-            <svg className="connection-svg">
-                <line
-                    x1={fromFulcrum.x}
-                    y1={fromFulcrum.y}
-                    x2={toFulcrum.x}
-                    y2={toFulcrum.y}
-                    stroke="#6b7280"
-                    strokeWidth="2"
-                    className="connection-line"
-                    onContextMenu={handleContextMenu}
-                />
-            </svg>
-
+        <div className={connectionClass}>
             <div
-                className="connection-weight"
+                className="connection-line-element"
                 style={{
-                    left: `${midX}px`,
-                    top: `${midY}px`,
-                    position: 'absolute'
+                    left: `${fromFulcrum.x}px`,
+                    top: `${fromFulcrum.y}px`,
+                    width: `${length}px`,
+                    transform: `rotate(${angle}deg)`,
+                    transformOrigin: '0 0'
                 }}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
                 onContextMenu={handleContextMenu}
-            >
-                {weight}
-            </div>
+            />
+
+            {/* Для двунаправленных добавляем вторую стрелочку в начале */}
+            {connectionType === 'bidirectional' && (
+                <div
+                    className="connection-line-element reverse-arrow"
+                    style={{
+                        left: `${fromFulcrum.x}px`,
+                        top: `${fromFulcrum.y}px`,
+                        width: `${length}px`,
+                        transform: `rotate(${angle}deg)`,
+                        transformOrigin: '0 0'
+                    }}
+                />
+            )}
         </div>
     );
 };

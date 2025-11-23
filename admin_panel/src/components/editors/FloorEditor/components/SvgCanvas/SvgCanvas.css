@@ -47,6 +47,12 @@
     z-index: 10;
 }
 
+/* Разрешаем события для всех интерактивных элементов */
+.fulcrum-point,
+.fulcrum-connection * {
+    pointer-events: auto;
+}
+
 .temp-connection {
     position: absolute;
     top: 0;
@@ -54,7 +60,7 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 8;
+    z-index: 4;
 }
 
 .connection-svg {
@@ -66,7 +72,43 @@
     pointer-events: none;
 }
 
-/* Разрешаем события для элементов внутри overlay */
-.fulcrums-overlay * {
+.temp-connection {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 8; /* Выше обычных линий, но ниже весов */
+}
+
+.connection-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.connection-weight-standalone {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
     pointer-events: auto;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    z-index: 25;
+    transition: all 0.2s ease;
+}
+
+.connection-weight-standalone:hover {
+    background: #f3f4f6;
+    border-color: #3b82f6;
+    transform: translate(-50%, -50%) scale(1.1);
+    z-index: 26;
 }
