@@ -30,6 +30,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        String path = request.getServletPath();
+
+        // Пропускаем публичные эндпоинты без проверки аутентификации
+        if (path.startsWith("/api/auth/") || path.startsWith("/api/public/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
