@@ -1,0 +1,29 @@
+.nav-item {
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    white-space: nowrap;
+}
+
+.nav-item:hover {
+    background: #f0f2f5;
+}
+
+.nav-item.active {
+    background: #e6f7ff;
+    border-right: 3px solid #1890ff;
+    color: #1890ff;
+}
+
+.nav-icon {
+    font-size: 1.2em;
+    min-width: 20px;
+    text-align: center;
+}
+
+.nav-label {
+    transition: opacity 0.3s;
+}

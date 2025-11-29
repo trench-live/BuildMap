@@ -1,6 +1,7 @@
 package com.buildmap.api.services;
 
 import com.buildmap.api.dto.mapping_area.MappingAreaSaveDto;
+import com.buildmap.api.dto.mapping_area.MappingAreaUpdateDto;
 import com.buildmap.api.dto.mapping_area.mappers.MappingAreaMapper;
 import com.buildmap.api.entities.mapping_area.MappingArea;
 import com.buildmap.api.exceptions.MappingAreaNotFoundException;
@@ -45,18 +46,9 @@ public class MappingAreaService {
                 mappingAreaRepository.findByUserIdAndDeletedFalse(userId);
     }
 
-    @Deprecated
-    public MappingArea update(Long id, MappingArea mappingArea) {
-        if (!mappingAreaRepository.existsById(id)) {
-            throw new MappingAreaNotFoundException(id);
-        }
-        mappingArea.setId(id);
-        return mappingAreaRepository.save(mappingArea);
-    }
-
-    public MappingArea update(Long id, MappingAreaSaveDto mappingAreaDto) {
+    public MappingArea update(Long id, MappingAreaUpdateDto mappingAreaUpdateDto) {
         MappingArea existingArea = getById(id);
-        mappingAreaMapper.updateEntity(mappingAreaDto, existingArea);
+        mappingAreaMapper.updateEntityFromUpdateDto(mappingAreaUpdateDto, existingArea);
         return mappingAreaRepository.save(existingArea);
     }
 

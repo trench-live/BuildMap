@@ -1,0 +1,88 @@
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    border-right: 1px solid #ddd;
+}
+
+.toolbar-group:last-child {
+    border-right: none;
+}
+
+/* Кнопки тулбара */
+.toolbar-btn {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.toolbar-btn:hover:not(:disabled) {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.toolbar-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.toolbar-btn-primary {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.toolbar-btn-primary:hover:not(:disabled) {
+    background: #0056b3;
+    border-color: #0056b3;
+}
+
+.toolbar-btn-danger {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+
+.toolbar-btn-danger:hover:not(:disabled) {
+    background: #c82333;
+    border-color: #c82333;
+}
+
+.scale-display {
+    font-size: 14px;
+    color: #666;
+    min-width: 60px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.file-input {
+    display: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .toolbar-group {
+        padding: 0 8px;
+        gap: 6px;
+    }
+
+    .toolbar-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .scale-display {
+        min-width: 50px;
+        font-size: 13px;
+    }
+}

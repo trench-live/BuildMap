@@ -1,0 +1,16 @@
+/* Основные стили для контента логина */
+.login-content {
+    margin-top: 30px;
+}
+
+.login-content h2 {
+    color: #333;
+    margin: 0 0 10px 0;
+    font-size: 22px;
+}
+
+.login-content > p {
+    color: #666;
+    margin: 0 0 30px 0;
+    font-size: 14px;
+}

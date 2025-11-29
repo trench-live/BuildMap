@@ -2,6 +2,7 @@ package com.buildmap.api.controllers;
 
 import com.buildmap.api.dto.mapping_area.MappingAreaDto;
 import com.buildmap.api.dto.mapping_area.MappingAreaSaveDto;
+import com.buildmap.api.dto.mapping_area.MappingAreaUpdateDto;
 import com.buildmap.api.dto.mapping_area.mappers.MappingAreaMapper;
 import com.buildmap.api.entities.mapping_area.MappingArea;
 import com.buildmap.api.services.MappingAreaService;
@@ -53,8 +54,8 @@ public class MappingAreaController {
     @PutMapping("/{id}")
     public ResponseEntity<MappingAreaDto> update(
             @PathVariable Long id,
-            @Valid @RequestBody MappingAreaSaveDto mappingAreaDto) {
-        MappingArea updated = mappingAreaService.update(id, mappingAreaDto);
+            @Valid @RequestBody MappingAreaUpdateDto mappingAreaUpdateDto) { // Используем UpdateDto вместо SaveDto
+        MappingArea updated = mappingAreaService.update(id, mappingAreaUpdateDto);
         return ResponseEntity.ok(mappingAreaMapper.toDto(updated));
     }
 
