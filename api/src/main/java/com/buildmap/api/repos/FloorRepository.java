@@ -16,9 +16,8 @@ public interface FloorRepository extends JpaRepository<Floor, Long> {
     List<Floor> findByMappingAreaIdAndDeletedTrue(Long mappingAreaId);
     List<Floor> findByMappingAreaIdAndDeletedFalse(Long mappingAreaId);
 
-    @Query("SELECT f FROM Floor f WHERE f.mappingArea.id = :mappingAreaId AND f.level = :level AND f.deleted = false")
-    Optional<Floor> findByMappingAreaIdAndLevel(@Param("mappingAreaId") Long mappingAreaId,
-                                                @Param("level") Integer level);
+    @Query("SELECT f FROM Floor f JOIN f.fulcrums ful WHERE ful.id = :fulcrumId")
+    Optional<Floor> findByFulcrumId(@Param("fulcrumId") Long fulcrumId);
 
     boolean existsByMappingAreaIdAndLevelAndDeletedFalse(Long mappingAreaId, Integer level);
 }

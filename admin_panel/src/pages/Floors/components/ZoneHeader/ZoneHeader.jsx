@@ -19,7 +19,7 @@ const ZoneHeader = ({ area, isExpanded, floorsCount, onToggle }) => {
                     {floorsCount} этажей
                 </span>
                 <span className="expand-icon">
-                    {isExpanded ? '▼' : '►'}
+                    {isExpanded ? '▼' : '▶'}
                 </span>
             </div>
         </div>

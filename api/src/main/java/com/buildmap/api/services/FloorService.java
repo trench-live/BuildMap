@@ -49,6 +49,12 @@ public class FloorService {
                 .orElseThrow(() -> new FloorNotFoundException(id));
     }
 
+    public Floor getByFulcrumId(Long fulcrumId) {
+        return floorRepository.findByFulcrumId(fulcrumId)
+                .orElseThrow(() -> new FloorNotFoundException(
+                        "Floor not found for fulcrum with id: " + fulcrumId));
+    }
+
     @Transactional
     public Floor update(Long id, FloorUpdateDto floorUpdateDto) {
         Floor existingFloor = getById(id);

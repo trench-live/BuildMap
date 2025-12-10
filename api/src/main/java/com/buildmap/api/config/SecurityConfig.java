@@ -29,6 +29,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("/api/fulcrum/**").permitAll()
                         .requestMatchers("/api/navigation/**").permitAll()
                         .requestMatchers("/api/floor/**").permitAll()
                         .anyRequest().authenticated()
@@ -47,6 +48,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
+                "http://localhost:3001",
                 "https://buildmap-admin.loca.lt",
                 "https://*.loca.lt"
         ));
