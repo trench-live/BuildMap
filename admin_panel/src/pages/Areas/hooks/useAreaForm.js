@@ -25,14 +25,12 @@ export const useAreaForm = (onSuccess) => {
                     name: formData.name,
                     description: formData.description
                 });
-                alert('Зона обновлена!');
             } else {
                 await mappingAreaAPI.create({
                     name: formData.name,
                     description: formData.description,
                     userIds: [user.id]
                 });
-                alert('Зона создана!');
             }
 
             setModalVisible(false);

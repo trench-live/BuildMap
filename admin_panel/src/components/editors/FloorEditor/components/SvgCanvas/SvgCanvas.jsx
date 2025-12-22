@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useSvgCanvas } from '../../hooks';
 import CanvasBackground from '../CanvasBackground/CanvasBackground';
 import SvgContent from '../SvgContent/SvgContent';
@@ -12,6 +12,7 @@ const SvgCanvas = ({
                        setEditorState,
                        fulcrums,
                        connections,
+                       svgSize,
                        onFulcrumCreate,
                        onFulcrumContextMenu,
                        onConnectionCreate,
@@ -29,14 +30,11 @@ const SvgCanvas = ({
         handleWheel
     } = useSvgCanvas(editorState, setEditorState);
 
-    // Отслеживание размеров контейнера
     const updateSize = useCallback(() => {
         if (containerRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
             const width = rect.width;
             const height = rect.height;
-
-            console.log('📐 SvgCanvas container size:', { width, height });
 
             if (width > 0 && height > 0) {
                 updateContainerSize?.(width, height);
@@ -44,94 +42,114 @@ const SvgCanvas = ({
         }
     }, [updateContainerSize]);
 
-    // Обновляем размеры при монтировании и изменении размеров
     useEffect(() => {
-        console.log('🔧 SvgCanvas mounted, setting up resize tracking');
         updateSize();
 
-        const handleResize = () => {
-            console.log('🔄 Window resized, updating container size');
-            updateSize();
-        };
+        const container = containerRef.current;
+        if (!container) return;
 
+        const resizeObserver = new ResizeObserver(() => updateSize());
+        resizeObserver.observe(container);
+
+        const handleResize = () => updateSize();
         window.addEventListener('resize', handleResize);
 
-        // Периодически проверяем размеры в течение первых 3 секунд
-        const initialCheckInterval = setInterval(updateSize, 100);
-        const timeout = setTimeout(() => {
-            clearInterval(initialCheckInterval);
-        }, 3000);
+        const viewport = window.visualViewport;
+        const handleViewportResize = () => updateSize();
+        viewport?.addEventListener('resize', handleViewportResize);
 
         return () => {
+            resizeObserver.disconnect();
             window.removeEventListener('resize', handleResize);
-            clearInterval(initialCheckInterval);
-            clearTimeout(timeout);
+            viewport?.removeEventListener('resize', handleViewportResize);
         };
     }, [updateSize]);
 
-    // Обновляем размеры при изменении видимости или содержимого
     useEffect(() => {
         if (editorState.svgContent) {
-            console.log('🔄 SVG content changed, updating container size');
-            // Даем время на рендеринг, затем обновляем размеры
             const timer = setTimeout(updateSize, 100);
             return () => clearTimeout(timer);
         }
     }, [editorState.svgContent, updateSize]);
 
-    // Обработка контекстного меню для создания fulcrum
     const handleContextMenu = (e) => {
         e.preventDefault();
 
         const container = containerRef.current;
         if (!container || !editorState.svgContent) return;
 
-        const relativeCoords = getRelativeCoordinates(e, container, editorState.offset, editorState.scale);
+        const relativeCoords = getRelativeCoordinates(
+            e,
+            container,
+            editorState.offset,
+            editorState.scale,
+            svgSize
+        );
 
         if (onFulcrumCreate) {
-            onFulcrumCreate(relativeCoords, e);
+            onFulcrumCreate({ x: relativeCoords.x, y: relativeCoords.y }, e);
         }
     };
 
-    // Обработка начала перетаскивания для создания связи
     const handleFulcrumDragStart = (fulcrum, e) => {
         e.stopPropagation();
 
         const container = containerRef.current;
-        const coords = getRelativeCoordinates(e, container, editorState.offset, editorState.scale);
+        const coords = getRelativeCoordinates(
+            e,
+            container,
+            editorState.offset,
+            editorState.scale,
+            svgSize
+        );
 
         setIsCreatingConnection(true);
         setTempConnection({
             from: fulcrum,
-            fromPos: coords,
-            toPos: coords
+            fromPos: { x: coords.svgX, y: coords.svgY },
+            toPos: { x: coords.svgX, y: coords.svgY }
         });
     };
 
-    // Обработка движения мыши при создании связи
     const handleMouseMove = (e) => {
         if (isCreatingConnection && tempConnection) {
             const container = containerRef.current;
-            const coords = getRelativeCoordinates(e, container, editorState.offset, editorState.scale);
+            const coords = getRelativeCoordinates(
+                e,
+                container,
+                editorState.offset,
+                editorState.scale,
+                svgSize
+            );
 
             setTempConnection(prev => ({
                 ...prev,
-                toPos: coords
+                toPos: { x: coords.svgX, y: coords.svgY }
             }));
         }
     };
 
-    // Обработка отпускания кнопки мыши для завершения связи
     const handleMouseUp = (e) => {
         if (isCreatingConnection && tempConnection) {
             const container = containerRef.current;
-            const coords = getRelativeCoordinates(e, container, editorState.offset, editorState.scale);
+            const coords = getRelativeCoordinates(
+                e,
+                container,
+                editorState.offset,
+                editorState.scale,
+                svgSize
+            );
 
-            // Ищем fulcrum под курсором
             const targetFulcrum = fulcrums.find(fulcrum => {
-                const displayPos = getFulcrumDisplayPosition(fulcrum, editorState.offset, editorState.scale);
+                const displayPos = getFulcrumDisplayPosition(
+                    fulcrum,
+                    editorState.offset,
+                    editorState.scale,
+                    svgSize
+                );
                 const distance = Math.sqrt(
-                    Math.pow(coords.x - fulcrum.x, 2) + Math.pow(coords.y - fulcrum.y, 2)
+                    Math.pow(coords.svgX - displayPos.x, 2) +
+                    Math.pow(coords.svgY - displayPos.y, 2)
                 );
                 return distance < 30 / editorState.scale;
             });
@@ -147,7 +165,6 @@ const SvgCanvas = ({
         }
     };
 
-    // Обработка нажатия мыши на канвасе
     const handleMouseDown = (e) => {
         if (isCreatingConnection) {
             e.preventDefault();
@@ -157,7 +174,6 @@ const SvgCanvas = ({
         handleCanvasMouseDown(e);
     };
 
-    // Обработчик контекстного меню для связей
     const handleConnectionContextMenu = (connection, event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -173,14 +189,12 @@ const SvgCanvas = ({
         connections.forEach(connection => {
             const pairKey = [connection.from, connection.to].sort().join('-');
 
-            // Проверяем есть ли обратная связь
             const reverseConnection = connections.find(conn =>
                 conn.from === connection.to && conn.to === connection.from
             );
 
             if (!processedPairs.has(pairKey)) {
                 if (reverseConnection) {
-                    // Двунаправленная связь - одна группа
                     grouped.push({
                         type: 'bidirectional',
                         connections: [connection, reverseConnection],
@@ -189,7 +203,6 @@ const SvgCanvas = ({
                         weights: [connection.weight, reverseConnection.weight]
                     });
                 } else {
-                    // Однонаправленная связь
                     grouped.push({
                         type: 'unidirectional',
                         connections: [connection],
@@ -205,9 +218,8 @@ const SvgCanvas = ({
         return grouped;
     }, [connections]);
 
-    const groupedConnections = getGroupedConnections();
+    const groupedConnections = useMemo(() => getGroupedConnections(), [getGroupedConnections]);
 
-    // Добавляем обработчики wheel и mouse move
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
@@ -238,7 +250,6 @@ const SvgCanvas = ({
                 <CanvasBackground />
             ) : (
                 <>
-                    {/* Основной контейнер для карты, точек и соединений с общими трансформациями */}
                     <div
                         className="canvas-content-wrapper"
                         style={{
@@ -246,13 +257,11 @@ const SvgCanvas = ({
                             transformOrigin: '0 0'
                         }}
                     >
-                        {/* Карта */}
                         <SvgContent
                             svgContent={editorState.svgContent}
                             isDragging={editorState.isDragging}
                         />
 
-                        {/* Временная связь при создании - ПЕРЕМЕЩАЕМ ВНУТРЬ трансформируемого контейнера */}
                         {tempConnection && (
                             <div className="temp-connection">
                                 <svg className="connection-svg">
@@ -269,23 +278,34 @@ const SvgCanvas = ({
                             </div>
                         )}
 
-                        {/* Overlay для fulcrums и connections */}
                         <div className="fulcrums-overlay">
-                            {/* 1. Сначала все линии и стрелочки */}
                             {groupedConnections.map((group, index) => {
                                 const fromFulcrum = fulcrums.find(f => f.id === group.from);
                                 const toFulcrum = fulcrums.find(f => f.id === group.to);
                                 if (!fromFulcrum || !toFulcrum) return null;
 
+                                const fromPos = getFulcrumDisplayPosition(
+                                    fromFulcrum,
+                                    editorState.offset,
+                                    editorState.scale,
+                                    svgSize
+                                );
+                                const toPos = getFulcrumDisplayPosition(
+                                    toFulcrum,
+                                    editorState.offset,
+                                    editorState.scale,
+                                    svgSize
+                                );
+
                                 return (
                                     <FulcrumConnection
                                         key={`line-${group.from}-${group.to}-${index}`}
-                                        connection={group.connections[0]} // Передаем первую связь для данных
-                                        fromFulcrum={fromFulcrum}
-                                        toFulcrum={toFulcrum}
+                                        connection={group.connections[0]}
+                                        fromFulcrum={fromPos}
+                                        toFulcrum={toPos}
                                         weight={group.weights[0]}
                                         isHovered={hoveredConnection === group.connections[0]}
-                                        connectionType={group.type} // Передаем тип связи
+                                        connectionType={group.type}
                                         onMouseEnter={() => setHoveredConnection(group.connections[0])}
                                         onMouseLeave={() => setHoveredConnection(null)}
                                         onContextMenu={handleConnectionContextMenu}
@@ -294,26 +314,35 @@ const SvgCanvas = ({
                                 );
                             })}
 
-                            {/* 2. Затем веса */}
                             {groupedConnections.map((group, index) => {
                                 const fromFulcrum = fulcrums.find(f => f.id === group.from);
                                 const toFulcrum = fulcrums.find(f => f.id === group.to);
                                 if (!fromFulcrum || !toFulcrum) return null;
 
+                                const fromPos = getFulcrumDisplayPosition(
+                                    fromFulcrum,
+                                    editorState.offset,
+                                    editorState.scale,
+                                    svgSize
+                                );
+                                const toPos = getFulcrumDisplayPosition(
+                                    toFulcrum,
+                                    editorState.offset,
+                                    editorState.scale,
+                                    svgSize
+                                );
+
                                 if (group.type === 'bidirectional') {
-                                    // Правильно определяем какой вес к какому направлению
                                     const connectionAtoB = group.connections.find(conn => conn.from === group.from && conn.to === group.to);
                                     const connectionBtoA = group.connections.find(conn => conn.from === group.to && conn.to === group.from);
 
                                     return (
-                                        <>
-                                            {/* Вес для направления A→B (ближе к A) */}
+                                        <React.Fragment key={`weights-${group.from}-${group.to}-${index}`}>
                                             <div
-                                                key={`weight-${group.from}-${group.to}-A`}
                                                 className="connection-weight-standalone"
                                                 style={{
-                                                    left: `${fromFulcrum.x + (toFulcrum.x - fromFulcrum.x) * 0.7}px`,
-                                                    top: `${fromFulcrum.y + (toFulcrum.y - fromFulcrum.y) * 0.7}px`,
+                                                    left: `${fromPos.x + (toPos.x - fromPos.x) * 0.7}px`,
+                                                    top: `${fromPos.y + (toPos.y - fromPos.y) * 0.7}px`,
                                                     position: 'absolute',
                                                     transform: 'translate(-50%, -50%)',
                                                     zIndex: 25
@@ -324,13 +353,11 @@ const SvgCanvas = ({
                                             >
                                                 {connectionAtoB?.weight}
                                             </div>
-                                            {/* Вес для направления B→A (ближе к B) */}
                                             <div
-                                                key={`weight-${group.from}-${group.to}-B`}
                                                 className="connection-weight-standalone"
                                                 style={{
-                                                    left: `${fromFulcrum.x + (toFulcrum.x - fromFulcrum.x) * 0.3}px`,
-                                                    top: `${fromFulcrum.y + (toFulcrum.y - fromFulcrum.y) * 0.3}px`,
+                                                    left: `${fromPos.x + (toPos.x - fromPos.x) * 0.3}px`,
+                                                    top: `${fromPos.y + (toPos.y - fromPos.y) * 0.3}px`,
                                                     position: 'absolute',
                                                     transform: 'translate(-50%, -50%)',
                                                     zIndex: 25
@@ -341,17 +368,16 @@ const SvgCanvas = ({
                                             >
                                                 {connectionBtoA?.weight}
                                             </div>
-                                        </>
+                                        </React.Fragment>
                                     );
                                 } else {
-                                    // Для однонаправленных - один квадратик
                                     return (
                                         <div
                                             key={`weight-${group.from}-${group.to}`}
                                             className="connection-weight-standalone"
                                             style={{
-                                                left: `${fromFulcrum.x + (toFulcrum.x - fromFulcrum.x) * 0.7}px`,
-                                                top: `${fromFulcrum.y + (toFulcrum.y - fromFulcrum.y) * 0.7}px`,
+                                                left: `${fromPos.x + (toPos.x - fromPos.x) * 0.7}px`,
+                                                top: `${fromPos.y + (toPos.y - fromPos.y) * 0.7}px`,
                                                 position: 'absolute',
                                                 transform: 'translate(-50%, -50%)',
                                                 zIndex: 25
@@ -366,18 +392,27 @@ const SvgCanvas = ({
                                 }
                             })}
 
-                            {/* 3. Точки fulcrum - самые верхние */}
-                            {fulcrums.map(fulcrum => (
-                                <FulcrumPoint
-                                    key={fulcrum.id}
-                                    fulcrum={fulcrum}
-                                    isHovered={hoveredFulcrum?.id === fulcrum.id}
-                                    onMouseEnter={() => setHoveredFulcrum(fulcrum)}
-                                    onMouseLeave={() => setHoveredFulcrum(null)}
-                                    onContextMenu={(fulcrum, e) => onFulcrumContextMenu && onFulcrumContextMenu(fulcrum, e)}
-                                    onDragStart={handleFulcrumDragStart}
-                                />
-                            ))}
+                            {fulcrums.map(fulcrum => {
+                                const displayPos = getFulcrumDisplayPosition(
+                                    fulcrum,
+                                    editorState.offset,
+                                    editorState.scale,
+                                    svgSize
+                                );
+
+                                return (
+                                    <FulcrumPoint
+                                        key={fulcrum.id}
+                                        fulcrum={fulcrum}
+                                        position={displayPos}
+                                        isHovered={hoveredFulcrum?.id === fulcrum.id}
+                                        onMouseEnter={() => setHoveredFulcrum(fulcrum)}
+                                        onMouseLeave={() => setHoveredFulcrum(null)}
+                                        onContextMenu={(f, e) => onFulcrumContextMenu && onFulcrumContextMenu(f, e)}
+                                        onDragStart={handleFulcrumDragStart}
+                                    />
+                                );
+                            })}
                         </div>
                     </div>
                 </>

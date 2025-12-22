@@ -18,22 +18,20 @@ export const useFloorEditor = (floor, onSave, onClose) => {
 
     const [isSaving, setIsSaving] = useState(false);
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+    const [svgSize, setSvgSize] = useState({ width: 0, height: 0 });
 
-    // Функция для центрирования и подбора масштаба
-    // Функция для центрирования и подбора масштаба
+    // Центруем и подгоняем изображение под контейнер
     const centerAndFitImage = useCallback((svgContent, containerWidth, containerHeight) => {
         if (!svgContent || !containerWidth || !containerHeight) return;
 
-        // Создаем временный элемент для получения размеров SVG
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = svgContent;
         const svgElement = tempDiv.querySelector('svg');
-
         if (!svgElement) return;
 
-        // Получаем размеры SVG
         const viewBox = svgElement.getAttribute('viewBox');
-        let svgWidth, svgHeight;
+        let svgWidth;
+        let svgHeight;
 
         if (viewBox) {
             const [, , width, height] = viewBox.split(' ').map(Number);
@@ -44,63 +42,58 @@ export const useFloorEditor = (floor, onSave, onClose) => {
             svgHeight = svgElement.height.baseVal.value || 600;
         }
 
-        // Рассчитываем масштаб, чтобы вместить SVG в контейнер
         const scaleX = containerWidth / svgWidth;
         const scaleY = containerHeight / svgHeight;
-        const scale = Math.min(scaleX, scaleY) * 0.9; // 90% от максимального размера для отступов
+        // Не уменьшаем масштаб ниже 1.0 при первом открытии
+        const scale = Math.max(1, Math.min(scaleX, scaleY));
 
-        // Рассчитываем смещение для центрирования
-        const offsetX = (containerWidth - svgWidth * scale) / 2;
-        const offsetY = (containerHeight - svgHeight * scale) / 2;
+        // Центруем, но не даём сместиться за границы контейнера
+        const offsetX = Math.max(0, (containerWidth - svgWidth * scale) / 2);
+        const offsetY = Math.max(0, (containerHeight - svgHeight * scale) / 2);
+
+        setSvgSize({ width: svgWidth, height: svgHeight });
 
         setEditorState(prev => ({
             ...prev,
-            scale: scale,
+            scale,
             offset: { x: offsetX, y: offsetY }
         }));
 
-        // Очищаем временный элемент
         tempDiv.remove();
     }, []);
 
-    // Инициализация состояния при изменении floor
+    // Загружаем данные этажа при смене floor
     useEffect(() => {
-        if (floor) {
-            setEditorState(prev => ({
-                ...prev,
-                svgContent: floor.svgPlan || '',
-                backgroundImage: null,
-                scale: 1,
-                offset: { x: 0, y: 0 },
-                mode: EDITOR_MODES.VIEW,
-                selectedFulcrum: null,
-                selectedConnection: null,
-                dragStartFulcrum: null
-            }));
+        if (!floor) return;
 
-            // Если есть SVG контент, центрируем его после загрузки
-            if (floor.svgPlan && containerSize.width > 0 && containerSize.height > 0) {
-                setTimeout(() => {
-                    centerAndFitImage(floor.svgPlan, containerSize.width, containerSize.height);
-                }, 100);
-            }
-        }
-    }, [floor, containerSize, centerAndFitImage]);
+        setEditorState(prev => ({
+            ...prev,
+            svgContent: floor.svgPlan || '',
+            backgroundImage: null,
+            scale: 1,
+            offset: { x: 0, y: 0 },
+            mode: EDITOR_MODES.VIEW,
+            selectedFulcrum: null,
+            selectedConnection: null,
+            dragStartFulcrum: null
+        }));
+    }, [floor]);
 
-    // Функция для обновления размеров контейнера
+    // Подгоняем содержимое, когда есть контент и известен размер контейнера
+    useEffect(() => {
+        if (!editorState.svgContent || !containerSize.width || !containerSize.height) return;
+        centerAndFitImage(editorState.svgContent, containerSize.width, containerSize.height);
+    }, [editorState.svgContent, containerSize.width, containerSize.height, centerAndFitImage]);
+
+    // Обновление размеров контейнера
     const updateContainerSize = useCallback((width, height) => {
         setContainerSize({ width, height });
-
-        // Если есть SVG контент, пересчитываем центрирование
-        if (editorState.svgContent && width > 0 && height > 0) {
-            centerAndFitImage(editorState.svgContent, width, height);
-        }
-    }, [editorState.svgContent, centerAndFitImage]);
+    }, []);
 
     // Сохранение этажа
     const handleSave = useCallback(async () => {
         if (!editorState.svgContent.trim()) {
-            alert('Холст пуст. Загрузите изображение или создайте план.');
+            alert('Нет плана. Загрузите изображение или вставьте план.');
             return;
         }
 
@@ -114,13 +107,11 @@ export const useFloorEditor = (floor, onSave, onClose) => {
             };
 
             await floorAPI.update(floor.id, updateData);
-
-            // Получаем обновленные данные
             const updatedFloor = await floorAPI.getById(floor.id);
             onSave?.(updatedFloor.data);
             onClose();
         } catch (error) {
-            alert('Ошибка сохранения: ' + (error.response?.data?.message || error.message));
+            alert('Ошибка при сохранении плана: ' + (error.response?.data?.message || error.message));
         } finally {
             setIsSaving(false);
         }
@@ -134,7 +125,7 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         }));
     }, []);
 
-    // Сброс вида к центрированному
+    // Сброс вида
     const handleResetView = useCallback(() => {
         if (editorState.svgContent && containerSize.width > 0 && containerSize.height > 0) {
             centerAndFitImage(editorState.svgContent, containerSize.width, containerSize.height);
@@ -147,18 +138,16 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         }
     }, [editorState.svgContent, containerSize, centerAndFitImage]);
 
-    // Очистка холста
+    // Очистка канваса
     const handleClearCanvas = useCallback(() => {
-        if (confirm('Вы уверены, что хотите очистить холст? Все несохраненные изменения будут потеряны.')) {
-            setEditorState(prev => ({
-                ...prev,
-                svgContent: '',
-                backgroundImage: null
-            }));
-        }
+        setEditorState(prev => ({
+            ...prev,
+            svgContent: '',
+            backgroundImage: null
+        }));
     }, []);
 
-    // Установка режима редактора
+    // Изменение режима
     const setMode = useCallback((mode, data = null) => {
         setEditorState(prev => ({
             ...prev,
@@ -172,7 +161,7 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         }));
     }, []);
 
-    // Начало перетаскивания для создания связи
+    // Начало/конец перетаскивания связи
     const startConnectionDrag = useCallback((fulcrum) => {
         setEditorState(prev => ({
             ...prev,
@@ -181,7 +170,6 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         }));
     }, []);
 
-    // Завершение перетаскивания связи
     const endConnectionDrag = useCallback(() => {
         setEditorState(prev => ({
             ...prev,
@@ -202,6 +190,7 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         startConnectionDrag,
         endConnectionDrag,
         updateContainerSize,
-        containerSize
+        containerSize,
+        svgSize
     };
 };

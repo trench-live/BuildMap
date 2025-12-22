@@ -11,15 +11,15 @@ export const convertImageToSvg = (file) => {
             try {
                 const imageData = e.target.result;
 
-                // Создаем изображение, чтобы получить реальные размеры
+                // Создаем объект изображения для получения его реальных размеров
                 const img = new Image();
                 img.onload = () => {
                     const width = img.naturalWidth || img.width || 800;
                     const height = img.naturalHeight || img.height || 600;
 
-                    console.log('🖼️ Image dimensions:', { width, height });
+                    console.log('Image dimensions:', { width, height });
 
-                    // Создаем SVG с конкретными размерами и viewBox
+                    // Создаем SVG с viewBox по размеру исходного изображения
                     const svgContent = `
                         <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
                             <image 
@@ -35,8 +35,8 @@ export const convertImageToSvg = (file) => {
                 };
 
                 img.onerror = () => {
-                    console.warn('⚠️ Could not load image, using default dimensions');
-                    // Если не удалось загрузить изображение, используем стандартные размеры
+                    console.warn('Could not load image, using default dimensions');
+                    // Фоллбек на дефолтные размеры, если не удалось прочитать картинку
                     const svgContent = `
                         <svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
                             <image 
