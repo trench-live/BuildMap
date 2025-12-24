@@ -81,14 +81,22 @@ export const useFloorEditor = (floor, onSave, onClose) => {
 
     // Подгоняем содержимое, когда есть контент и известен размер контейнера
     useEffect(() => {
-        if (!editorState.svgContent || !containerSize.width || !containerSize.height) return;
-        centerAndFitImage(editorState.svgContent, containerSize.width, containerSize.height);
+        if (!containerSize.width || !containerSize.height) return;
+        if (editorState.svgContent) {
+            centerAndFitImage(editorState.svgContent, containerSize.width, containerSize.height);
+        } else {
+            setSvgSize({ width: containerSize.width, height: containerSize.height });
+        }
     }, [editorState.svgContent, containerSize.width, containerSize.height, centerAndFitImage]);
 
     // Обновление размеров контейнера
     const updateContainerSize = useCallback((width, height) => {
         setContainerSize({ width, height });
-    }, []);
+
+        if (!editorState.svgContent) {
+            setSvgSize({ width, height });
+        }
+    }, [editorState.svgContent]);
 
     // Сохранение этажа
     const handleSave = useCallback(async () => {
