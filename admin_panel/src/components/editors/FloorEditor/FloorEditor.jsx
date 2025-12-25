@@ -16,7 +16,9 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
         handleZoom,
         handleResetView,
         handleClearCanvas,
-        setMode
+        setMode,
+        svgSize,
+        updateContainerSize
     } = useFloorEditor(floor, onSave, onClose);
 
     const { handleImageUpload } = useImageUpload(setEditorState);
@@ -154,13 +156,11 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
     // Удаление fulcrum
     const handleFulcrumDelete = async () => {
         if (fulcrumModal.mode === 'edit' && fulcrumModal.fulcrum) {
-            if (confirm('Вы уверены, что хотите удалить эту точку?')) {
-                try {
-                    await deleteFulcrum(fulcrumModal.fulcrum.id);
-                    setFulcrumModal({ visible: false, mode: 'create', fulcrum: null, position: null });
-                } catch (error) {
-                    alert(error.message);
-                }
+            try {
+                await deleteFulcrum(fulcrumModal.fulcrum.id);
+                setFulcrumModal({ visible: false, mode: 'create', fulcrum: null, position: null });
+            } catch (error) {
+                alert(error.message);
             }
         }
     };
@@ -192,13 +192,11 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
     // Удаление связи
     const handleConnectionDelete = async () => {
         if (connectionModal.mode === 'edit' && connectionModal.connection) {
-            if (confirm('Вы уверены, что хотите удалить эту связь?')) {
-                try {
-                    await removeConnection(connectionModal.connection.from, connectionModal.connection.to);
-                    setConnectionModal({ visible: false, mode: 'create', connection: null, fromFulcrum: null, toFulcrum: null });
-                } catch (error) {
-                    alert(error.message);
-                }
+            try {
+                await removeConnection(connectionModal.connection.from, connectionModal.connection.to);
+                setConnectionModal({ visible: false, mode: 'create', connection: null, fromFulcrum: null, toFulcrum: null });
+            } catch (error) {
+                alert(error.message);
             }
         }
     };
@@ -232,12 +230,14 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                         editorState={editorState}
                         setEditorState={setEditorState}
                         fulcrums={fulcrums}
-                        connections={connections}
-                        onFulcrumCreate={handleFulcrumCreate}
-                        onFulcrumContextMenu={handleFulcrumContextMenu}
-                        onConnectionCreate={handleConnectionCreate}
-                        onConnectionContextMenu={handleConnectionContextMenu}
-                    />
+                    connections={connections}
+                    svgSize={svgSize}
+                    updateContainerSize={updateContainerSize}
+                    onFulcrumCreate={handleFulcrumCreate}
+                    onFulcrumContextMenu={handleFulcrumContextMenu}
+                    onConnectionCreate={handleConnectionCreate}
+                    onConnectionContextMenu={handleConnectionContextMenu}
+                />
                 </div>
 
                 {/* Модальное окно для fulcrum */}

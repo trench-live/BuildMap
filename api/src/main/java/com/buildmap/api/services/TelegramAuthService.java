@@ -21,7 +21,14 @@ public class TelegramAuthService {
     @Value("${telegram.bot.token:}")
     private String botToken;
 
+    private void ensureBotTokenConfigured() {
+        if (botToken == null || botToken.isBlank()) {
+            throw new IllegalStateException("Telegram bot token is not configured (telegram.bot.token)");
+        }
+    }
+
     public boolean validateTelegramAuth(TelegramAuthDto authData) {
+        ensureBotTokenConfigured();
         // Разрешаем тестовые данные для разработки
         if (isDevelopmentData(authData)) {
             System.out.println("⚠️ Development data detected, skipping validation");

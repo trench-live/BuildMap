@@ -89,7 +89,7 @@ const FulcrumModal = ({
                             <div className="position-info">
                                 <span>Координаты: </span>
                                 <strong>
-                                    X: {Math.round(formData.x)}, Y: {Math.round(formData.y)}
+                                    X: {formatCoord(formData.x)}, Y: {formatCoord(formData.y)}
                                 </strong>
                             </div>
                         ) : null}
@@ -195,6 +195,11 @@ const getTypeLabel = (type) => {
         [FULCRUM_TYPES.LANDMARK]: 'Ориентир'
     };
     return labels[type] || type;
+};
+
+const formatCoord = (value) => {
+    if (value === undefined || value === null || Number.isNaN(Number(value))) return '-';
+    return Number(value).toFixed(3);
 };
 
 export default FulcrumModal;

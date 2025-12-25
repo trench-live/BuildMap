@@ -4,6 +4,7 @@ import './FulcrumPoint.css';
 
 const FulcrumPoint = ({
                           fulcrum,
+                          position,
                           isSelected = false,
                           isHovered = false,
                           onMouseEnter,
@@ -31,12 +32,15 @@ const FulcrumPoint = ({
 
     const pointClass = `fulcrum-point ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''} ${fulcrum.type.toLowerCase()}`;
 
+    const posX = position?.x ?? fulcrum.x;
+    const posY = position?.y ?? fulcrum.y;
+
     return (
         <div
             className={pointClass}
             style={{
-                left: `${fulcrum.x}px`,
-                top: `${fulcrum.y}px`,
+                left: `${posX}px`,
+                top: `${posY}px`,
                 transform: 'translate(-50%, -50%)',
                 position: 'absolute'
             }}
