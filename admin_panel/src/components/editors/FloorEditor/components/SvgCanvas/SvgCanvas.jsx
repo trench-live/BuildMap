@@ -115,19 +115,13 @@ const SvgCanvas = ({
         const container = containerRef.current;
         if (!container) return;
 
-        const coords = getRelativeCoordinates(
-            e,
-            container,
-            imageRect,
-            editorState.offset,
-            editorState.scale
-        );
+        const displayPos = getFulcrumDisplayPosition(fulcrum, imageRect);
 
         setIsCreatingConnection(true);
         setTempConnection({
             from: fulcrum,
-            fromPos: { x: coords.canvasX, y: coords.canvasY },
-            toPos: { x: coords.canvasX, y: coords.canvasY }
+            fromPos: { x: displayPos.x, y: displayPos.y },
+            toPos: { x: displayPos.x, y: displayPos.y }
         });
     };
 
@@ -153,23 +147,22 @@ const SvgCanvas = ({
     const handleMouseUp = (e) => {
         if (!isCreatingConnection || !tempConnection) return;
         const container = containerRef.current;
-        if (!container) return;
 
-        const coords = getRelativeCoordinates(
-            e,
-            container,
-            imageRect,
-            editorState.offset,
-            editorState.scale
-        );
+        const rect = container ? container.getBoundingClientRect() : null;
+        const mouseX = rect ? e.clientX - rect.left : e.clientX;
+        const mouseY = rect ? e.clientY - rect.top : e.clientY;
+        const scale = editorState.scale || 1;
+        const offset = editorState.offset || { x: 0, y: 0 };
 
         const targetFulcrum = fulcrums.find(fulcrum => {
             const displayPos = getFulcrumDisplayPosition(fulcrum, imageRect);
+            const screenX = displayPos.x * scale + offset.x;
+            const screenY = displayPos.y * scale + offset.y;
             const distance = Math.sqrt(
-                Math.pow(coords.canvasX - displayPos.x, 2) +
-                Math.pow(coords.canvasY - displayPos.y, 2)
+                Math.pow(mouseX - screenX, 2) +
+                Math.pow(mouseY - screenY, 2)
             );
-            return distance < 30 / editorState.scale;
+            return distance < 30;
         });
 
         if (targetFulcrum && targetFulcrum.id !== tempConnection.from.id) {
@@ -239,12 +232,12 @@ const SvgCanvas = ({
 
         container.addEventListener('wheel', handleWheelWithOptions, { passive: false });
         document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
+        document.addEventListener('mouseup', handleMouseUp, true);
 
         return () => {
             container.removeEventListener('wheel', handleWheelWithOptions);
             document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
+            document.removeEventListener('mouseup', handleMouseUp, true);
         };
     }, [handleWheel, handleMouseMove, handleMouseUp]);
 
