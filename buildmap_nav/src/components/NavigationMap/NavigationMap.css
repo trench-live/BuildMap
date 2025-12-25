@@ -1,0 +1,46 @@
+.navigation-canvas {
+    width: 100%;
+    height: 100%;
+    background: #f5f6f8;
+    overflow: hidden;
+    touch-action: none;
+}
+
+.navigation-transform-wrapper {
+    width: 100%;
+    height: 100%;
+}
+
+.navigation-transform-content {
+    width: 100%;
+    height: 100%;
+}
+
+.navigation-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.route-line {
+    stroke: #2563eb;
+    stroke-width: 4px;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 6px rgba(37, 99, 235, 0.35));
+}
+
+.fulcrum-marker {
+    fill: #facc15;
+    stroke: #0f172a;
+    stroke-width: 2px;
+}
+
+.fulcrum-marker.start {
+    fill: #22c55e;
+    stroke: #14532d;
+}
+
+.fulcrum-marker.end {
+    fill: #ef4444;
+    stroke: #7f1d1d;
+}
