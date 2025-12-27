@@ -36,6 +36,12 @@ public class FloorController {
         return ResponseEntity.ok(floorMapper.toDtoList(floors));
     }
 
+    @GetMapping("/fulcrum/{fulcrumId}")
+    public ResponseEntity<FloorDto> getByFulcrumId(@PathVariable Long fulcrumId) {
+        Floor floor = floorService.getByFulcrumId(fulcrumId);
+        return ResponseEntity.ok(floorMapper.toDto(floor));
+    }
+
     @GetMapping("/{floorId}")
     public ResponseEntity<FloorDto> getById(@PathVariable Long floorId) {
         Floor floor = floorService.getById(floorId);
