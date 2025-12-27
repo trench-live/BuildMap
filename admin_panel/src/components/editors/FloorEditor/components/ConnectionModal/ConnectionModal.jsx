@@ -12,6 +12,7 @@ const ConnectionModal = ({
                              visible,
                              mode,
                              connection,
+                             isBidirectional,
                              fromFulcrum,
                              toFulcrum,
                              onSave,
@@ -34,13 +35,16 @@ const ConnectionModal = ({
         if (visible) {
             if (mode === 'edit' && connection) {
                 resetForm({
-                    weight: connection.weight || 1.0
+                    weight: connection.weight || 1.0,
+                    bidirectional: Boolean(isBidirectional)
                 });
             } else {
-                resetForm();
+                resetForm({
+                    bidirectional: true
+                });
             }
         }
-    }, [visible, mode, connection, resetForm]);
+    }, [visible, mode, connection, isBidirectional, resetForm]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -116,6 +120,20 @@ const ConnectionModal = ({
                                     Примеры: 1.0 - нормально, 2.0 - сложнее пройти, 0.5 - легче пройти
                                 </small>
                             </div>
+                        </div>
+                        <div className="form-group checkbox-group">
+                            <label htmlFor="connection-bidirectional" className="checkbox-label">
+                                <input
+                                    id="connection-bidirectional"
+                                    type="checkbox"
+                                    checked={Boolean(formData.bidirectional)}
+                                    onChange={(e) => updateField('bidirectional', e.target.checked)}
+                                />
+                                <span className="checkbox-text">
+                                    {decodeURIComponent('%D0%94%D0%B2%D1%83%D0%BD%D0%B0%D0%BF%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%BD%D0%BD%D0%B0%D1%8F%20%D1%81%D0%B2%D1%8F%D0%B7%D1%8C')}
+                                </span>
+                            </label>
+                            <span className="hint">{decodeURIComponent('%D0%90%D0%B2%D1%82%D0%BE%D0%BC%D0%B0%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%20%D1%81%D0%BE%D0%B7%D0%B4%D0%B0%D1%82%D1%8C/%D0%BE%D0%B1%D0%BD%D0%BE%D0%B2%D0%B8%D1%82%D1%8C%20%D0%BE%D0%B1%D1%80%D0%B0%D1%82%D0%BD%D1%83%D1%8E%20%D1%81%D0%B2%D1%8F%D0%B7%D1%8C.')}</span>
                         </div>
                     </ModalContent>
 
