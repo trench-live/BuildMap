@@ -127,7 +127,7 @@
 .connection-weight-standalone:hover {
     background: #f3f4f6;
     border-color: #3b82f6;
-    transform: translate(-50%, -50%) scale(1.1);
+    transform: translate(-50%, -50%) scale(calc(var(--weight-scale, 1) * 1.1));
     z-index: 26;
 }
 

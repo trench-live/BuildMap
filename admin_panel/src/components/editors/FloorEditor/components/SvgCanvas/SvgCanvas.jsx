@@ -25,6 +25,11 @@ const SvgCanvas = ({
     const [tempConnection, setTempConnection] = useState(null);
     const [isCreatingConnection, setIsCreatingConnection] = useState(false);
     const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+    const uiScale = useMemo(() => {
+        const scaleValue = editorState.scale || 1;
+        const inverse = 1 / scaleValue;
+        return Math.max(0.6, Math.min(1.6, inverse));
+    }, [editorState.scale]);
 
     const {
         handleMouseDown: handleCanvasMouseDown,
@@ -334,7 +339,8 @@ const SvgCanvas = ({
                                             left: `${fromPos.x + (toPos.x - fromPos.x) * 0.7}px`,
                                             top: `${fromPos.y + (toPos.y - fromPos.y) * 0.7}px`,
                                             position: 'absolute',
-                                            transform: 'translate(-50%, -50%)',
+                                            transform: 'translate(-50%, -50%) scale(var(--weight-scale, 1))',
+                                            '--weight-scale': uiScale,
                                             zIndex: 25
                                         }}
                                         onMouseEnter={() => setHoveredConnection(connectionAtoB)}
@@ -349,7 +355,8 @@ const SvgCanvas = ({
                                             left: `${fromPos.x + (toPos.x - fromPos.x) * 0.3}px`,
                                             top: `${fromPos.y + (toPos.y - fromPos.y) * 0.3}px`,
                                             position: 'absolute',
-                                            transform: 'translate(-50%, -50%)',
+                                            transform: 'translate(-50%, -50%) scale(var(--weight-scale, 1))',
+                                            '--weight-scale': uiScale,
                                             zIndex: 25
                                         }}
                                         onMouseEnter={() => setHoveredConnection(connectionBtoA)}
@@ -370,7 +377,8 @@ const SvgCanvas = ({
                                     left: `${fromPos.x + (toPos.x - fromPos.x) * 0.7}px`,
                                     top: `${fromPos.y + (toPos.y - fromPos.y) * 0.7}px`,
                                     position: 'absolute',
-                                    transform: 'translate(-50%, -50%)',
+                                    transform: 'translate(-50%, -50%) scale(var(--weight-scale, 1))',
+                                    '--weight-scale': uiScale,
                                     zIndex: 25
                                 }}
                                 onMouseEnter={() => setHoveredConnection(group.connections[0])}
@@ -391,6 +399,7 @@ const SvgCanvas = ({
                                 fulcrum={fulcrum}
                                 position={displayPos}
                                 isHovered={hoveredFulcrum?.id === fulcrum.id}
+                                uiScale={uiScale}
                                 onMouseEnter={() => setHoveredFulcrum(fulcrum)}
                                 onMouseLeave={() => setHoveredFulcrum(null)}
                                 onContextMenu={(f, e) => onFulcrumContextMenu && onFulcrumContextMenu(f, e)}

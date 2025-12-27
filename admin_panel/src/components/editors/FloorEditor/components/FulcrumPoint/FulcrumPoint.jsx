@@ -7,6 +7,7 @@ const FulcrumPoint = ({
                           position,
                           isSelected = false,
                           isHovered = false,
+                          uiScale = 1,
                           onMouseEnter,
                           onMouseLeave,
                           onContextMenu,
@@ -41,8 +42,9 @@ const FulcrumPoint = ({
             style={{
                 left: `${posX}px`,
                 top: `${posY}px`,
-                transform: 'translate(-50%, -50%)',
-                position: 'absolute'
+                transform: 'translate(-50%, -50%) scale(var(--point-scale, 1))',
+                position: 'absolute',
+                '--point-scale': uiScale
             }}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
