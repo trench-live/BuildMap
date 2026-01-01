@@ -142,15 +142,48 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
         });
     };
 
+    const normalizeConnectionWeight = (value) => {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed < 1) return 1;
+        return parsed;
+    };
+
+    const syncInterfloorConnections = async (fulcrumId, rows = []) => {
+        for (const row of rows) {
+            if (row.forwardEnabled) {
+                await removeConnection(fulcrumId, row.id);
+                await addConnection(fulcrumId, {
+                    connectedFulcrumId: row.id,
+                    weight: normalizeConnectionWeight(row.forwardWeight)
+                });
+            } else {
+                await removeConnection(fulcrumId, row.id);
+            }
+
+            if (row.backwardEnabled) {
+                await removeConnection(row.id, fulcrumId);
+                await addConnection(row.id, {
+                    connectedFulcrumId: fulcrumId,
+                    weight: normalizeConnectionWeight(row.backwardWeight)
+                });
+            } else {
+                await removeConnection(row.id, fulcrumId);
+            }
+        }
+    };
+
     // Сохранение fulcrum
-    const handleFulcrumSave = async (fulcrumData) => {
+    const handleFulcrumSave = async (payload) => {
+        const { fulcrumData, connectionRows } = payload;
         try {
             if (fulcrumModal.mode === 'create') {
                 const newFulcrum = await createFulcrum(fulcrumData);
+                await syncInterfloorConnections(newFulcrum.id, connectionRows);
                 console.log('Fulcrum created:', newFulcrum);
             } else {
                 // При обновлении отправляем все данные, включая координаты и floorId
-                await updateFulcrum(fulcrumModal.fulcrum.id, fulcrumData);
+                const updatedFulcrum = await updateFulcrum(fulcrumModal.fulcrum.id, fulcrumData);
+                await syncInterfloorConnections(updatedFulcrum.id, connectionRows);
                 console.log('Fulcrum updated');
             }
             setFulcrumModal({ visible: false, mode: 'create', fulcrum: null, position: null });
@@ -292,6 +325,7 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                     fulcrum={fulcrumModal.fulcrum}
                     position={fulcrumModal.position}
                     floorId={floor?.id}
+                    mappingAreaId={floor?.mappingAreaId}
                     onSave={handleFulcrumSave}
                     onDelete={handleFulcrumDelete}
                     onClose={() => setFulcrumModal({ visible: false, mode: 'create', fulcrum: null, position: null })}
