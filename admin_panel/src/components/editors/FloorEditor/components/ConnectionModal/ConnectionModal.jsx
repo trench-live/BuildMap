@@ -12,6 +12,7 @@ const ConnectionModal = ({
                              visible,
                              mode,
                              connection,
+                             isBidirectional,
                              fromFulcrum,
                              toFulcrum,
                              onSave,
@@ -34,13 +35,16 @@ const ConnectionModal = ({
         if (visible) {
             if (mode === 'edit' && connection) {
                 resetForm({
-                    weight: connection.weight || 1.0
+                    weight: connection.weight || 1.0,
+                    bidirectional: Boolean(isBidirectional)
                 });
             } else {
-                resetForm();
+                resetForm({
+                    bidirectional: true
+                });
             }
         }
-    }, [visible, mode, connection, resetForm]);
+    }, [visible, mode, connection, isBidirectional, resetForm]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -116,6 +120,20 @@ const ConnectionModal = ({
                                     Примеры: 1.0 - нормально, 2.0 - сложнее пройти, 0.5 - легче пройти
                                 </small>
                             </div>
+                        </div>
+                        <div className="form-group checkbox-group">
+                            <label htmlFor="connection-bidirectional" className="checkbox-label">
+                                <input
+                                    id="connection-bidirectional"
+                                    type="checkbox"
+                                    checked={Boolean(formData.bidirectional)}
+                                    onChange={(e) => updateField('bidirectional', e.target.checked)}
+                                />
+                                <span className="checkbox-text">
+                                    {' Двунаправленная связь'}
+                                </span>
+                            </label>
+                            <span className="hint">{'Автоматически создать/обновить обратную связь.'}</span>
                         </div>
                     </ModalContent>
 

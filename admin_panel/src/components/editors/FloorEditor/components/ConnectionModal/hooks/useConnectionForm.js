@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 export const useConnectionForm = (initialData = null) => {
     const [formData, setFormData] = useState({
         weight: 1.0,
+        bidirectional: true,
         ...initialData
     });
 
@@ -44,6 +45,7 @@ export const useConnectionForm = (initialData = null) => {
     const resetForm = useCallback((newData = null) => {
         setFormData({
             weight: 1.0,
+            bidirectional: true,
             ...newData
         });
         setErrors({});
@@ -53,7 +55,8 @@ export const useConnectionForm = (initialData = null) => {
     // Подготовка данных для отправки
     const getSubmitData = useCallback(() => {
         return {
-            weight: parseFloat(formData.weight)
+            weight: parseFloat(formData.weight),
+            bidirectional: Boolean(formData.bidirectional)
         };
     }, [formData]);
 

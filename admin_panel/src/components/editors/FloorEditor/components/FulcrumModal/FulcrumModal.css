@@ -1,5 +1,5 @@
 .fulcrum-modal {
-    max-width: 480px;
+    max-width: 720px;
 }
 
 .position-info {
@@ -73,4 +73,91 @@
     font-size: 12px;
     color: #6b7280;
     margin-top: 4px;
+}
+
+.connections-section {
+    margin-top: 16px;
+}
+
+.connections-section summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 8px;
+}
+
+.connections-state {
+    padding: 8px 0;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.connections-state.error {
+    color: #ef4444;
+}
+
+.connections-table {
+    display: grid;
+    gap: 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px;
+    background: #f9fafb;
+}
+
+.connections-header,
+.connections-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 1.6fr) minmax(90px, 1fr) 90px 90px 90px 90px;
+    align-items: center;
+    column-gap: 8px;
+}
+
+.connections-header {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+    padding: 4px 0;
+}
+
+.connections-row {
+    background: #ffffff;
+    border-radius: 6px;
+    padding: 6px 4px;
+}
+
+.connections-name {
+    font-weight: 500;
+    color: #111827;
+}
+
+.connections-floor {
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.connections-checkbox {
+    display: flex;
+    justify-content: center;
+}
+
+.connections-weight input {
+    width: 100%;
+    padding: 4px 6px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.connections-weight input:disabled {
+    background: #f3f4f6;
+    color: #9ca3af;
+}
+
+.connections-empty {
+    padding: 12px;
+    text-align: center;
+    color: #6b7280;
+    font-size: 13px;
 }

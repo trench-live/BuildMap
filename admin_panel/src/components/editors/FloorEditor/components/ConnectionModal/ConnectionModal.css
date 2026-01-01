@@ -101,3 +101,33 @@
     color: #6b7280;
     font-style: italic;
 }
+
+
+.checkbox-group {
+    margin-top: 12px;
+    display: block;
+}
+
+.checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0;
+}
+
+.checkbox-text {
+    display: inline;
+}
+
+.checkbox-label input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    padding: 0;
+    display: inline-block;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
