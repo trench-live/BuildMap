@@ -12,14 +12,13 @@
 }
 
 .navigation-transform-content {
-    width: 100%;
-    height: 100%;
+    display: inline-block;
 }
 
 .navigation-svg {
     display: block;
-    width: 100%;
-    height: 100%;
+    width: auto;
+    height: auto;
 }
 
 .route-line {
