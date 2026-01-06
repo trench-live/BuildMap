@@ -20,6 +20,8 @@ export const floorAPI = {
 export const fulcrumAPI = {
     getById: (id) => api.get(`/api/fulcrum/${id}`),
     getByFloor: (floorId) => api.get(`/api/fulcrum/floor/${floorId}`),
+    getByArea: (areaId, deleted = false) =>
+        api.get(`/api/fulcrum/area/${areaId}?deleted=${deleted}`),
 };
 
 export const navigationAPI = {
