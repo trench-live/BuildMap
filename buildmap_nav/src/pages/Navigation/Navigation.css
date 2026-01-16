@@ -282,10 +282,18 @@
     font: inherit;
     color: inherit;
     cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.15s ease, color 0.15s ease;
 }
 
 .navigation-step-button:hover {
     color: #111827;
+}
+
+.navigation-step-button.is-selected {
+    background: #ffedd5;
+    color: #9a3412;
+    padding: 6px 8px;
 }
 
 .navigation-steps-empty {

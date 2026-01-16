@@ -97,7 +97,8 @@ const NavigationMap = ({
     routeSegments,
     focusFulcrum,
     endFulcrumId,
-    focusTargets
+    focusTargets,
+    focusSegments
 }) => {
     const containerRef = useRef(null);
     const transformRef = useRef(null);
@@ -184,7 +185,7 @@ const NavigationMap = ({
                 containerSize.width / coordinateWidth,
                 containerSize.height / coordinateHeight
             );
-            const targetScale = Math.max(0.9, fitScale * 1.5);
+            const targetScale = Math.max(1.8, fitScale * 3.4);
 
             const positionX = containerSize.width / 2 - point.x * targetScale;
             const positionY = containerSize.height / 2 - point.y * targetScale;
@@ -216,7 +217,7 @@ const NavigationMap = ({
             containerSize.height / coordinateHeight
         );
         const rawScale = Math.min(scaleX, scaleY);
-        const targetScale = Math.max(0.3, Math.min(8, Math.min(rawScale, fitScale * 1.6)));
+        const targetScale = Math.max(0.3, Math.min(8, Math.min(rawScale, fitScale * 3.6)));
 
         const centerX = (minX + maxX) / 2;
         const centerY = (minY + maxY) / 2;
@@ -266,11 +267,16 @@ const NavigationMap = ({
                             const fromY = mapCoordinate(from.y, coordinateHeight, svgMeta.originY);
                             const toX = mapCoordinate(to.x, coordinateWidth, svgMeta.originX);
                             const toY = mapCoordinate(to.y, coordinateHeight, svgMeta.originY);
+                            const isFocus = (focusSegments || []).some(
+                                ([focusFrom, focusTo]) =>
+                                    (focusFrom.id === from.id && focusTo.id === to.id)
+                                    || (focusFrom.id === to.id && focusTo.id === from.id)
+                            );
 
                             return (
                                 <line
                                     key={`${from.id}-${to.id}`}
-                                    className="route-line"
+                                    className={`route-line${isFocus ? ' is-focus' : ''}`}
                                     x1={fromX}
                                     y1={fromY}
                                     x2={toX}
@@ -281,6 +287,7 @@ const NavigationMap = ({
                         {fulcrums.map((fulcrum) => {
                             const isStart = fulcrum.id === focusFulcrum?.id;
                             const isEnd = fulcrum.id === endFulcrumId;
+                            const isFocused = (focusTargets || []).some((target) => target.id === fulcrum.id);
                             const variant = isStart ? 'start' : isEnd ? 'end' : 'path';
                             const adjustedX = mapCoordinate(fulcrum.x, coordinateWidth, svgMeta.originX);
                             const adjustedY = mapCoordinate(fulcrum.y, coordinateHeight, svgMeta.originY);
@@ -288,7 +295,7 @@ const NavigationMap = ({
                             return (
                                 <circle
                                     key={fulcrum.id}
-                                    className={`fulcrum-marker ${variant}`}
+                                    className={`fulcrum-marker ${variant}${isFocused ? ' is-focus' : ''}`}
                                     cx={adjustedX}
                                     cy={adjustedY}
                                     r={isStart || isEnd ? 8 : 7}

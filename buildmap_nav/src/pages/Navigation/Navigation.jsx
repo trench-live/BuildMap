@@ -29,6 +29,8 @@ const Navigation = () => {
     const [stepsOpen, setStepsOpen] = useState(true);
     const [focusTargets, setFocusTargets] = useState([]);
     const [pendingFocus, setPendingFocus] = useState(null);
+    const [focusSegments, setFocusSegments] = useState([]);
+    const [selectedStepKey, setSelectedStepKey] = useState(null);
     const searchRef = useRef(null);
     const searchInputRef = useRef(null);
     const stepsRef = useRef(null);
@@ -127,6 +129,7 @@ const Navigation = () => {
                 });
                 if (!isActive) return;
                 setRoute(routeResponse.data);
+                setSelectedStepKey(null);
             } catch (err) {
                 if (!isActive) return;
                 const message = err.response?.data?.message || err.message || 'Failed to build route.';
@@ -148,6 +151,7 @@ const Navigation = () => {
             .map((id) => route?.path?.find((item) => item.id === id))
             .filter(Boolean);
         setFocusTargets(targets);
+        setFocusSegments(pendingFocus.segments || []);
         setPendingFocus(null);
     }, [pendingFocus, activeFloorId, route]);
 
@@ -164,10 +168,6 @@ const Navigation = () => {
         });
     }, [floors, startFulcrum]);
 
-    useEffect(() => {
-        if (!selectedEndId) return;
-        setStepsOpen(false);
-    }, [activeFloorId, selectedEndId]);
 
     useEffect(() => {
         if (!selectedEndId) return;
@@ -345,37 +345,47 @@ const Navigation = () => {
 
     const handleStepClick = (step) => {
         if (!step) return;
+        const stepKey = `${step.type}-${step.fromFulcrumId || 'x'}-${step.toFulcrumId || 'y'}`;
+        setSelectedStepKey(stepKey);
         const targetIds = [];
-        if (step.fromFulcrumId) targetIds.push(step.fromFulcrumId);
-        if (step.toFulcrumId && step.toFulcrumId !== step.fromFulcrumId) {
-            targetIds.push(step.toFulcrumId);
+        const isTurnStep = ['TURN_LEFT', 'TURN_RIGHT', 'U_TURN'].includes(step.type);
+        if (isTurnStep) {
+            if (step.fromFulcrumId) targetIds.push(step.fromFulcrumId);
+        } else {
+            if (step.fromFulcrumId) targetIds.push(step.fromFulcrumId);
+            if (step.toFulcrumId && step.toFulcrumId !== step.fromFulcrumId) {
+                targetIds.push(step.toFulcrumId);
+            }
+        }
+        const path = route?.path || [];
+        const fromIndex = path.findIndex((item) => item.id === step.fromFulcrumId);
+        const toIndex = path.findIndex((item) => item.id === step.toFulcrumId);
+        let segments = [];
+        if (!isTurnStep) {
+            if (fromIndex >= 0 && toIndex >= 0) {
+                const start = Math.min(fromIndex, toIndex);
+                const end = Math.max(fromIndex, toIndex);
+                for (let i = start; i < end; i += 1) {
+                    segments.push([path[i], path[i + 1]]);
+                }
+            } else {
+                const fromItem = path.find((item) => item.id === step.fromFulcrumId);
+                const toItem = path.find((item) => item.id === step.toFulcrumId);
+                if (fromItem && toItem) {
+                    segments = [[fromItem, toItem]];
+                }
+            }
         }
         const floorId = step.floorId || route?.path?.find((item) => item.id === step.toFulcrumId)?.floorId
             || route?.path?.find((item) => item.id === step.fromFulcrumId)?.floorId;
 
         if (!targetIds.length) return;
-        setPendingFocus({ targetIds, floorId });
+        setPendingFocus({ targetIds, floorId, segments });
         if (floorId) {
             setActiveFloorId(floorId);
         }
     };
 
-    const handleStepsTouchStart = (event) => {
-        const touch = event.touches?.[0];
-        if (!touch) return;
-        stepsRef.current.dataset.touchStartY = String(touch.clientY);
-    };
-
-    const handleStepsTouchMove = (event) => {
-        const startY = Number(stepsRef.current?.dataset?.touchStartY || 0);
-        const touch = event.touches?.[0];
-        if (!touch || !startY) return;
-        const deltaY = touch.clientY - startY;
-        if (deltaY > 50) {
-            setStepsOpen(false);
-            stepsRef.current.dataset.touchStartY = '0';
-        }
-    };
 
     if (loading) {
         return (
@@ -457,6 +467,7 @@ const Navigation = () => {
                                     focusFulcrum={isActive ? focusFulcrum : null}
                                     endFulcrumId={isActive ? route?.endFulcrumId : null}
                                     focusTargets={isActive ? focusTargets : []}
+                                    focusSegments={isActive ? focusSegments : []}
                                 />
                             ) : (
                                 <div className="navigation-layer-placeholder">
@@ -472,8 +483,6 @@ const Navigation = () => {
                 <div
                     className={`navigation-steps${stepsOpen ? ' is-open' : ''}`}
                     ref={stepsRef}
-                    onTouchStart={handleStepsTouchStart}
-                    onTouchMove={handleStepsTouchMove}
                 >
                     <button
                         type="button"
@@ -488,18 +497,21 @@ const Navigation = () => {
                         <div className="navigation-steps-content">
                             {route?.steps?.length ? (
                                 <ol className="navigation-steps-list">
-                                    {route.steps.map((step, index) => (
-                                        <li key={`${step.type}-${index}`} className="navigation-step">
+                                    {route.steps.map((step, index) => {
+                                        const stepKey = `${step.type}-${step.fromFulcrumId || 'x'}-${step.toFulcrumId || 'y'}-${index}`;
+                                        const isSelected = selectedStepKey === `${step.type}-${step.fromFulcrumId || 'x'}-${step.toFulcrumId || 'y'}`;
+                                        return (
+                                        <li key={stepKey} className="navigation-step">
                                             <button
                                                 type="button"
-                                                className="navigation-step-button"
+                                                className={`navigation-step-button${isSelected ? ' is-selected' : ''}`}
                                                 onClick={() => handleStepClick(step)}
                                             >
                                             {step.text}
                                             </button>
                                         </li>
-                                    ))}
-                                </ol>
+                                    )})}
+                            </ol>
                             ) : (
                                 <div className="navigation-steps-empty">
                                     No hints available yet.
