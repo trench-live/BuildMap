@@ -96,7 +96,8 @@ const NavigationMap = ({
     routePath,
     routeSegments,
     focusFulcrum,
-    endFulcrumId
+    endFulcrumId,
+    focusTargets
 }) => {
     const containerRef = useRef(null);
     const transformRef = useRef(null);
@@ -161,6 +162,70 @@ const NavigationMap = ({
 
         transformRef.current.setTransform(positionX, positionY, targetScale, 0, 'easeOut');
     }, [containerSize.width, containerSize.height, coordinateWidth, coordinateHeight, focusPoint.x, focusPoint.y]);
+
+    useEffect(() => {
+        if (!focusTargets || focusTargets.length === 0) return;
+        if (!containerSize.width || !containerSize.height) return;
+        if (!coordinateWidth || !coordinateHeight) return;
+        if (!transformRef.current) return;
+
+        const points = focusTargets
+            .map((target) => ({
+                x: mapCoordinate(target.x, coordinateWidth, svgMeta.originX),
+                y: mapCoordinate(target.y, coordinateHeight, svgMeta.originY)
+            }))
+            .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+
+        if (!points.length) return;
+
+        if (points.length === 1) {
+            const point = points[0];
+            const fitScale = Math.min(
+                containerSize.width / coordinateWidth,
+                containerSize.height / coordinateHeight
+            );
+            const targetScale = Math.max(0.9, fitScale * 1.5);
+
+            const positionX = containerSize.width / 2 - point.x * targetScale;
+            const positionY = containerSize.height / 2 - point.y * targetScale;
+
+            transformRef.current.setTransform(positionX, positionY, targetScale, 0, 'easeOut');
+            return;
+        }
+
+        let minX = points[0].x;
+        let maxX = points[0].x;
+        let minY = points[0].y;
+        let maxY = points[0].y;
+
+        points.forEach((point) => {
+            minX = Math.min(minX, point.x);
+            maxX = Math.max(maxX, point.x);
+            minY = Math.min(minY, point.y);
+            maxY = Math.max(maxY, point.y);
+        });
+
+        const padding = 0.18;
+        const boundsWidth = Math.max(maxX - minX, coordinateWidth * 0.02);
+        const boundsHeight = Math.max(maxY - minY, coordinateHeight * 0.02);
+
+        const scaleX = containerSize.width / (boundsWidth * (1 + padding * 2));
+        const scaleY = containerSize.height / (boundsHeight * (1 + padding * 2));
+        const fitScale = Math.min(
+            containerSize.width / coordinateWidth,
+            containerSize.height / coordinateHeight
+        );
+        const rawScale = Math.min(scaleX, scaleY);
+        const targetScale = Math.max(0.3, Math.min(8, Math.min(rawScale, fitScale * 1.6)));
+
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        const positionX = containerSize.width / 2 - centerX * targetScale;
+        const positionY = containerSize.height / 2 - centerY * targetScale;
+
+        transformRef.current.setTransform(positionX, positionY, targetScale, 0, 'easeOut');
+    }, [focusTargets, containerSize.width, containerSize.height, coordinateWidth, coordinateHeight, svgMeta.originX, svgMeta.originY]);
 
     const segments = useMemo(() => {
         if (routeSegments?.length) {

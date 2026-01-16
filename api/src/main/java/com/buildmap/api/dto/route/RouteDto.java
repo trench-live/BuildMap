@@ -15,4 +15,5 @@ public class RouteDto {
     private Double totalDistance;
     private Long startFulcrumId;
     private Long endFulcrumId;
+    private List<RouteStepDto> steps;
 }

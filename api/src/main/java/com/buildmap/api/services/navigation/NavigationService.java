@@ -2,14 +2,18 @@ package com.buildmap.api.services.navigation;
 
 import com.buildmap.api.dto.route.RouteDto;
 import com.buildmap.api.dto.route.RouteRequestDto;
+import com.buildmap.api.dto.route.RouteStepDto;
+import com.buildmap.api.dto.route.RouteStepType;
 import com.buildmap.api.dto.route.mappers.RouteMapper;
 import com.buildmap.api.entities.mapping_area.fulcrum.Fulcrum;
+import com.buildmap.api.entities.mapping_area.fulcrum.FacingDirection;
 import com.buildmap.api.services.FloorService;
 import com.buildmap.api.services.FulcrumService;
 import com.buildmap.api.services.navigation.dijkstra_algorithm.DijkstraAlgorithm;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -85,6 +89,7 @@ public class NavigationService {
                 request.getStartFulcrumId(),
                 request.getEndFulcrumId()
         );
+        routeDto.setSteps(buildSteps(graph, path));
 
         // 10. Логируем результат
         System.out.println("Маршрут готов, расстояние: " + routeDto.getTotalDistance());
@@ -96,6 +101,232 @@ public class NavigationService {
         );
 
         return routeDto;
+    }
+
+    private List<RouteStepDto> buildSteps(Graph graph, List<Fulcrum> path) {
+        List<RouteStepDto> steps = new ArrayList<>();
+        if (path == null || path.size() < 2) {
+            return steps;
+        }
+
+        Vector previousVector = null;
+        boolean previousWasFloorChange = false;
+
+        for (int i = 0; i < path.size() - 1; i += 1) {
+            Fulcrum from = path.get(i);
+            Fulcrum to = path.get(i + 1);
+
+            boolean floorChanged = from.getFloor() != null && to.getFloor() != null
+                    && !from.getFloor().getId().equals(to.getFloor().getId());
+
+            if (floorChanged) {
+                steps.add(buildFloorChangeStep(from, to));
+                previousVector = null;
+                previousWasFloorChange = true;
+                continue;
+            }
+
+            Vector segmentVector = vectorBetween(from, to);
+            if (segmentVector.isZero()) {
+                previousVector = null;
+                previousWasFloorChange = false;
+                continue;
+            }
+
+            Vector baseVector = previousVector;
+            if (i == 0 || previousWasFloorChange || baseVector == null) {
+                baseVector = facingToVector(from.getFacingDirection());
+            }
+
+            RouteStepDto turnStep = buildTurnStep(baseVector, segmentVector, from, to);
+            if (turnStep != null) {
+                steps.add(turnStep);
+            }
+
+            Integer distance = estimateDistance(graph, from, to);
+            if (distance != null && distance > 0) {
+                appendForwardStep(steps, distance, from, to);
+            }
+
+            previousVector = segmentVector;
+            previousWasFloorChange = false;
+        }
+
+        return steps;
+    }
+
+    private RouteStepDto buildFloorChangeStep(Fulcrum from, Fulcrum to) {
+        Integer fromLevel = from.getFloor() != null ? from.getFloor().getLevel() : null;
+        Integer toLevel = to.getFloor() != null ? to.getFloor().getLevel() : null;
+        String targetLabel;
+        if (toLevel != null) {
+            targetLabel = "этаж " + toLevel;
+        } else if (to.getFloor() != null && to.getFloor().getName() != null) {
+            targetLabel = to.getFloor().getName();
+        } else {
+            targetLabel = "другой этаж";
+        }
+
+        boolean goUp = false;
+        if (fromLevel != null && toLevel != null) {
+            goUp = toLevel > fromLevel;
+        }
+
+        String text = (goUp ? "Поднимитесь на " : "Спуститесь на ") + targetLabel;
+        RouteStepDto step = new RouteStepDto();
+        step.setType(goUp ? RouteStepType.CHANGE_FLOOR_UP : RouteStepType.CHANGE_FLOOR_DOWN);
+        step.setText(text);
+        step.setFromFulcrumId(from.getId());
+        step.setToFulcrumId(to.getId());
+        step.setFloorId(to.getFloor() != null ? to.getFloor().getId() : null);
+        return step;
+    }
+
+    private RouteStepDto buildTurnStep(Vector baseVector, Vector nextVector, Fulcrum from, Fulcrum to) {
+        if (baseVector == null || baseVector.isZero() || nextVector == null || nextVector.isZero()) {
+            return null;
+        }
+
+        double angle = angleBetween(baseVector, nextVector);
+        if (angle <= 20.0) {
+            return null;
+        }
+
+        if (angle >= 135.0) {
+            return buildStep(RouteStepType.U_TURN, "Развернитесь", from, to);
+        }
+
+        double cross = cross(baseVector, nextVector);
+        if (cross > 0) {
+            return buildStep(RouteStepType.TURN_RIGHT, "Поверните направо", from, to);
+        }
+        if (cross < 0) {
+            return buildStep(RouteStepType.TURN_LEFT, "Поверните налево", from, to);
+        }
+        return null;
+    }
+
+    private void appendForwardStep(List<RouteStepDto> steps, int distance, Fulcrum from, Fulcrum to) {
+        if (steps == null || distance <= 0) {
+            return;
+        }
+        int lastIndex = steps.size() - 1;
+        if (lastIndex >= 0) {
+            RouteStepDto last = steps.get(lastIndex);
+            if (last.getType() == RouteStepType.GO_FORWARD) {
+                int previous = parseForwardDistance(last.getText());
+                int sum = previous + distance;
+                last.setText("Пройдите " + sum);
+                if (to != null) {
+                    last.setToFulcrumId(to.getId());
+                    last.setFloorId(to.getFloor() != null ? to.getFloor().getId() : last.getFloorId());
+                }
+                return;
+            }
+        }
+        RouteStepDto step = new RouteStepDto();
+        step.setType(RouteStepType.GO_FORWARD);
+        step.setText("Пройдите " + distance);
+        step.setFromFulcrumId(from != null ? from.getId() : null);
+        step.setToFulcrumId(to != null ? to.getId() : null);
+        step.setFloorId(from != null && from.getFloor() != null ? from.getFloor().getId() : null);
+        steps.add(step);
+    }
+
+    private int parseForwardDistance(String text) {
+        if (text == null) return 0;
+        String normalized = text.replaceAll("[^0-9]", "");
+        if (normalized.isEmpty()) return 0;
+        try {
+            return Integer.parseInt(normalized);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private RouteStepDto buildStep(RouteStepType type, String text, Fulcrum from, Fulcrum to) {
+        RouteStepDto step = new RouteStepDto();
+        step.setType(type);
+        step.setText(text);
+        step.setFromFulcrumId(from != null ? from.getId() : null);
+        step.setToFulcrumId(to != null ? to.getId() : null);
+        step.setFloorId(from != null && from.getFloor() != null ? from.getFloor().getId() : null);
+        return step;
+    }
+
+    private Integer estimateDistance(Graph graph, Fulcrum from, Fulcrum to) {
+        if (graph == null || from == null || to == null) {
+            return null;
+        }
+        List<Graph.Edge> edges = graph.getEdges(from.getId());
+        if (edges != null) {
+            for (Graph.Edge edge : edges) {
+                if (edge.targetId().equals(to.getId())) {
+                    if (edge.weight() == null) {
+                        return null;
+                    }
+                    return (int) Math.round(edge.weight());
+                }
+            }
+        }
+        double dx = to.getX() - from.getX();
+        double dy = to.getY() - from.getY();
+        double distance = Math.hypot(dx, dy);
+        return (int) Math.round(distance);
+    }
+
+    private Vector vectorBetween(Fulcrum from, Fulcrum to) {
+        if (from == null || to == null || from.getX() == null || from.getY() == null
+                || to.getX() == null || to.getY() == null) {
+            return new Vector(0, 0);
+        }
+        return new Vector(to.getX() - from.getX(), to.getY() - from.getY());
+    }
+
+    private Vector facingToVector(FacingDirection direction) {
+        if (direction == null) {
+            return new Vector(0, -1);
+        }
+        return switch (direction) {
+            case UP -> new Vector(0, -1);
+            case RIGHT -> new Vector(1, 0);
+            case DOWN -> new Vector(0, 1);
+            case LEFT -> new Vector(-1, 0);
+        };
+    }
+
+    private double angleBetween(Vector a, Vector b) {
+        double dot = dot(a, b);
+        double len = a.length() * b.length();
+        if (len == 0) return 0;
+        double cos = Math.max(-1.0, Math.min(1.0, dot / len));
+        return Math.toDegrees(Math.acos(cos));
+    }
+
+    private double dot(Vector a, Vector b) {
+        return a.x * b.x + a.y * b.y;
+    }
+
+    private double cross(Vector a, Vector b) {
+        return a.x * b.y - a.y * b.x;
+    }
+
+    private static class Vector {
+        private final double x;
+        private final double y;
+
+        private Vector(double x, double y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        private double length() {
+            return Math.hypot(x, y);
+        }
+
+        private boolean isZero() {
+            return Math.abs(x) < 1e-9 && Math.abs(y) < 1e-9;
+        }
     }
 
     // Вспомогательный метод для отладки

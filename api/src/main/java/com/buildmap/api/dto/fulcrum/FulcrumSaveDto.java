@@ -1,5 +1,6 @@
 package com.buildmap.api.dto.fulcrum;
 
+import com.buildmap.api.entities.mapping_area.fulcrum.FacingDirection;
 import com.buildmap.api.entities.mapping_area.fulcrum.FulcrumType;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -29,6 +30,9 @@ public class FulcrumSaveDto {
 
     @NotNull
     private FulcrumType type;
+
+    @NotNull
+    private FacingDirection facingDirection;
 
     @NotNull
     private Long floorId;

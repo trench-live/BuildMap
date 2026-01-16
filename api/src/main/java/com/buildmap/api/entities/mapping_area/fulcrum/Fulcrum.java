@@ -36,6 +36,9 @@ public class Fulcrum {
     @Column(nullable = false)
     private FulcrumType type;
 
+    @Enumerated(EnumType.STRING)
+    private FacingDirection facingDirection;
+
     @Column(unique = true)
     private String qrCodeId;
 

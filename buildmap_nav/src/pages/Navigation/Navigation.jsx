@@ -26,12 +26,22 @@ const Navigation = () => {
     const [selectedEndId, setSelectedEndId] = useState(null);
     const [searchValue, setSearchValue] = useState('');
     const [searchOpen, setSearchOpen] = useState(false);
+    const [stepsOpen, setStepsOpen] = useState(true);
+    const [focusTargets, setFocusTargets] = useState([]);
+    const [pendingFocus, setPendingFocus] = useState(null);
     const searchRef = useRef(null);
     const searchInputRef = useRef(null);
+    const stepsRef = useRef(null);
 
     useEffect(() => {
         setSelectedEndId(toId ?? null);
     }, [fulcrumId]);
+
+    useEffect(() => {
+        if (selectedEndId) {
+            setStepsOpen(true);
+        }
+    }, [selectedEndId]);
 
     useEffect(() => {
         if (!fulcrumId) {
@@ -132,6 +142,16 @@ const Navigation = () => {
     }, [fulcrumId, selectedEndId]);
 
     useEffect(() => {
+        if (!pendingFocus) return;
+        if (pendingFocus.floorId && pendingFocus.floorId !== activeFloorId) return;
+        const targets = pendingFocus.targetIds
+            .map((id) => route?.path?.find((item) => item.id === id))
+            .filter(Boolean);
+        setFocusTargets(targets);
+        setPendingFocus(null);
+    }, [pendingFocus, activeFloorId, route]);
+
+    useEffect(() => {
         if (!floors.length) return;
         setActiveFloorId((current) => {
             if (current && floors.some((floor) => floor.id === current)) {
@@ -143,6 +163,11 @@ const Navigation = () => {
             return floors[0]?.id ?? null;
         });
     }, [floors, startFulcrum]);
+
+    useEffect(() => {
+        if (!selectedEndId) return;
+        setStepsOpen(false);
+    }, [activeFloorId, selectedEndId]);
 
     useEffect(() => {
         if (!selectedEndId) return;
@@ -166,6 +191,20 @@ const Navigation = () => {
             window.removeEventListener('pointerdown', handlePointerDown);
         };
     }, []);
+
+    useEffect(() => {
+        if (!selectedEndId) return;
+        const handlePointerDown = (event) => {
+            if (!stepsRef.current) return;
+            if (stepsRef.current.contains(event.target)) return;
+            setStepsOpen(false);
+        };
+
+        window.addEventListener('pointerdown', handlePointerDown);
+        return () => {
+            window.removeEventListener('pointerdown', handlePointerDown);
+        };
+    }, [selectedEndId]);
 
     const activeFloor = useMemo(
         () => floors.find((item) => item.id === activeFloorId) ?? null,
@@ -304,6 +343,40 @@ const Navigation = () => {
         setSearchOpen(true);
     };
 
+    const handleStepClick = (step) => {
+        if (!step) return;
+        const targetIds = [];
+        if (step.fromFulcrumId) targetIds.push(step.fromFulcrumId);
+        if (step.toFulcrumId && step.toFulcrumId !== step.fromFulcrumId) {
+            targetIds.push(step.toFulcrumId);
+        }
+        const floorId = step.floorId || route?.path?.find((item) => item.id === step.toFulcrumId)?.floorId
+            || route?.path?.find((item) => item.id === step.fromFulcrumId)?.floorId;
+
+        if (!targetIds.length) return;
+        setPendingFocus({ targetIds, floorId });
+        if (floorId) {
+            setActiveFloorId(floorId);
+        }
+    };
+
+    const handleStepsTouchStart = (event) => {
+        const touch = event.touches?.[0];
+        if (!touch) return;
+        stepsRef.current.dataset.touchStartY = String(touch.clientY);
+    };
+
+    const handleStepsTouchMove = (event) => {
+        const startY = Number(stepsRef.current?.dataset?.touchStartY || 0);
+        const touch = event.touches?.[0];
+        if (!touch || !startY) return;
+        const deltaY = touch.clientY - startY;
+        if (deltaY > 50) {
+            setStepsOpen(false);
+            stepsRef.current.dataset.touchStartY = '0';
+        }
+    };
+
     if (loading) {
         return (
             <div className="navigation-state">
@@ -383,6 +456,7 @@ const Navigation = () => {
                                     routeSegments={isActive ? activeSegments : []}
                                     focusFulcrum={isActive ? focusFulcrum : null}
                                     endFulcrumId={isActive ? route?.endFulcrumId : null}
+                                    focusTargets={isActive ? focusTargets : []}
                                 />
                             ) : (
                                 <div className="navigation-layer-placeholder">
@@ -394,6 +468,47 @@ const Navigation = () => {
                     );
                 })}
             </div>
+            {selectedEndId && (
+                <div
+                    className={`navigation-steps${stepsOpen ? ' is-open' : ''}`}
+                    ref={stepsRef}
+                    onTouchStart={handleStepsTouchStart}
+                    onTouchMove={handleStepsTouchMove}
+                >
+                    <button
+                        type="button"
+                        className="navigation-steps-toggle"
+                        onClick={() => setStepsOpen((prev) => !prev)}
+                        aria-expanded={stepsOpen}
+                    >
+                        <span>Route hints</span>
+                        <span className="navigation-steps-chevron">{stepsOpen ? '▾' : '▸'}</span>
+                    </button>
+                    {stepsOpen && (
+                        <div className="navigation-steps-content">
+                            {route?.steps?.length ? (
+                                <ol className="navigation-steps-list">
+                                    {route.steps.map((step, index) => (
+                                        <li key={`${step.type}-${index}`} className="navigation-step">
+                                            <button
+                                                type="button"
+                                                className="navigation-step-button"
+                                                onClick={() => handleStepClick(step)}
+                                            >
+                                            {step.text}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ol>
+                            ) : (
+                                <div className="navigation-steps-empty">
+                                    No hints available yet.
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
             <div className="floor-switcher" role="tablist" aria-label="Floors">
                 <span className="floor-switcher-label">Floors</span>
                 <div className="floor-switcher-list">

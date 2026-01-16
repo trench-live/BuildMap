@@ -1,11 +1,12 @@
 import { useState, useCallback } from 'react';
-import { FULCRUM_TYPES } from '../../../types/editorTypes';
+import { FACING_DIRECTIONS, FULCRUM_TYPES } from '../../../types/editorTypes';
 
 export const useFulcrumForm = (initialData = null) => {
     const [formData, setFormData] = useState({
         name: '',
         description: '',
         type: FULCRUM_TYPES.ROOM,
+        facingDirection: FACING_DIRECTIONS.UP,
         x: 0,
         y: 0,
         floorId: null,
@@ -31,6 +32,10 @@ export const useFulcrumForm = (initialData = null) => {
 
         if (!Object.values(FULCRUM_TYPES).includes(formData.type)) {
             newErrors.type = 'Неверный тип точки';
+        }
+
+        if (!Object.values(FACING_DIRECTIONS).includes(formData.facingDirection)) {
+            newErrors.facingDirection = 'Invalid direction.';
         }
 
         if (formData.x === undefined || formData.x === null) {
@@ -88,6 +93,7 @@ export const useFulcrumForm = (initialData = null) => {
             name: '',
             description: '',
             type: FULCRUM_TYPES.ROOM,
+            facingDirection: FACING_DIRECTIONS.UP,
             x: 0,
             y: 0,
             floorId: null,
@@ -103,6 +109,7 @@ export const useFulcrumForm = (initialData = null) => {
             name: formData.name.trim(),
             description: formData.description.trim(),
             type: formData.type,
+            facingDirection: formData.facingDirection,
             x: formData.x,
             y: formData.y,
             floorId: formData.floorId

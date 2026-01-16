@@ -12,6 +12,7 @@ import com.buildmap.api.services.JwtService;
 import com.buildmap.api.services.TelegramAuthService;
 import com.buildmap.api.services.UserService;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,6 +37,12 @@ public class AuthController {
 
     @Autowired
     private JwtService jwtService;
+
+    @Value("${auth.dev.enabled:false}")
+    private boolean devAuthEnabled;
+
+    @Value("${auth.dev.secret:dev}")
+    private String devAuthSecret;
 
     @GetMapping("/test-connection")
     public ResponseEntity<String> testConnection() {
@@ -77,10 +84,41 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/dev-login")
+    public ResponseEntity<AuthResponseDto> devLogin(@RequestBody DevLoginRequest request) {
+        if (!devAuthEnabled) {
+            return ResponseEntity.status(403).build();
+        }
+        if (request.getSecret() == null || !request.getSecret().equals(devAuthSecret)) {
+            return ResponseEntity.status(401).build();
+        }
+
+        User user;
+        if (request.getUserId() != null) {
+            user = userService.getById(request.getUserId());
+        } else if (request.getTelegramId() != null && !request.getTelegramId().isBlank()) {
+            user = userRepository.findByTelegramId(request.getTelegramId())
+                    .orElseThrow(() -> new ValidationException("User not found"));
+        } else {
+            throw new ValidationException("userId or telegramId is required");
+        }
+
+        String token = jwtService.generateToken(user.getId());
+        UserDto userDto = userMapper.toDto(user);
+        return ResponseEntity.ok(new AuthResponseDto(token, userDto));
+    }
+
     @Data
     static class TestLoginRequest {
         private Long userId;
         private String name;
+    }
+
+    @Data
+    static class DevLoginRequest {
+        private Long userId;
+        private String telegramId;
+        private String secret;
     }
 
     @PostMapping("/telegram")

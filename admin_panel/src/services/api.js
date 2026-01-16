@@ -44,6 +44,7 @@ export const authAPI = {
     telegramLogin: (telegramData) => api.post('/api/auth/telegram', telegramData),
     logout: () => api.post('/api/auth/logout'),
     getMe: () => api.get('/api/auth/me'),
+    devLogin: (payload) => api.post('/api/auth/dev-login', payload),
 };
 
 // Остальные API методы остаются без изменений
