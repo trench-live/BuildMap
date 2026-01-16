@@ -98,7 +98,9 @@ const NavigationMap = ({
     focusFulcrum,
     endFulcrumId,
     focusTargets,
-    focusSegments
+    focusSegments,
+    focusAnimate,
+    focusYOffset
 }) => {
     const containerRef = useRef(null);
     const transformRef = useRef(null);
@@ -185,12 +187,14 @@ const NavigationMap = ({
                 containerSize.width / coordinateWidth,
                 containerSize.height / coordinateHeight
             );
-            const targetScale = Math.max(1.8, fitScale * 3.4);
+            const targetScale = Math.max(1.2, fitScale * 2.2);
 
             const positionX = containerSize.width / 2 - point.x * targetScale;
-            const positionY = containerSize.height / 2 - point.y * targetScale;
+            const shiftY = Math.min(containerSize.height * 0.25, (focusYOffset || 0) * 0.6);
+            const positionY = containerSize.height / 2 - point.y * targetScale - shiftY;
 
-            transformRef.current.setTransform(positionX, positionY, targetScale, 0, 'easeOut');
+            const animationTime = focusAnimate === false ? 0 : 300;
+            transformRef.current.setTransform(positionX, positionY, targetScale, animationTime, 'easeOut');
             return;
         }
 
@@ -221,12 +225,14 @@ const NavigationMap = ({
 
         const centerX = (minX + maxX) / 2;
         const centerY = (minY + maxY) / 2;
+        const shiftY = Math.min(containerSize.height * 0.25, (focusYOffset || 0) * 0.6);
 
         const positionX = containerSize.width / 2 - centerX * targetScale;
-        const positionY = containerSize.height / 2 - centerY * targetScale;
+        const positionY = containerSize.height / 2 - centerY * targetScale - shiftY;
 
-        transformRef.current.setTransform(positionX, positionY, targetScale, 0, 'easeOut');
-    }, [focusTargets, containerSize.width, containerSize.height, coordinateWidth, coordinateHeight, svgMeta.originX, svgMeta.originY]);
+        const animationTime = focusAnimate === false ? 0 : 300;
+        transformRef.current.setTransform(positionX, positionY, targetScale, animationTime, 'easeOut');
+    }, [focusTargets, focusYOffset, containerSize.width, containerSize.height, coordinateWidth, coordinateHeight, svgMeta.originX, svgMeta.originY]);
 
     const segments = useMemo(() => {
         if (routeSegments?.length) {

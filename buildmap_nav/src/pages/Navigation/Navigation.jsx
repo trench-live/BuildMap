@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { floorAPI, fulcrumAPI, navigationAPI } from '../../services/api';
 import NavigationMap from '../../components/NavigationMap/NavigationMap';
@@ -30,7 +30,10 @@ const Navigation = () => {
     const [focusTargets, setFocusTargets] = useState([]);
     const [pendingFocus, setPendingFocus] = useState(null);
     const [focusSegments, setFocusSegments] = useState([]);
+    const [focusAnimate, setFocusAnimate] = useState(true);
     const [selectedStepKey, setSelectedStepKey] = useState(null);
+    const [stepsPanelHeight, setStepsPanelHeight] = useState(0);
+    const [lastFocus, setLastFocus] = useState(null);
     const searchRef = useRef(null);
     const searchInputRef = useRef(null);
     const stepsRef = useRef(null);
@@ -152,8 +155,15 @@ const Navigation = () => {
             .filter(Boolean);
         setFocusTargets(targets);
         setFocusSegments(pendingFocus.segments || []);
+        setFocusAnimate(pendingFocus.animate !== false);
         setPendingFocus(null);
     }, [pendingFocus, activeFloorId, route]);
+
+    useEffect(() => {
+        if (!lastFocus || !activeFloorId) return;
+        if (lastFocus.floorId !== activeFloorId) return;
+        setPendingFocus(lastFocus);
+    }, [activeFloorId, lastFocus]);
 
     useEffect(() => {
         if (!floors.length) return;
@@ -205,6 +215,33 @@ const Navigation = () => {
             window.removeEventListener('pointerdown', handlePointerDown);
         };
     }, [selectedEndId]);
+
+    useEffect(() => {
+        if (!stepsRef.current) return;
+        const updateHeight = () => {
+            if (!stepsRef.current) return;
+            const rect = stepsRef.current.getBoundingClientRect();
+            setStepsPanelHeight(rect.height);
+        };
+        updateHeight();
+        const observer = new ResizeObserver(updateHeight);
+        observer.observe(stepsRef.current);
+        return () => observer.disconnect();
+    }, [stepsOpen, route?.steps?.length]);
+
+    useLayoutEffect(() => {
+        if (!stepsOpen || !stepsRef.current) return;
+        const rect = stepsRef.current.getBoundingClientRect();
+        if (rect.height !== stepsPanelHeight) {
+            setStepsPanelHeight(rect.height);
+        }
+    }, [stepsOpen, route?.steps?.length, stepsPanelHeight]);
+
+    useEffect(() => {
+        if (!stepsOpen || !lastFocus) return;
+        if (!stepsPanelHeight) return;
+        setPendingFocus(lastFocus);
+    }, [stepsOpen, stepsPanelHeight, lastFocus]);
 
     const activeFloor = useMemo(
         () => floors.find((item) => item.id === activeFloorId) ?? null,
@@ -345,6 +382,10 @@ const Navigation = () => {
 
     const handleStepClick = (step) => {
         if (!step) return;
+        if (stepsOpen && stepsRef.current) {
+            const rect = stepsRef.current.getBoundingClientRect();
+            setStepsPanelHeight(rect.height);
+        }
         const stepKey = `${step.type}-${step.fromFulcrumId || 'x'}-${step.toFulcrumId || 'y'}`;
         setSelectedStepKey(stepKey);
         const targetIds = [];
@@ -380,9 +421,21 @@ const Navigation = () => {
             || route?.path?.find((item) => item.id === step.fromFulcrumId)?.floorId;
 
         if (!targetIds.length) return;
-        setPendingFocus({ targetIds, floorId, segments });
+        const animate = floorId ? floorId === activeFloorId : true;
+        const focusPayload = { targetIds, floorId, segments, animate };
+        setLastFocus(focusPayload);
+        setPendingFocus(focusPayload);
         if (floorId) {
             setActiveFloorId(floorId);
+        }
+    };
+
+    const handleFloorSelect = (floorId) => {
+        setActiveFloorId(floorId);
+        setPendingFocus(null);
+        if (lastFocus && lastFocus.floorId !== floorId) {
+            setFocusTargets([]);
+            setFocusSegments([]);
         }
     };
 
@@ -427,7 +480,7 @@ const Navigation = () => {
                     ref={searchInputRef}
                 />
                 {searchOpen && (
-                    <div className="navigation-search-results">
+                    <div className="navigation-search-results is-open">
                         {searchResults.length ? (
                             searchResults.map((item) => (
                                 <button
@@ -468,6 +521,8 @@ const Navigation = () => {
                                     endFulcrumId={isActive ? route?.endFulcrumId : null}
                                     focusTargets={isActive ? focusTargets : []}
                                     focusSegments={isActive ? focusSegments : []}
+                                    focusAnimate={isActive ? focusAnimate : true}
+                                    focusYOffset={stepsOpen ? stepsPanelHeight : 0}
                                 />
                             ) : (
                                 <div className="navigation-layer-placeholder">
@@ -531,7 +586,7 @@ const Navigation = () => {
                                 key={floorItem.id}
                                 type="button"
                                 className={`floor-switcher-button${isActive ? ' is-active' : ''}`}
-                                onClick={() => setActiveFloorId(floorItem.id)}
+                                onClick={() => handleFloorSelect(floorItem.id)}
                                 aria-pressed={isActive}
                                 title={floorItem.name || undefined}
                             >
