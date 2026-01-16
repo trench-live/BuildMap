@@ -13,11 +13,15 @@ const api = axios.create({
 export const floorAPI = {
     getById: (id) => api.get(`/api/floor/${id}`),
     getByFulcrumId: (id) => api.get(`/api/floor/fulcrum/${id}`),
+    getByArea: (areaId, deleted = false) =>
+        api.get(`/api/floor/area/${areaId}?deleted=${deleted}`),
 };
 
 export const fulcrumAPI = {
     getById: (id) => api.get(`/api/fulcrum/${id}`),
     getByFloor: (floorId) => api.get(`/api/fulcrum/floor/${floorId}`),
+    getByArea: (areaId, deleted = false) =>
+        api.get(`/api/fulcrum/area/${areaId}?deleted=${deleted}`),
 };
 
 export const navigationAPI = {

@@ -90,7 +90,14 @@ const mapCoordinate = (value, size, origin) => {
     return origin + base;
 };
 
-const NavigationMap = ({ svgContent, fulcrums, routePath, focusFulcrum, endFulcrumId }) => {
+const NavigationMap = ({
+    svgContent,
+    fulcrums,
+    routePath,
+    routeSegments,
+    focusFulcrum,
+    endFulcrumId
+}) => {
     const containerRef = useRef(null);
     const transformRef = useRef(null);
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -144,21 +151,28 @@ const NavigationMap = ({ svgContent, fulcrums, routePath, focusFulcrum, endFulcr
             containerSize.width / coordinateWidth,
             containerSize.height / coordinateHeight
         );
+        const isNarrow = containerSize.width < 600;
+        const boostedScale = fitScale * (isNarrow ? 2.4 : 1.6);
+        const minInitialScale = isNarrow ? 1.7 : 0.75;
+        const targetScale = Math.max(boostedScale, minInitialScale);
 
-        const positionX = containerSize.width / 2 - focusPoint.x * fitScale;
-        const positionY = containerSize.height / 2 - focusPoint.y * fitScale;
+        const positionX = containerSize.width / 2 - focusPoint.x * targetScale;
+        const positionY = containerSize.height / 2 - focusPoint.y * targetScale;
 
-        transformRef.current.setTransform(positionX, positionY, fitScale, 0, 'easeOut');
+        transformRef.current.setTransform(positionX, positionY, targetScale, 0, 'easeOut');
     }, [containerSize.width, containerSize.height, coordinateWidth, coordinateHeight, focusPoint.x, focusPoint.y]);
 
     const segments = useMemo(() => {
+        if (routeSegments?.length) {
+            return routeSegments;
+        }
         if (!routePath || routePath.length < 2) return [];
         const items = [];
         for (let i = 0; i < routePath.length - 1; i += 1) {
             items.push([routePath[i], routePath[i + 1]]);
         }
         return items;
-    }, [routePath]);
+    }, [routePath, routeSegments]);
 
     return (
         <div className="navigation-canvas" ref={containerRef}>
