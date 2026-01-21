@@ -16,6 +16,7 @@ public class FulcrumDto {
     private Double y;
     private FulcrumType type;
     private FacingDirection facingDirection;
+    private boolean hasQr;
     private String qrCodeId;
     private Long mappingAreaId;
     private Long floorId;

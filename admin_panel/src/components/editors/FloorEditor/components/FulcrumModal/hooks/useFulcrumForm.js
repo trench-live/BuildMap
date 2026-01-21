@@ -7,6 +7,7 @@ export const useFulcrumForm = (initialData = null) => {
         description: '',
         type: FULCRUM_TYPES.ROOM,
         facingDirection: FACING_DIRECTIONS.UP,
+        hasQr: false,
         x: 0,
         y: 0,
         floorId: null,
@@ -34,7 +35,7 @@ export const useFulcrumForm = (initialData = null) => {
             newErrors.type = 'Неверный тип точки';
         }
 
-        if (!Object.values(FACING_DIRECTIONS).includes(formData.facingDirection)) {
+        if (formData.hasQr && !Object.values(FACING_DIRECTIONS).includes(formData.facingDirection)) {
             newErrors.facingDirection = 'Invalid direction.';
         }
 
@@ -94,6 +95,7 @@ export const useFulcrumForm = (initialData = null) => {
             description: '',
             type: FULCRUM_TYPES.ROOM,
             facingDirection: FACING_DIRECTIONS.UP,
+            hasQr: false,
             x: 0,
             y: 0,
             floorId: null,
@@ -109,7 +111,8 @@ export const useFulcrumForm = (initialData = null) => {
             name: formData.name.trim(),
             description: formData.description.trim(),
             type: formData.type,
-            facingDirection: formData.facingDirection,
+            facingDirection: formData.hasQr ? formData.facingDirection : null,
+            hasQr: formData.hasQr,
             x: formData.x,
             y: formData.y,
             floorId: formData.floorId

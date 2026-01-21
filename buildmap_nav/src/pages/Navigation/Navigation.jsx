@@ -149,21 +149,39 @@ const Navigation = () => {
 
     useEffect(() => {
         if (!pendingFocus) return;
-        if (pendingFocus.floorId && pendingFocus.floorId !== activeFloorId) return;
+        if (pendingFocus.floorId && pendingFocus.floorId !== activeFloorId) {
+            setFocusTargets([]);
+            setFocusSegments([]);
+            return;
+        }
+        const targetFloorId = pendingFocus.floorId || activeFloorId;
         const targets = pendingFocus.targetIds
             .map((id) => route?.path?.find((item) => item.id === id))
-            .filter(Boolean);
+            .filter((item) => item && (!targetFloorId || item.floorId === targetFloorId));
         setFocusTargets(targets);
-        setFocusSegments(pendingFocus.segments || []);
+        const segments = (pendingFocus.segments || []).filter(
+            ([from, to]) => !targetFloorId || (from.floorId === targetFloorId && to.floorId === targetFloorId)
+        );
+        setFocusSegments(segments);
         setFocusAnimate(pendingFocus.animate !== false);
         setPendingFocus(null);
     }, [pendingFocus, activeFloorId, route]);
 
     useEffect(() => {
         if (!lastFocus || !activeFloorId) return;
+        if (pendingFocus) return;
         if (lastFocus.floorId !== activeFloorId) return;
         setPendingFocus(lastFocus);
-    }, [activeFloorId, lastFocus]);
+    }, [activeFloorId, lastFocus, pendingFocus]);
+
+    useEffect(() => {
+        if (!activeFloorId) return;
+        const mismatch = focusTargets.some((item) => item.floorId !== activeFloorId);
+        if (mismatch) {
+            setFocusTargets([]);
+            setFocusSegments([]);
+        }
+    }, [activeFloorId, focusTargets]);
 
     useEffect(() => {
         if (!floors.length) return;
@@ -424,9 +442,13 @@ const Navigation = () => {
         const animate = floorId ? floorId === activeFloorId : true;
         const focusPayload = { targetIds, floorId, segments, animate };
         setLastFocus(focusPayload);
-        setPendingFocus(focusPayload);
-        if (floorId) {
+        if (floorId && floorId !== activeFloorId) {
+            setFocusTargets([]);
+            setFocusSegments([]);
+            setPendingFocus(focusPayload);
             setActiveFloorId(floorId);
+        } else {
+            setPendingFocus(focusPayload);
         }
     };
 

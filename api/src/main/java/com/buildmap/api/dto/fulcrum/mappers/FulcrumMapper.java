@@ -61,6 +61,7 @@ public interface FulcrumMapper {
     }
 
     default String generateQrCodeUrl(Fulcrum entity) {
+        if (!entity.isHasQr()) return null;
         if (entity.getFloor() == null) return null;
         return String.format("fulcrum/%d",
                 entity.getId());

@@ -6,6 +6,7 @@ import com.buildmap.api.dto.user.UserDto;
 import com.buildmap.api.dto.user.mappers.UserMapper;
 import com.buildmap.api.entities.user.Role;
 import com.buildmap.api.entities.user.User;
+import com.buildmap.api.exceptions.UserNotFoundException;
 import com.buildmap.api.exceptions.ValidationException;
 import com.buildmap.api.repos.UserRepository;
 import com.buildmap.api.services.JwtService;
@@ -95,10 +96,14 @@ public class AuthController {
 
         User user;
         if (request.getUserId() != null) {
-            user = userService.getById(request.getUserId());
+            try {
+                user = userService.getById(request.getUserId());
+            } catch (UserNotFoundException ex) {
+                user = createDevUser(request, "user_" + request.getUserId());
+            }
         } else if (request.getTelegramId() != null && !request.getTelegramId().isBlank()) {
             user = userRepository.findByTelegramId(request.getTelegramId())
-                    .orElseThrow(() -> new ValidationException("User not found"));
+                    .orElseGet(() -> createDevUser(request, request.getTelegramId()));
         } else {
             throw new ValidationException("userId or telegramId is required");
         }
@@ -106,6 +111,26 @@ public class AuthController {
         String token = jwtService.generateToken(user.getId());
         UserDto userDto = userMapper.toDto(user);
         return ResponseEntity.ok(new AuthResponseDto(token, userDto));
+    }
+
+    private User createDevUser(DevLoginRequest request, String fallbackKey) {
+        String telegramId = request.getTelegramId();
+        if (telegramId == null || telegramId.isBlank()) {
+            telegramId = "dev_" + fallbackKey;
+        }
+        if (userRepository.existsByTelegramIdAndDeletedFalse(telegramId)) {
+            telegramId = telegramId + "_" + System.currentTimeMillis();
+        }
+
+        User user = new User();
+        String name = request.getName();
+        if (name == null || name.isBlank()) {
+            name = "Dev User " + fallbackKey;
+        }
+        user.setName(name);
+        user.setTelegramId(telegramId);
+        user.setRole(Role.USER);
+        return userService.create(user);
     }
 
     @Data
@@ -119,6 +144,7 @@ public class AuthController {
         private Long userId;
         private String telegramId;
         private String secret;
+        private String name;
     }
 
     @PostMapping("/telegram")

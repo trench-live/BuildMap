@@ -31,8 +31,9 @@ public class FulcrumSaveDto {
     @NotNull
     private FulcrumType type;
 
-    @NotNull
     private FacingDirection facingDirection;
+
+    private Boolean hasQr;
 
     @NotNull
     private Long floorId;

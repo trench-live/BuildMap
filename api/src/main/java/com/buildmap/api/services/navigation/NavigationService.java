@@ -7,6 +7,7 @@ import com.buildmap.api.dto.route.RouteStepType;
 import com.buildmap.api.dto.route.mappers.RouteMapper;
 import com.buildmap.api.entities.mapping_area.fulcrum.Fulcrum;
 import com.buildmap.api.entities.mapping_area.fulcrum.FacingDirection;
+import com.buildmap.api.entities.mapping_area.fulcrum.FulcrumType;
 import com.buildmap.api.services.FloorService;
 import com.buildmap.api.services.FulcrumService;
 import com.buildmap.api.services.navigation.dijkstra_algorithm.DijkstraAlgorithm;
@@ -25,6 +26,7 @@ public class NavigationService {
     private final FulcrumService fulcrumService;
     private final RouteMapper routeMapper;
     private final DijkstraAlgorithm dijkstraAlgorithm;
+    private static final double LANDMARK_RADIUS = 0.1;
 
     public RouteDto findShortestPath(RouteRequestDto request) {
         // 1. Получаем стартовую и конечную точки для определения зоны
@@ -120,7 +122,7 @@ public class NavigationService {
                     && !from.getFloor().getId().equals(to.getFloor().getId());
 
             if (floorChanged) {
-                steps.add(buildFloorChangeStep(from, to));
+                steps.add(buildFloorChangeStep(from, to, graph));
                 previousVector = null;
                 previousWasFloorChange = true;
                 continue;
@@ -138,7 +140,7 @@ public class NavigationService {
                 baseVector = facingToVector(from.getFacingDirection());
             }
 
-            RouteStepDto turnStep = buildTurnStep(baseVector, segmentVector, from, to);
+            RouteStepDto turnStep = buildTurnStep(baseVector, segmentVector, from, to, graph);
             if (turnStep != null) {
                 steps.add(turnStep);
             }
@@ -155,7 +157,7 @@ public class NavigationService {
         return steps;
     }
 
-    private RouteStepDto buildFloorChangeStep(Fulcrum from, Fulcrum to) {
+    private RouteStepDto buildFloorChangeStep(Fulcrum from, Fulcrum to, Graph graph) {
         Integer fromLevel = from.getFloor() != null ? from.getFloor().getLevel() : null;
         Integer toLevel = to.getFloor() != null ? to.getFloor().getLevel() : null;
         String targetLabel;
@@ -179,10 +181,14 @@ public class NavigationService {
         step.setFromFulcrumId(from.getId());
         step.setToFulcrumId(to.getId());
         step.setFloorId(to.getFloor() != null ? to.getFloor().getId() : null);
+        String landmark = buildLandmarkHint(to, facingToVector(to.getFacingDirection()), graph, true);
+        if (landmark != null) {
+            step.setText(text + ". " + landmark);
+        }
         return step;
     }
 
-    private RouteStepDto buildTurnStep(Vector baseVector, Vector nextVector, Fulcrum from, Fulcrum to) {
+    private RouteStepDto buildTurnStep(Vector baseVector, Vector nextVector, Fulcrum from, Fulcrum to, Graph graph) {
         if (baseVector == null || baseVector.isZero() || nextVector == null || nextVector.isZero()) {
             return null;
         }
@@ -193,15 +199,21 @@ public class NavigationService {
         }
 
         if (angle >= 135.0) {
-            return buildStep(RouteStepType.U_TURN, "Развернитесь", from, to);
+            RouteStepDto step = buildStep(RouteStepType.U_TURN, "Развернитесь", from, to);
+            appendLandmark(step, from, nextVector, graph, true);
+            return step;
         }
 
         double cross = cross(baseVector, nextVector);
         if (cross > 0) {
-            return buildStep(RouteStepType.TURN_RIGHT, "Поверните направо", from, to);
+            RouteStepDto step = buildStep(RouteStepType.TURN_RIGHT, "Поверните направо", from, to);
+            appendLandmark(step, from, nextVector, graph, true);
+            return step;
         }
         if (cross < 0) {
-            return buildStep(RouteStepType.TURN_LEFT, "Поверните налево", from, to);
+            RouteStepDto step = buildStep(RouteStepType.TURN_LEFT, "Поверните налево", from, to);
+            appendLandmark(step, from, nextVector, graph, true);
+            return step;
         }
         return null;
     }
@@ -242,6 +254,61 @@ public class NavigationService {
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+
+    private void appendLandmark(RouteStepDto step, Fulcrum pivot, Vector facing, Graph graph, boolean excludeVerticals) {
+        if (step == null) return;
+        String landmark = buildLandmarkHint(pivot, facing, graph, excludeVerticals);
+        if (landmark != null) {
+            step.setText(step.getText() + ". " + landmark);
+        }
+    }
+
+    private String buildLandmarkHint(Fulcrum pivot, Vector facing, Graph graph, boolean excludeVerticals) {
+        if (pivot == null || facing == null || facing.isZero() || graph == null) return null;
+        if (pivot.getFloor() == null) return null;
+
+        Fulcrum best = null;
+        double bestDist = Double.MAX_VALUE;
+
+        for (Fulcrum candidate : graph.getNodes().values()) {
+            if (candidate == null || candidate.getId() == null) continue;
+            if (candidate.getId().equals(pivot.getId())) continue;
+            if (candidate.getFloor() == null || pivot.getFloor() == null) continue;
+            if (!candidate.getFloor().getId().equals(pivot.getFloor().getId())) continue;
+            if (candidate.getType() == null || candidate.getType() == FulcrumType.CORRIDOR) continue;
+            if (excludeVerticals && (candidate.getType() == FulcrumType.STAIRS || candidate.getType() == FulcrumType.ELEVATOR)) {
+                continue;
+            }
+            String name = candidate.getName();
+            if (name == null || name.isBlank()) continue;
+            if (candidate.getX() == null || candidate.getY() == null || pivot.getX() == null || pivot.getY() == null) continue;
+
+            double dx = candidate.getX() - pivot.getX();
+            double dy = candidate.getY() - pivot.getY();
+            double dist = Math.hypot(dx, dy);
+            if (dist > LANDMARK_RADIUS) continue;
+            double dot = facing.x * dx + facing.y * dy;
+            if (dot <= 0) continue;
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = candidate;
+            }
+        }
+
+        if (best == null) return null;
+
+        Vector toCandidate = new Vector(best.getX() - pivot.getX(), best.getY() - pivot.getY());
+        double cross = cross(facing, toCandidate);
+        String side;
+        if (Math.abs(cross) < 1e-6) {
+            side = "Рядом";
+        } else if (cross > 0) {
+            side = "Справа";
+        } else {
+            side = "Слева";
+        }
+        return side + " будет " + best.getName();
     }
 
     private RouteStepDto buildStep(RouteStepType type, String text, Fulcrum from, Fulcrum to) {
@@ -285,7 +352,7 @@ public class NavigationService {
 
     private Vector facingToVector(FacingDirection direction) {
         if (direction == null) {
-            return new Vector(0, -1);
+            return null;
         }
         return switch (direction) {
             case UP -> new Vector(0, -1);
