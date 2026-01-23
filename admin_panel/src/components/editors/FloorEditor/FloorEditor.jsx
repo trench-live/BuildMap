@@ -13,7 +13,6 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
         setEditorState,
         isSaving: floorSaving, // переименовываем, чтобы избежать конфликта
         handleSave: handleFloorSave,
-        handleZoom,
         handleResetView,
         handleClearCanvas,
         setMode,
@@ -295,8 +294,6 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                 <div className="floor-editor-content">
                     <EditorToolbar
                         onImageUpload={handleImageUpload}
-                        onZoomIn={() => handleZoom(1.2)}
-                        onZoomOut={() => handleZoom(0.8)}
                         onResetView={handleResetView}
                         onClearCanvas={handleClearCanvas}
                         onSave={handleSaveWithReload}

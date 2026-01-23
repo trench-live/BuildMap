@@ -139,14 +139,6 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         }
     }, [editorState.svgContent, floor, onSave, onClose]);
 
-    // Масштабирование
-    const handleZoom = useCallback((zoomFactor) => {
-        setEditorState(prev => ({
-            ...prev,
-            scale: Math.max(0.1, Math.min(5, prev.scale * zoomFactor))
-        }));
-    }, []);
-
     // Сброс вида
     const handleResetView = useCallback(() => {
         if (editorState.svgContent && containerSize.width > 0 && containerSize.height > 0) {
@@ -226,7 +218,6 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         setEditorState,
         isSaving,
         handleSave,
-        handleZoom,
         handleResetView,
         handleClearCanvas,
         setMode,

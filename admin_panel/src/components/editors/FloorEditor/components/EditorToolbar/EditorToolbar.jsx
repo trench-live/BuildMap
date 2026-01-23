@@ -4,8 +4,6 @@ import './EditorToolbar.css';
 
 const EditorToolbar = ({
                            onImageUpload,
-                           onZoomIn,
-                           onZoomOut,
                            onResetView,
                            onClearCanvas,
                            onSave,
@@ -20,7 +18,7 @@ const EditorToolbar = ({
                            fulcrumsCount = 0,
                            connectionsCount = 0
                        }) => {
-    const gridPercent = Number.isFinite(gridStep) ? Math.round(gridStep * 100) : null;
+    const gridLabel = gridEnabled ? 'Сетка: вкл' : 'Сетка: выкл';
     const handleImageUploadClick = () => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -51,22 +49,6 @@ const EditorToolbar = ({
                     <Button
                         variant="secondary"
                         size="small"
-                        onClick={onZoomIn}
-                        disabled={!hasContent}
-                    >
-                        🔍 Увеличить
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        size="small"
-                        onClick={onZoomOut}
-                        disabled={!hasContent}
-                    >
-                        🔎 Уменьшить
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        size="small"
                         onClick={onResetView}
                         disabled={!hasContent}
                     >
@@ -79,8 +61,9 @@ const EditorToolbar = ({
                         variant="secondary"
                         size="small"
                         onClick={onToggleGrid}
+                        className="grid-toggle"
                     >
-                        {gridEnabled ? 'Сетка: вкл' : 'Сетка: выкл'}
+                        {gridLabel}
                     </Button>
                     <Button
                         variant="secondary"
@@ -104,9 +87,6 @@ const EditorToolbar = ({
 
                 <div className="toolbar-stats">
                     <span className="stat-item">📏 {Math.round(scale * 100)}%</span>
-                    {gridEnabled && gridPercent !== null ? (
-                        <span className="stat-item">Сетка {gridPercent}%</span>
-                    ) : null}
                     <span className="stat-item">📍 {fulcrumsCount}</span>
                     <span className="stat-item">🔗 {connectionsCount}</span>
                 </div>
