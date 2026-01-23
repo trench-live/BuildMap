@@ -9,12 +9,18 @@ const EditorToolbar = ({
                            onResetView,
                            onClearCanvas,
                            onSave,
+                           onToggleGrid,
+                           onGridStepIncrease,
+                           onGridStepDecrease,
                            scale,
+                           gridEnabled = false,
+                           gridStep,
                            hasContent,
                            isSaving,
                            fulcrumsCount = 0,
                            connectionsCount = 0
                        }) => {
+    const gridPercent = Number.isFinite(gridStep) ? Math.round(gridStep * 100) : null;
     const handleImageUploadClick = () => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -68,8 +74,39 @@ const EditorToolbar = ({
                     </Button>
                 </div>
 
+                <div className="toolbar-group">
+                    <Button
+                        variant="secondary"
+                        size="small"
+                        onClick={onToggleGrid}
+                    >
+                        {gridEnabled ? 'Сетка: вкл' : 'Сетка: выкл'}
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        size="small"
+                        onClick={onGridStepDecrease}
+                        disabled={!gridEnabled}
+                        title="Уменьшить шаг сетки"
+                    >
+                        Сетка -
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        size="small"
+                        onClick={onGridStepIncrease}
+                        disabled={!gridEnabled}
+                        title="Увеличить шаг сетки"
+                    >
+                        Сетка +
+                    </Button>
+                </div>
+
                 <div className="toolbar-stats">
                     <span className="stat-item">📏 {Math.round(scale * 100)}%</span>
+                    {gridEnabled && gridPercent !== null ? (
+                        <span className="stat-item">Сетка {gridPercent}%</span>
+                    ) : null}
                     <span className="stat-item">📍 {fulcrumsCount}</span>
                     <span className="stat-item">🔗 {connectionsCount}</span>
                 </div>

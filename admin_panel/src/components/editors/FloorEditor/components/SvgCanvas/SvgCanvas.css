@@ -55,6 +55,23 @@
     width: 100%;
     height: 100%;
 }
+
+.grid-overlay {
+    position: absolute;
+    pointer-events: none;
+    z-index: 2;
+    background-image:
+        linear-gradient(to right, rgba(148, 163, 184, 0.25) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.25) 1px, transparent 1px),
+        linear-gradient(to right, rgba(148, 163, 184, 0.45) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.45) 1px, transparent 1px);
+    background-size:
+        var(--grid-step-x) var(--grid-step-y),
+        var(--grid-step-x) var(--grid-step-y),
+        var(--grid-major-step-x) var(--grid-major-step-y),
+        var(--grid-major-step-x) var(--grid-major-step-y);
+    background-position: 0 0, 0 0, 0 0, 0 0;
+}
 .fulcrums-overlay {
     position: absolute;
     top: 0;

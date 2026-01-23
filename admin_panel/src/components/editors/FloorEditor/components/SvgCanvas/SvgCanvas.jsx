@@ -36,6 +36,13 @@ const SvgCanvas = ({
         handleWheel
     } = useSvgCanvas(editorState, setEditorState);
 
+    const snapToGrid = useCallback((value, step) => {
+        if (!Number.isFinite(step) || step <= 0) return value;
+        const snapped = Math.round(value / step) * step;
+        const clamped = Math.min(1, Math.max(0, snapped));
+        return Number(clamped.toFixed(6));
+    }, []);
+
     const updateSize = useCallback(() => {
         if (!containerRef.current) return;
         const rect = containerRef.current.getBoundingClientRect();
@@ -99,6 +106,27 @@ const SvgCanvas = ({
         };
     }, [canvasSize.width, canvasSize.height, svgSize]);
 
+    const gridMetrics = useMemo(() => {
+        if (!editorState.gridEnabled || !Number.isFinite(editorState.gridStep)) {
+            return null;
+        }
+        if (!imageRect.width || !imageRect.height) {
+            return null;
+        }
+        const baseSize = Math.min(imageRect.width, imageRect.height);
+        const stepPx = baseSize * editorState.gridStep;
+        if (!Number.isFinite(stepPx) || stepPx <= 0) {
+            return null;
+        }
+        return {
+            stepPx,
+            stepX: stepPx,
+            stepY: stepPx,
+            stepXNorm: stepPx / imageRect.width,
+            stepYNorm: stepPx / imageRect.height
+        };
+    }, [editorState.gridEnabled, editorState.gridStep, imageRect]);
+
     const handleContextMenu = (e) => {
         e.preventDefault();
         const container = containerRef.current;
@@ -112,7 +140,15 @@ const SvgCanvas = ({
             editorState.scale
         );
 
-        onFulcrumCreate?.({ x: relativeCoords.x, y: relativeCoords.y }, e);
+        let nextX = relativeCoords.x;
+        let nextY = relativeCoords.y;
+
+        if (gridMetrics) {
+            nextX = snapToGrid(nextX, gridMetrics.stepXNorm);
+            nextY = snapToGrid(nextY, gridMetrics.stepYNorm);
+        }
+
+        onFulcrumCreate?.({ x: nextX, y: nextY }, e);
     };
 
     const handleFulcrumDragStart = (fulcrum, e) => {
@@ -229,6 +265,22 @@ const SvgCanvas = ({
 
     const groupedConnections = useMemo(() => getGroupedConnections(), [getGroupedConnections]);
 
+    const gridStyle = useMemo(() => {
+        if (!gridMetrics) {
+            return null;
+        }
+        return {
+            left: `${imageRect.offsetX}px`,
+            top: `${imageRect.offsetY}px`,
+            width: `${imageRect.width}px`,
+            height: `${imageRect.height}px`,
+            '--grid-step-x': `${gridMetrics.stepX}px`,
+            '--grid-step-y': `${gridMetrics.stepY}px`,
+            '--grid-major-step-x': `${gridMetrics.stepPx * 5}px`,
+            '--grid-major-step-y': `${gridMetrics.stepPx * 5}px`
+        };
+    }, [gridMetrics, imageRect]);
+
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
@@ -276,6 +328,9 @@ const SvgCanvas = ({
                             isDragging={editorState.isDragging}
                         />
                     </div>
+                ) : null}
+                {gridStyle ? (
+                    <div className="grid-overlay" style={gridStyle} />
                 ) : null}
                 {tempConnection ? (
                     <div className="temp-connection">

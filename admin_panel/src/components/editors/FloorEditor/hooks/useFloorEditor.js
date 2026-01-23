@@ -2,6 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { floorAPI } from '../../../../services/api';
 import { EDITOR_MODES } from '../types/editorTypes';
 
+const GRID_STEP_DEFAULT = 0.04;
+const GRID_STEP_MIN = 0.005;
+const GRID_STEP_MAX = 0.2;
+
+const clampGridStep = (value) => {
+    if (!Number.isFinite(value)) return GRID_STEP_DEFAULT;
+    const clamped = Math.max(GRID_STEP_MIN, Math.min(GRID_STEP_MAX, value));
+    return Number(clamped.toFixed(6));
+};
+
 export const useFloorEditor = (floor, onSave, onClose) => {
     const [editorState, setEditorState] = useState({
         svgContent: '',
@@ -13,7 +23,9 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         mode: EDITOR_MODES.VIEW,
         selectedFulcrum: null,
         selectedConnection: null,
-        dragStartFulcrum: null
+        dragStartFulcrum: null,
+        gridEnabled: true,
+        gridStep: GRID_STEP_DEFAULT
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -75,7 +87,9 @@ export const useFloorEditor = (floor, onSave, onClose) => {
             mode: EDITOR_MODES.VIEW,
             selectedFulcrum: null,
             selectedConnection: null,
-            dragStartFulcrum: null
+            dragStartFulcrum: null,
+            gridEnabled: prev.gridEnabled ?? true,
+            gridStep: clampGridStep(prev.gridStep ?? GRID_STEP_DEFAULT)
         }));
     }, [floor]);
 
@@ -186,6 +200,27 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         }));
     }, []);
 
+    const toggleGrid = useCallback(() => {
+        setEditorState(prev => ({
+            ...prev,
+            gridEnabled: !prev.gridEnabled
+        }));
+    }, []);
+
+    const increaseGridStep = useCallback(() => {
+        setEditorState(prev => ({
+            ...prev,
+            gridStep: clampGridStep((prev.gridStep || GRID_STEP_DEFAULT) * 2)
+        }));
+    }, []);
+
+    const decreaseGridStep = useCallback(() => {
+        setEditorState(prev => ({
+            ...prev,
+            gridStep: clampGridStep((prev.gridStep || GRID_STEP_DEFAULT) / 2)
+        }));
+    }, []);
+
     return {
         editorState,
         setEditorState,
@@ -197,6 +232,9 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         setMode,
         startConnectionDrag,
         endConnectionDrag,
+        toggleGrid,
+        increaseGridStep,
+        decreaseGridStep,
         updateContainerSize,
         containerSize,
         svgSize

@@ -18,7 +18,10 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
         handleClearCanvas,
         setMode,
         svgSize,
-        updateContainerSize
+        updateContainerSize,
+        toggleGrid,
+        increaseGridStep,
+        decreaseGridStep
     } = useFloorEditor(floor, onSave, onClose);
 
     const { handleImageUpload } = useImageUpload(setEditorState);
@@ -297,7 +300,12 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                         onResetView={handleResetView}
                         onClearCanvas={handleClearCanvas}
                         onSave={handleSaveWithReload}
+                        onToggleGrid={toggleGrid}
+                        onGridStepIncrease={increaseGridStep}
+                        onGridStepDecrease={decreaseGridStep}
                         scale={editorState.scale}
+                        gridEnabled={editorState.gridEnabled}
+                        gridStep={editorState.gridStep}
                         hasContent={!!editorState.svgContent}
                         isSaving={isSaving || floorSaving}
                         fulcrumsCount={fulcrums.length}
@@ -308,14 +316,14 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                         editorState={editorState}
                         setEditorState={setEditorState}
                         fulcrums={fulcrums}
-                    connections={connections}
-                    svgSize={svgSize}
-                    updateContainerSize={updateContainerSize}
-                    onFulcrumCreate={handleFulcrumCreate}
-                    onFulcrumContextMenu={handleFulcrumContextMenu}
-                    onConnectionCreate={handleConnectionCreate}
-                    onConnectionContextMenu={handleConnectionContextMenu}
-                />
+                        connections={connections}
+                        svgSize={svgSize}
+                        updateContainerSize={updateContainerSize}
+                        onFulcrumCreate={handleFulcrumCreate}
+                        onFulcrumContextMenu={handleFulcrumContextMenu}
+                        onConnectionCreate={handleConnectionCreate}
+                        onConnectionContextMenu={handleConnectionContextMenu}
+                    />
                 </div>
 
                 {/* Модальное окно для fulcrum */}
