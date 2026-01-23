@@ -96,7 +96,11 @@ const NavigationMap = ({
     routePath,
     routeSegments,
     focusFulcrum,
-    endFulcrumId
+    endFulcrumId,
+    focusTargets,
+    focusSegments,
+    focusAnimate,
+    focusYOffset
 }) => {
     const containerRef = useRef(null);
     const transformRef = useRef(null);
@@ -162,6 +166,74 @@ const NavigationMap = ({
         transformRef.current.setTransform(positionX, positionY, targetScale, 0, 'easeOut');
     }, [containerSize.width, containerSize.height, coordinateWidth, coordinateHeight, focusPoint.x, focusPoint.y]);
 
+    useEffect(() => {
+        if (!focusTargets || focusTargets.length === 0) return;
+        if (!containerSize.width || !containerSize.height) return;
+        if (!coordinateWidth || !coordinateHeight) return;
+        if (!transformRef.current) return;
+
+        const points = focusTargets
+            .map((target) => ({
+                x: mapCoordinate(target.x, coordinateWidth, svgMeta.originX),
+                y: mapCoordinate(target.y, coordinateHeight, svgMeta.originY)
+            }))
+            .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+
+        if (!points.length) return;
+
+        if (points.length === 1) {
+            const point = points[0];
+            const fitScale = Math.min(
+                containerSize.width / coordinateWidth,
+                containerSize.height / coordinateHeight
+            );
+            const targetScale = Math.max(1.2, fitScale * 2.2);
+
+            const positionX = containerSize.width / 2 - point.x * targetScale;
+            const shiftY = Math.min(containerSize.height * 0.25, (focusYOffset || 0) * 0.6);
+            const positionY = containerSize.height / 2 - point.y * targetScale - shiftY;
+
+            const animationTime = focusAnimate === false ? 0 : 300;
+            transformRef.current.setTransform(positionX, positionY, targetScale, animationTime, 'easeOut');
+            return;
+        }
+
+        let minX = points[0].x;
+        let maxX = points[0].x;
+        let minY = points[0].y;
+        let maxY = points[0].y;
+
+        points.forEach((point) => {
+            minX = Math.min(minX, point.x);
+            maxX = Math.max(maxX, point.x);
+            minY = Math.min(minY, point.y);
+            maxY = Math.max(maxY, point.y);
+        });
+
+        const padding = 0.18;
+        const boundsWidth = Math.max(maxX - minX, coordinateWidth * 0.02);
+        const boundsHeight = Math.max(maxY - minY, coordinateHeight * 0.02);
+
+        const scaleX = containerSize.width / (boundsWidth * (1 + padding * 2));
+        const scaleY = containerSize.height / (boundsHeight * (1 + padding * 2));
+        const fitScale = Math.min(
+            containerSize.width / coordinateWidth,
+            containerSize.height / coordinateHeight
+        );
+        const rawScale = Math.min(scaleX, scaleY);
+        const targetScale = Math.max(0.3, Math.min(8, Math.min(rawScale, fitScale * 3.6)));
+
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+        const shiftY = Math.min(containerSize.height * 0.25, (focusYOffset || 0) * 0.6);
+
+        const positionX = containerSize.width / 2 - centerX * targetScale;
+        const positionY = containerSize.height / 2 - centerY * targetScale - shiftY;
+
+        const animationTime = focusAnimate === false ? 0 : 300;
+        transformRef.current.setTransform(positionX, positionY, targetScale, animationTime, 'easeOut');
+    }, [focusTargets, focusYOffset, containerSize.width, containerSize.height, coordinateWidth, coordinateHeight, svgMeta.originX, svgMeta.originY]);
+
     const segments = useMemo(() => {
         if (routeSegments?.length) {
             return routeSegments;
@@ -201,11 +273,16 @@ const NavigationMap = ({
                             const fromY = mapCoordinate(from.y, coordinateHeight, svgMeta.originY);
                             const toX = mapCoordinate(to.x, coordinateWidth, svgMeta.originX);
                             const toY = mapCoordinate(to.y, coordinateHeight, svgMeta.originY);
+                            const isFocus = (focusSegments || []).some(
+                                ([focusFrom, focusTo]) =>
+                                    (focusFrom.id === from.id && focusTo.id === to.id)
+                                    || (focusFrom.id === to.id && focusTo.id === from.id)
+                            );
 
                             return (
                                 <line
                                     key={`${from.id}-${to.id}`}
-                                    className="route-line"
+                                    className={`route-line${isFocus ? ' is-focus' : ''}`}
                                     x1={fromX}
                                     y1={fromY}
                                     x2={toX}
@@ -216,6 +293,7 @@ const NavigationMap = ({
                         {fulcrums.map((fulcrum) => {
                             const isStart = fulcrum.id === focusFulcrum?.id;
                             const isEnd = fulcrum.id === endFulcrumId;
+                            const isFocused = (focusTargets || []).some((target) => target.id === fulcrum.id);
                             const variant = isStart ? 'start' : isEnd ? 'end' : 'path';
                             const adjustedX = mapCoordinate(fulcrum.x, coordinateWidth, svgMeta.originX);
                             const adjustedY = mapCoordinate(fulcrum.y, coordinateHeight, svgMeta.originY);
@@ -223,7 +301,7 @@ const NavigationMap = ({
                             return (
                                 <circle
                                     key={fulcrum.id}
-                                    className={`fulcrum-marker ${variant}`}
+                                    className={`fulcrum-marker ${variant}${isFocused ? ' is-focus' : ''}`}
                                     cx={adjustedX}
                                     cy={adjustedY}
                                     r={isStart || isEnd ? 8 : 7}

@@ -1,6 +1,7 @@
 package com.buildmap.api.dto.fulcrum;
 
 import com.buildmap.api.dto.fulcrum.connections.FulcrumConnectionDto;
+import com.buildmap.api.entities.mapping_area.fulcrum.FacingDirection;
 import com.buildmap.api.entities.mapping_area.fulcrum.FulcrumType;
 import lombok.Data;
 
@@ -14,6 +15,8 @@ public class FulcrumDto {
     private Double x;
     private Double y;
     private FulcrumType type;
+    private FacingDirection facingDirection;
+    private boolean hasQr;
     private String qrCodeId;
     private Long mappingAreaId;
     private Long floorId;

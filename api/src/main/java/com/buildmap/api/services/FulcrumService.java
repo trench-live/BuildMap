@@ -26,6 +26,7 @@ public class FulcrumService {
 
     @Transactional
     public Fulcrum create(FulcrumSaveDto fulcrumDto) {
+        validateQrSettings(fulcrumDto);
         // Просто проверяем существование этажа (для валидации)
 
         Fulcrum fulcrum = fulcrumMapper.toEntity(fulcrumDto);
@@ -53,6 +54,7 @@ public class FulcrumService {
 
     @Transactional
     public Fulcrum update(Long id, FulcrumSaveDto fulcrumDto) {
+        validateQrSettings(fulcrumDto);
         Fulcrum existingFulcrum = getById(id);
         fulcrumMapper.updateEntity(fulcrumDto, existingFulcrum);
         return fulcrumRepository.save(existingFulcrum);
@@ -101,4 +103,11 @@ public class FulcrumService {
         fulcrum.getConnections().clear();
         fulcrumRepository.save(fulcrum);
     }
+
+    private void validateQrSettings(FulcrumSaveDto fulcrumDto) {
+        if (Boolean.TRUE.equals(fulcrumDto.getHasQr()) && fulcrumDto.getFacingDirection() == null) {
+            throw new IllegalArgumentException("Facing direction is required when QR is enabled");
+        }
+    }
+
 }

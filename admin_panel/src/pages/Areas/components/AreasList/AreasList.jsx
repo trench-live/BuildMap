@@ -1,4 +1,5 @@
 import React from 'react';
+import { API_BASE_URL } from '../../../../services/api';
 import AreaCard from '../AreaCard/AreaCard';
 import './AreasList.css';
 
@@ -16,6 +17,11 @@ const AreasList = ({
         );
     }
 
+    const handleOpenQrPdf = (area) => {
+        const url = `${API_BASE_URL}/api/fulcrum/area/${area.id}/qr.pdf?sizeMm=140`;
+        window.open(url, '_blank', 'noopener');
+    };
+
     const handleNavigateToFloors = (area) => {
         // TODO: Реализовать навигацию к этажам
         console.log('Navigate to floors for area:', area.id);
@@ -31,6 +37,7 @@ const AreasList = ({
                     onEdit={onEditArea}
                     onDelete={onDeleteArea}
                     onNavigate={() => handleNavigateToFloors(area)}
+                    onPrintQr={() => handleOpenQrPdf(area)}
                 />
             ))}
         </div>

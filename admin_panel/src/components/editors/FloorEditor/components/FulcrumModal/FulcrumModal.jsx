@@ -4,7 +4,7 @@ import ModalHeader from '../../../../common/Modal/components/ModalHeader/ModalHe
 import ModalContent from '../../../../common/Modal/components/ModalContent/ModalContent';
 import ModalActions from '../../../../common/Modal/components/ModalActions/ModalActions';
 import Button from '../../../../common/Modal/components/Button/Button';
-import { FULCRUM_TYPES } from '../../types/editorTypes';
+import { FACING_DIRECTIONS, FULCRUM_TYPES } from '../../types/editorTypes';
 import { FULCRUM_POINT_ICONS } from '../FulcrumPoint/types/fulcrumTypes';
 import { useFulcrumForm } from './hooks/useFulcrumForm';
 import { floorAPI, fulcrumAPI } from '../../../../../services/api';
@@ -100,6 +100,8 @@ const FulcrumModal = ({
                     name: fulcrum.name || '',
                     description: fulcrum.description || '',
                     type: fulcrum.type || FULCRUM_TYPES.ROOM,
+                    facingDirection: fulcrum.facingDirection || FACING_DIRECTIONS.UP,
+                    hasQr: Boolean(fulcrum.hasQr),
                     x: fulcrum.x || 0,
                     y: fulcrum.y || 0,
                     floorId: fulcrum.floorId || floorId
@@ -292,6 +294,38 @@ const FulcrumModal = ({
                             {errors.type && <span className="error-message">{errors.type}</span>}
                         </div>
 
+                        <div className="form-group checkbox-group">
+                            <label className="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.hasQr}
+                                    onChange={(e) => updateField('hasQr', e.target.checked)}
+                                />
+                                <span className="checkbox-text">Has QR</span>
+                            </label>
+                        </div>
+
+                        {formData.hasQr && (
+                            <div className="form-group">
+                                <label htmlFor="fulcrum-facing">Direction</label>
+                                <select
+                                    id="fulcrum-facing"
+                                    value={formData.facingDirection}
+                                    onChange={(e) => updateField('facingDirection', e.target.value)}
+                                    className={errors.facingDirection ? 'error' : ''}
+                                >
+                                    {Object.values(FACING_DIRECTIONS).map(direction => (
+                                        <option key={direction} value={direction}>
+                                            {getFacingLabel(direction)}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.facingDirection && (
+                                    <span className="error-message">{errors.facingDirection}</span>
+                                )}
+                            </div>
+                        )}
+
                         <div className="form-group">
                             <label htmlFor="fulcrum-description">Описание</label>
                             <textarea
@@ -440,6 +474,16 @@ const FulcrumModal = ({
 };
 
 // Вспомогательная функция для получения читабельных названий типов
+const getFacingLabel = (direction) => {
+    const labels = {
+        [FACING_DIRECTIONS.UP]: 'Up',
+        [FACING_DIRECTIONS.RIGHT]: 'Right',
+        [FACING_DIRECTIONS.DOWN]: 'Down',
+        [FACING_DIRECTIONS.LEFT]: 'Left'
+    };
+    return labels[direction] || direction;
+};
+
 const getTypeLabel = (type) => {
     const labels = {
         [FULCRUM_TYPES.ROOM]: 'Комната',

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -44,6 +44,7 @@ export const authAPI = {
     telegramLogin: (telegramData) => api.post('/api/auth/telegram', telegramData),
     logout: () => api.post('/api/auth/logout'),
     getMe: () => api.get('/api/auth/me'),
+    devLogin: (payload) => api.post('/api/auth/dev-login', payload),
 };
 
 // Остальные API методы остаются без изменений

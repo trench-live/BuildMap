@@ -8,13 +8,17 @@ import com.buildmap.api.entities.mapping_area.Floor;
 import com.buildmap.api.entities.mapping_area.fulcrum.Fulcrum;
 import com.buildmap.api.services.FloorService;
 import com.buildmap.api.services.FulcrumService;
+import com.buildmap.api.services.QrPdfService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/fulcrum")
@@ -24,6 +28,7 @@ public class FulcrumController {
     private final FulcrumService fulcrumService;
     private final FulcrumMapper fulcrumMapper;
     private final FloorService floorService;
+    private final QrPdfService qrPdfService;
 
     @PostMapping
     public ResponseEntity<FulcrumDto> create(@Valid @RequestBody FulcrumSaveDto fulcrumDto) {
@@ -48,6 +53,27 @@ public class FulcrumController {
             @RequestParam(name = "deleted", required = false) Boolean deleted) {
         List<Fulcrum> fulcrums = fulcrumService.getAllByAreaId(areaId, deleted);
         return ResponseEntity.ok(fulcrumMapper.toDtoList(fulcrums));
+    }
+
+    @GetMapping("/area/{areaId}/qr.pdf")
+    public ResponseEntity<byte[]> getAreaQrPdf(
+            @PathVariable Long areaId,
+            @RequestParam(name = "sizeMm", defaultValue = "140") int sizeMm) {
+        List<Fulcrum> fulcrums = fulcrumService.getAllByAreaId(areaId, false)
+                .stream()
+                .filter(fulcrum -> !fulcrum.isDeleted())
+                .filter(Fulcrum::isHasQr)
+                .collect(Collectors.toList());
+
+        if (fulcrums.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        byte[] pdf = qrPdfService.buildQrPdf(fulcrums, sizeMm);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=area-" + areaId + "-qr.pdf");
+        return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
     }
 
     @GetMapping("/{fulcrumId}")

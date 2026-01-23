@@ -21,3 +21,10 @@ export const FULCRUM_TYPES = {
     EMERGENCY_EXIT: 'EMERGENCY_EXIT',
     LANDMARK: 'LANDMARK'
 };
+
+export const FACING_DIRECTIONS = {
+    UP: 'UP',
+    RIGHT: 'RIGHT',
+    DOWN: 'DOWN',
+    LEFT: 'LEFT'
+};
