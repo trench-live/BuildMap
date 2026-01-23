@@ -302,7 +302,6 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                         onGridStepDecrease={decreaseGridStep}
                         scale={editorState.scale}
                         gridEnabled={editorState.gridEnabled}
-                        gridStep={editorState.gridStep}
                         hasContent={!!editorState.svgContent}
                         isSaving={isSaving || floorSaving}
                         fulcrumsCount={fulcrums.length}

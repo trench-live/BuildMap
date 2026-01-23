@@ -5,11 +5,51 @@ import { EDITOR_MODES } from '../types/editorTypes';
 const GRID_STEP_DEFAULT = 0.04;
 const GRID_STEP_MIN = 0.005;
 const GRID_STEP_MAX = 0.2;
+const GRID_OFFSET_STORAGE_PREFIX = 'buildmap.floorEditor.gridOffset.';
 
 const clampGridStep = (value) => {
     if (!Number.isFinite(value)) return GRID_STEP_DEFAULT;
     const clamped = Math.max(GRID_STEP_MIN, Math.min(GRID_STEP_MAX, value));
     return Number(clamped.toFixed(6));
+};
+
+const clamp01 = (value) => Math.min(1, Math.max(0, value));
+
+const normalizeGridOffset = (offset) => {
+    if (!offset || typeof offset !== 'object') {
+        return { x: 0, y: 0 };
+    }
+    const x = Number(offset.x);
+    const y = Number(offset.y);
+    return {
+        x: Number.isFinite(x) ? clamp01(x) : 0,
+        y: Number.isFinite(y) ? clamp01(y) : 0
+    };
+};
+
+const loadGridOffset = (floorId) => {
+    if (!floorId) return null;
+    try {
+        const raw = localStorage.getItem(`${GRID_OFFSET_STORAGE_PREFIX}${floorId}`);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return normalizeGridOffset(parsed);
+    } catch {
+        return null;
+    }
+};
+
+const saveGridOffset = (floorId, offset) => {
+    if (!floorId) return;
+    try {
+        const normalized = normalizeGridOffset(offset);
+        localStorage.setItem(
+            `${GRID_OFFSET_STORAGE_PREFIX}${floorId}`,
+            JSON.stringify(normalized)
+        );
+    } catch {
+        // ignore storage errors
+    }
 };
 
 export const useFloorEditor = (floor, onSave, onClose) => {
@@ -25,7 +65,8 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         selectedConnection: null,
         dragStartFulcrum: null,
         gridEnabled: true,
-        gridStep: GRID_STEP_DEFAULT
+        gridStep: GRID_STEP_DEFAULT,
+        gridOffset: { x: 0, y: 0 }
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -78,6 +119,8 @@ export const useFloorEditor = (floor, onSave, onClose) => {
     useEffect(() => {
         if (!floor) return;
 
+        const savedGridOffset = loadGridOffset(floor.id);
+
         setEditorState(prev => ({
             ...prev,
             svgContent: floor.svgPlan || '',
@@ -89,9 +132,15 @@ export const useFloorEditor = (floor, onSave, onClose) => {
             selectedConnection: null,
             dragStartFulcrum: null,
             gridEnabled: prev.gridEnabled ?? true,
-            gridStep: clampGridStep(prev.gridStep ?? GRID_STEP_DEFAULT)
+            gridStep: clampGridStep(prev.gridStep ?? GRID_STEP_DEFAULT),
+            gridOffset: savedGridOffset ?? normalizeGridOffset(prev.gridOffset)
         }));
     }, [floor]);
+
+    useEffect(() => {
+        if (!floor?.id) return;
+        saveGridOffset(floor.id, editorState.gridOffset);
+    }, [floor?.id, editorState.gridOffset]);
 
     // Подгоняем содержимое, когда есть контент и известен размер контейнера
     useEffect(() => {

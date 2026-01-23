@@ -12,7 +12,6 @@ const EditorToolbar = ({
                            onGridStepDecrease,
                            scale,
                            gridEnabled = false,
-                           gridStep,
                            hasContent,
                            isSaving,
                            fulcrumsCount = 0,
