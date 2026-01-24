@@ -4,17 +4,20 @@ import './EditorToolbar.css';
 
 const EditorToolbar = ({
                            onImageUpload,
-                           onZoomIn,
-                           onZoomOut,
                            onResetView,
                            onClearCanvas,
                            onSave,
+                           onToggleGrid,
+                           onGridStepIncrease,
+                           onGridStepDecrease,
                            scale,
+                           gridEnabled = false,
                            hasContent,
                            isSaving,
                            fulcrumsCount = 0,
                            connectionsCount = 0
                        }) => {
+    const gridLabel = gridEnabled ? 'Сетка: вкл' : 'Сетка: выкл';
     const handleImageUploadClick = () => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -45,26 +48,39 @@ const EditorToolbar = ({
                     <Button
                         variant="secondary"
                         size="small"
-                        onClick={onZoomIn}
-                        disabled={!hasContent}
-                    >
-                        🔍 Увеличить
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        size="small"
-                        onClick={onZoomOut}
-                        disabled={!hasContent}
-                    >
-                        🔎 Уменьшить
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        size="small"
                         onClick={onResetView}
                         disabled={!hasContent}
                     >
                         🏠 Сбросить вид
+                    </Button>
+                </div>
+
+                <div className="toolbar-group">
+                    <Button
+                        variant="secondary"
+                        size="small"
+                        onClick={onToggleGrid}
+                        className="grid-toggle"
+                    >
+                        {gridLabel}
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        size="small"
+                        onClick={onGridStepDecrease}
+                        disabled={!gridEnabled}
+                        title="Уменьшить шаг сетки"
+                    >
+                        Сетка -
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        size="small"
+                        onClick={onGridStepIncrease}
+                        disabled={!gridEnabled}
+                        title="Увеличить шаг сетки"
+                    >
+                        Сетка +
                     </Button>
                 </div>
 

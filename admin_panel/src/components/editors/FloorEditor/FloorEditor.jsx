@@ -13,12 +13,14 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
         setEditorState,
         isSaving: floorSaving, // переименовываем, чтобы избежать конфликта
         handleSave: handleFloorSave,
-        handleZoom,
         handleResetView,
         handleClearCanvas,
         setMode,
         svgSize,
-        updateContainerSize
+        updateContainerSize,
+        toggleGrid,
+        increaseGridStep,
+        decreaseGridStep
     } = useFloorEditor(floor, onSave, onClose);
 
     const { handleImageUpload } = useImageUpload(setEditorState);
@@ -292,12 +294,14 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                 <div className="floor-editor-content">
                     <EditorToolbar
                         onImageUpload={handleImageUpload}
-                        onZoomIn={() => handleZoom(1.2)}
-                        onZoomOut={() => handleZoom(0.8)}
                         onResetView={handleResetView}
                         onClearCanvas={handleClearCanvas}
                         onSave={handleSaveWithReload}
+                        onToggleGrid={toggleGrid}
+                        onGridStepIncrease={increaseGridStep}
+                        onGridStepDecrease={decreaseGridStep}
                         scale={editorState.scale}
+                        gridEnabled={editorState.gridEnabled}
                         hasContent={!!editorState.svgContent}
                         isSaving={isSaving || floorSaving}
                         fulcrumsCount={fulcrums.length}
@@ -308,14 +312,14 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                         editorState={editorState}
                         setEditorState={setEditorState}
                         fulcrums={fulcrums}
-                    connections={connections}
-                    svgSize={svgSize}
-                    updateContainerSize={updateContainerSize}
-                    onFulcrumCreate={handleFulcrumCreate}
-                    onFulcrumContextMenu={handleFulcrumContextMenu}
-                    onConnectionCreate={handleConnectionCreate}
-                    onConnectionContextMenu={handleConnectionContextMenu}
-                />
+                        connections={connections}
+                        svgSize={svgSize}
+                        updateContainerSize={updateContainerSize}
+                        onFulcrumCreate={handleFulcrumCreate}
+                        onFulcrumContextMenu={handleFulcrumContextMenu}
+                        onConnectionCreate={handleConnectionCreate}
+                        onConnectionContextMenu={handleConnectionContextMenu}
+                    />
                 </div>
 
                 {/* Модальное окно для fulcrum */}

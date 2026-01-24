@@ -55,6 +55,78 @@
     width: 100%;
     height: 100%;
 }
+
+.grid-handle {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 12px;
+    background: rgba(15, 23, 42, 0.8);
+    color: #f8fafc;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    cursor: grab;
+    user-select: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 30;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.grid-handle:hover {
+    transform: translateX(-50%) scale(1.03);
+}
+
+.grid-handle.is-dragging {
+    cursor: grabbing;
+    opacity: 1;
+}
+
+.svg-canvas:hover .grid-handle {
+    opacity: 1;
+}
+
+.grid-handle-icon {
+    display: inline-block;
+    line-height: 1;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+.grid-handle-text {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.svg-canvas.grid-dragging {
+    cursor: none;
+}
+
+.grid-overlay {
+    position: absolute;
+    pointer-events: none;
+    z-index: 2;
+    background-image:
+        linear-gradient(to right, rgba(148, 163, 184, 0.25) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.25) 1px, transparent 1px),
+        linear-gradient(to right, rgba(148, 163, 184, 0.45) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.45) 1px, transparent 1px);
+    background-size:
+        var(--grid-step-x) var(--grid-step-y),
+        var(--grid-step-x) var(--grid-step-y),
+        var(--grid-major-step-x) var(--grid-major-step-y),
+        var(--grid-major-step-x) var(--grid-major-step-y);
+    background-position:
+        var(--grid-offset-x) var(--grid-offset-y),
+        var(--grid-offset-x) var(--grid-offset-y),
+        var(--grid-offset-x) var(--grid-offset-y),
+        var(--grid-offset-x) var(--grid-offset-y);
+}
 .fulcrums-overlay {
     position: absolute;
     top: 0;

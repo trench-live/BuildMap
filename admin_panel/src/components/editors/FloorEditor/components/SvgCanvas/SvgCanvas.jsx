@@ -24,7 +24,14 @@ const SvgCanvas = ({
     const [hoveredConnection, setHoveredConnection] = useState(null);
     const [tempConnection, setTempConnection] = useState(null);
     const [isCreatingConnection, setIsCreatingConnection] = useState(false);
+    const [isGridDragging, setIsGridDragging] = useState(false);
+    const [gridDragState, setGridDragState] = useState(null);
     const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+    const bodyCursorRef = useRef(null);
+    const bodyUserSelectRef = useRef(null);
+    const gridHandleRef = useRef(null);
+    const lastGridClickRef = useRef(0);
+    const lastPointerUnlockRef = useRef(0);
     const uiScale = useMemo(() => {
         const scaleValue = editorState.scale || 1;
         const inverse = 1 / scaleValue;
@@ -35,6 +42,22 @@ const SvgCanvas = ({
         handleMouseDown: handleCanvasMouseDown,
         handleWheel
     } = useSvgCanvas(editorState, setEditorState);
+
+    const snapToGrid = useCallback((value, step) => {
+        if (!Number.isFinite(step) || step <= 0) return value;
+        const snapped = Math.round(value / step) * step;
+        const clamped = Math.min(1, Math.max(0, snapped));
+        return Number(clamped.toFixed(6));
+    }, []);
+
+    const wrapOffset = useCallback((value, step) => {
+        if (!Number.isFinite(value) || !Number.isFinite(step) || step <= 0) {
+            return 0;
+        }
+        let wrapped = value % step;
+        if (wrapped < 0) wrapped += step;
+        return Number(wrapped.toFixed(6));
+    }, []);
 
     const updateSize = useCallback(() => {
         if (!containerRef.current) return;
@@ -99,6 +122,27 @@ const SvgCanvas = ({
         };
     }, [canvasSize.width, canvasSize.height, svgSize]);
 
+    const gridMetrics = useMemo(() => {
+        if (!editorState.gridEnabled || !Number.isFinite(editorState.gridStep)) {
+            return null;
+        }
+        if (!imageRect.width || !imageRect.height) {
+            return null;
+        }
+        const baseSize = Math.min(imageRect.width, imageRect.height);
+        const stepPx = baseSize * editorState.gridStep;
+        if (!Number.isFinite(stepPx) || stepPx <= 0) {
+            return null;
+        }
+        return {
+            stepPx,
+            stepX: stepPx,
+            stepY: stepPx,
+            stepXNorm: stepPx / imageRect.width,
+            stepYNorm: stepPx / imageRect.height
+        };
+    }, [editorState.gridEnabled, editorState.gridStep, imageRect]);
+
     const handleContextMenu = (e) => {
         e.preventDefault();
         const container = containerRef.current;
@@ -112,7 +156,60 @@ const SvgCanvas = ({
             editorState.scale
         );
 
-        onFulcrumCreate?.({ x: relativeCoords.x, y: relativeCoords.y }, e);
+        let nextX = relativeCoords.x;
+        let nextY = relativeCoords.y;
+
+        if (gridMetrics) {
+            const offsetX = editorState.gridOffset?.x ?? 0;
+            const offsetY = editorState.gridOffset?.y ?? 0;
+            nextX = snapToGrid(nextX - offsetX, gridMetrics.stepXNorm) + offsetX;
+            nextY = snapToGrid(nextY - offsetY, gridMetrics.stepYNorm) + offsetY;
+            nextX = Math.min(1, Math.max(0, nextX));
+            nextY = Math.min(1, Math.max(0, nextY));
+        }
+
+        onFulcrumCreate?.({ x: nextX, y: nextY }, e);
+    };
+
+    const handleGridHandleMouseDown = (e) => {
+        if (!gridMetrics) return;
+        const container = containerRef.current;
+        if (!container) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const now = e.timeStamp || Date.now();
+        if (now - lastGridClickRef.current < 280) {
+            lastGridClickRef.current = 0;
+            handleGridReset(e);
+            return;
+        }
+        lastGridClickRef.current = now;
+
+        const coords = getRelativeCoordinates(
+            e,
+            container,
+            imageRect,
+            editorState.offset,
+            editorState.scale
+        );
+
+        setGridDragState({
+            startX: coords.x,
+            startY: coords.y,
+            startOffsetX: editorState.gridOffset?.x ?? 0,
+            startOffsetY: editorState.gridOffset?.y ?? 0,
+            hasMoved: false
+        });
+    };
+
+    const handleGridReset = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setEditorState(prev => ({
+            ...prev,
+            gridOffset: { x: 0, y: 0 }
+        }));
     };
 
     const handleFulcrumDragStart = (fulcrum, e) => {
@@ -229,6 +326,26 @@ const SvgCanvas = ({
 
     const groupedConnections = useMemo(() => getGroupedConnections(), [getGroupedConnections]);
 
+    const gridStyle = useMemo(() => {
+        if (!gridMetrics) {
+            return null;
+        }
+        const offsetX = (editorState.gridOffset?.x ?? 0) * imageRect.width;
+        const offsetY = (editorState.gridOffset?.y ?? 0) * imageRect.height;
+        return {
+            left: `${imageRect.offsetX}px`,
+            top: `${imageRect.offsetY}px`,
+            width: `${imageRect.width}px`,
+            height: `${imageRect.height}px`,
+            '--grid-step-x': `${gridMetrics.stepX}px`,
+            '--grid-step-y': `${gridMetrics.stepY}px`,
+            '--grid-major-step-x': `${gridMetrics.stepPx * 5}px`,
+            '--grid-major-step-y': `${gridMetrics.stepPx * 5}px`,
+            '--grid-offset-x': `${offsetX}px`,
+            '--grid-offset-y': `${offsetY}px`
+        };
+    }, [gridMetrics, imageRect, editorState.gridOffset]);
+
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
@@ -246,14 +363,153 @@ const SvgCanvas = ({
         };
     }, [handleWheel, handleMouseMove, handleMouseUp]);
 
+    useEffect(() => {
+        if (!isGridDragging) return;
+        const body = document.body;
+        if (!body) return;
+        bodyCursorRef.current = body.style.cursor;
+        bodyUserSelectRef.current = body.style.userSelect;
+        body.style.cursor = 'none';
+        body.style.userSelect = 'none';
+
+        return () => {
+            if (!body) return;
+            body.style.cursor = bodyCursorRef.current ?? '';
+            body.style.userSelect = bodyUserSelectRef.current ?? '';
+        };
+    }, [isGridDragging]);
+
+    useEffect(() => {
+        if (!gridDragState || !gridMetrics) return;
+
+        const handleGridMove = (e) => {
+            const container = containerRef.current;
+            if (!container) return;
+            const isPointerLocked = document.pointerLockElement === gridHandleRef.current;
+
+            if (isPointerLocked) {
+                const scaleValue = editorState.scale || 1;
+                const denomX = imageRect.width * scaleValue;
+                const denomY = imageRect.height * scaleValue;
+                if (!denomX || !denomY) return;
+
+                const deltaX = e.movementX / denomX;
+                const deltaY = e.movementY / denomY;
+
+                setEditorState(prev => {
+                    const currentX = prev.gridOffset?.x ?? 0;
+                    const currentY = prev.gridOffset?.y ?? 0;
+                    const nextOffsetX = wrapOffset(currentX + deltaX, gridMetrics.stepXNorm);
+                    const nextOffsetY = wrapOffset(currentY + deltaY, gridMetrics.stepYNorm);
+                    return {
+                        ...prev,
+                        gridOffset: { x: nextOffsetX, y: nextOffsetY }
+                    };
+                });
+                return;
+            }
+
+            const coords = getRelativeCoordinates(
+                e,
+                container,
+                imageRect,
+                editorState.offset,
+                editorState.scale
+            );
+
+            const deltaX = coords.x - gridDragState.startX;
+            const deltaY = coords.y - gridDragState.startY;
+            const absMove = Math.hypot(deltaX, deltaY);
+            if (!gridDragState.hasMoved && absMove < 0.004) {
+                return;
+            }
+
+            if (!gridDragState.hasMoved) {
+                setGridDragState(prev => prev ? { ...prev, hasMoved: true } : prev);
+                setIsGridDragging(true);
+                const now = Date.now();
+                if (gridHandleRef.current?.requestPointerLock && now - lastPointerUnlockRef.current > 200) {
+                    try {
+                        gridHandleRef.current.requestPointerLock();
+                    } catch {
+                        // ignore pointer lock errors
+                    }
+                }
+            }
+
+            const nextOffsetX = wrapOffset(
+                gridDragState.startOffsetX + deltaX,
+                gridMetrics.stepXNorm
+            );
+            const nextOffsetY = wrapOffset(
+                gridDragState.startOffsetY + deltaY,
+                gridMetrics.stepYNorm
+            );
+
+            setEditorState(prev => ({
+                ...prev,
+                gridOffset: { x: nextOffsetX, y: nextOffsetY }
+            }));
+        };
+
+        const handleGridUp = () => {
+            setIsGridDragging(false);
+            setGridDragState(null);
+            if (document.pointerLockElement === gridHandleRef.current) {
+                document.exitPointerLock?.();
+            }
+        };
+
+        document.addEventListener('mousemove', handleGridMove);
+        document.addEventListener('mouseup', handleGridUp, true);
+
+        return () => {
+            document.removeEventListener('mousemove', handleGridMove);
+            document.removeEventListener('mouseup', handleGridUp, true);
+        };
+    }, [
+        gridDragState,
+        gridMetrics,
+        imageRect,
+        editorState.offset,
+        editorState.scale,
+        setEditorState,
+        wrapOffset
+    ]);
+
+    useEffect(() => {
+        const handlePointerLockChange = () => {
+            if (!isGridDragging) return;
+            if (document.pointerLockElement !== gridHandleRef.current) {
+                setIsGridDragging(false);
+                setGridDragState(null);
+                lastPointerUnlockRef.current = Date.now();
+            }
+        };
+        document.addEventListener('pointerlockchange', handlePointerLockChange);
+        return () => document.removeEventListener('pointerlockchange', handlePointerLockChange);
+    }, [isGridDragging]);
+
     return (
         <div
             ref={containerRef}
-            className={`svg-canvas ${editorState.isDragging ? 'dragging' : ''} ${isCreatingConnection ? 'creating-connection' : ''}`}
+            className={`svg-canvas ${editorState.isDragging ? 'dragging' : ''} ${isCreatingConnection ? 'creating-connection' : ''} ${isGridDragging ? 'grid-dragging' : ''}`}
             onMouseDown={handleMouseDown}
             onContextMenu={handleContextMenu}
         >
             {!editorState.svgContent ? <CanvasBackground /> : null}
+            {editorState.gridEnabled ? (
+                <div
+                    className={`grid-handle${isGridDragging ? ' is-dragging' : ''}`}
+                    onMouseDown={handleGridHandleMouseDown}
+                    onDoubleClick={handleGridReset}
+                    title="Сдвиг сетки (двойной клик — сброс)"
+                    ref={gridHandleRef}
+                >
+                    <span className="grid-handle-icon">⇕⇔</span>
+                    <span className="grid-handle-text">Сдвиг сетки</span>
+                </div>
+            ) : null}
             <div
                 className="canvas-content-wrapper"
                 style={{
@@ -276,6 +532,9 @@ const SvgCanvas = ({
                             isDragging={editorState.isDragging}
                         />
                     </div>
+                ) : null}
+                {gridStyle ? (
+                    <div className="grid-overlay" style={gridStyle} />
                 ) : null}
                 {tempConnection ? (
                     <div className="temp-connection">
