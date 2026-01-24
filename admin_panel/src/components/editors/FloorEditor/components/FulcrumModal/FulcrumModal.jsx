@@ -346,7 +346,7 @@ const FulcrumModal = ({
                         </div>
 
                         <div className="connections-section">
-                            <details open>
+                            <details>
                                 <summary>Inter-floor connections</summary>
                                 {connectionsLoading ? (
                                     <div className="connections-state">Loading connections...</div>

@@ -74,6 +74,9 @@ public class FloorService {
     public void safeDelete(Long id) {
         Floor floor = getById(id);
         floor.setDeleted(true);
+        if (floor.getFulcrums() != null) {
+            floor.getFulcrums().forEach(fulcrum -> fulcrum.setDeleted(true));
+        }
         floorRepository.save(floor);
     }
 
