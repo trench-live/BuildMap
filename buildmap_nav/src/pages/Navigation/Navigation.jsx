@@ -1,7 +1,12 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { floorAPI, fulcrumAPI, navigationAPI } from '../../services/api';
-import NavigationMap from '../../components/NavigationMap/NavigationMap';
+import NavigationSearch from './components/NavigationSearch';
+import NavigationLayers from './components/NavigationLayers';
+import NavigationStepsPanel from './components/NavigationStepsPanel';
+import FloorSwitcher from './components/FloorSwitcher';
+import useNavigationData from './hooks/useNavigationData';
+import useRoute from './hooks/useRoute';
+import useFocusState from './hooks/useFocusState';
 import './Navigation.css';
 
 const parseId = (value) => {
@@ -15,28 +20,58 @@ const Navigation = () => {
     const fulcrumId = parseId(searchParams.get('fulcrum'));
     const toId = parseId(searchParams.get('to'));
 
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [floors, setFloors] = useState([]);
     const [activeFloorId, setActiveFloorId] = useState(null);
-    const [startFulcrum, setStartFulcrum] = useState(null);
     const [route, setRoute] = useState(null);
-    const [areaId, setAreaId] = useState(null);
-    const [areaFulcrums, setAreaFulcrums] = useState([]);
     const [selectedEndId, setSelectedEndId] = useState(null);
     const [searchValue, setSearchValue] = useState('');
     const [searchOpen, setSearchOpen] = useState(false);
     const [stepsOpen, setStepsOpen] = useState(true);
-    const [focusTargets, setFocusTargets] = useState([]);
-    const [pendingFocus, setPendingFocus] = useState(null);
-    const [focusSegments, setFocusSegments] = useState([]);
-    const [focusAnimate, setFocusAnimate] = useState(true);
     const [selectedStepKey, setSelectedStepKey] = useState(null);
-    const [stepsPanelHeight, setStepsPanelHeight] = useState(0);
-    const [lastFocus, setLastFocus] = useState(null);
     const searchRef = useRef(null);
     const searchInputRef = useRef(null);
     const stepsRef = useRef(null);
+
+    const handleDataReset = useCallback(() => {
+        setRoute(null);
+        setActiveFloorId(null);
+    }, [setRoute, setActiveFloorId]);
+
+    const handleRouteLoaded = useCallback(() => {
+        setSelectedStepKey(null);
+    }, [setSelectedStepKey]);
+
+    const {
+        loading,
+        error,
+        setError,
+        floors,
+        areaFulcrums,
+        startFulcrum
+    } = useNavigationData(fulcrumId, handleDataReset);
+
+    useRoute({
+        fulcrumId,
+        selectedEndId,
+        setRoute,
+        setError,
+        onRouteLoaded: handleRouteLoaded
+    });
+
+    const {
+        focusTargets,
+        focusSegments,
+        focusAnimate,
+        stepsPanelHeight,
+        onStepClick,
+        onFloorSelect
+    } = useFocusState({
+        route,
+        activeFloorId,
+        setActiveFloorId,
+        stepsOpen,
+        stepsRef,
+        setSelectedStepKey
+    });
 
     useEffect(() => {
         setSelectedEndId(toId ?? null);
@@ -47,141 +82,6 @@ const Navigation = () => {
             setStepsOpen(true);
         }
     }, [selectedEndId]);
-
-    useEffect(() => {
-        if (!fulcrumId) {
-            setError('Missing fulcrum id in URL.');
-            setLoading(false);
-            return;
-        }
-
-        let isActive = true;
-        const load = async () => {
-            setLoading(true);
-            setError(null);
-            setRoute(null);
-            setFloors([]);
-            setActiveFloorId(null);
-            setAreaId(null);
-            setAreaFulcrums([]);
-
-            try {
-                const fulcrumResponse = await fulcrumAPI.getById(fulcrumId);
-
-                if (!isActive) return;
-
-                const startData = fulcrumResponse.data;
-                setStartFulcrum(startData);
-
-                let areaIdValue = startData?.mappingAreaId;
-                if (!areaIdValue) {
-                    const floorResponse = await floorAPI.getByFulcrumId(fulcrumId);
-                    areaIdValue = floorResponse.data?.mappingAreaId;
-                }
-
-                if (!areaIdValue) {
-                    throw new Error('Mapping area not found for this fulcrum.');
-                }
-
-                const [floorsResponse, fulcrumsResponse] = await Promise.all([
-                    floorAPI.getByArea(areaIdValue),
-                    fulcrumAPI.getByArea(areaIdValue)
-                ]);
-
-                if (!isActive) return;
-
-                const sortedFloors = (floorsResponse.data || []).slice().sort((a, b) => {
-                    const aLevel = Number.isFinite(a.level) ? a.level : Number.MAX_SAFE_INTEGER;
-                    const bLevel = Number.isFinite(b.level) ? b.level : Number.MAX_SAFE_INTEGER;
-                    return aLevel - bLevel;
-                });
-                setFloors(sortedFloors);
-                setAreaId(areaIdValue);
-                setAreaFulcrums((fulcrumsResponse.data || []).filter((item) => !item.deleted));
-            } catch (err) {
-                if (!isActive) return;
-                const message = err.response?.data?.message || err.message || 'Failed to load navigation data.';
-                setError(message);
-            } finally {
-                if (isActive) {
-                    setLoading(false);
-                }
-            }
-        };
-
-        load();
-
-        return () => {
-            isActive = false;
-        };
-    }, [fulcrumId]);
-
-    useEffect(() => {
-        let isActive = true;
-
-        const loadRoute = async () => {
-            if (!selectedEndId) {
-                setRoute(null);
-                return;
-            }
-
-            try {
-                const routeResponse = await navigationAPI.findPath({
-                    startFulcrumId: fulcrumId,
-                    endFulcrumId: selectedEndId
-                });
-                if (!isActive) return;
-                setRoute(routeResponse.data);
-                setSelectedStepKey(null);
-            } catch (err) {
-                if (!isActive) return;
-                const message = err.response?.data?.message || err.message || 'Failed to build route.';
-                setError(message);
-            }
-        };
-
-        loadRoute();
-
-        return () => {
-            isActive = false;
-        };
-    }, [fulcrumId, selectedEndId]);
-
-    useEffect(() => {
-        if (!pendingFocus) return;
-        if (pendingFocus.floorId && pendingFocus.floorId !== activeFloorId) {
-            setFocusTargets([]);
-            setFocusSegments([]);
-            return;
-        }
-        const targetFloorId = pendingFocus.floorId || activeFloorId;
-        const targets = pendingFocus.targetIds
-            .map((id) => route?.path?.find((item) => item.id === id))
-            .filter((item) => item && (!targetFloorId || item.floorId === targetFloorId));
-        setFocusTargets(targets);
-        const segments = (pendingFocus.segments || []).filter(
-            ([from, to]) => !targetFloorId || (from.floorId === targetFloorId && to.floorId === targetFloorId)
-        );
-        setFocusSegments(segments);
-        setFocusAnimate(pendingFocus.animate !== false);
-        setPendingFocus(null);
-    }, [pendingFocus, activeFloorId, route]);
-
-    useEffect(() => {
-        if (!lastFocus || !activeFloorId) return;
-        if (pendingFocus) return;
-        if (lastFocus.floorId !== activeFloorId) return;
-        setPendingFocus(lastFocus);
-    }, [activeFloorId, lastFocus, pendingFocus]);
-
-    useEffect(() => {
-        if (!activeFloorId) return;
-        const mismatch = focusTargets.some((item) => item.floorId !== activeFloorId);
-        if (mismatch) {
-            setFocusTargets([]);
-            setFocusSegments([]);
-        }
-    }, [activeFloorId, focusTargets]);
 
     useEffect(() => {
         if (!floors.length) return;
@@ -233,33 +133,6 @@ const Navigation = () => {
             window.removeEventListener('pointerdown', handlePointerDown);
         };
     }, [selectedEndId]);
-
-    useEffect(() => {
-        if (!stepsRef.current) return;
-        const updateHeight = () => {
-            if (!stepsRef.current) return;
-            const rect = stepsRef.current.getBoundingClientRect();
-            setStepsPanelHeight(rect.height);
-        };
-        updateHeight();
-        const observer = new ResizeObserver(updateHeight);
-        observer.observe(stepsRef.current);
-        return () => observer.disconnect();
-    }, [stepsOpen, route?.steps?.length]);
-
-    useLayoutEffect(() => {
-        if (!stepsOpen || !stepsRef.current) return;
-        const rect = stepsRef.current.getBoundingClientRect();
-        if (rect.height !== stepsPanelHeight) {
-            setStepsPanelHeight(rect.height);
-        }
-    }, [stepsOpen, route?.steps?.length, stepsPanelHeight]);
-
-    useEffect(() => {
-        if (!stepsOpen || !lastFocus) return;
-        if (!stepsPanelHeight) return;
-        setPendingFocus(lastFocus);
-    }, [stepsOpen, stepsPanelHeight, lastFocus]);
 
     const activeFloor = useMemo(
         () => floors.find((item) => item.id === activeFloorId) ?? null,
@@ -398,70 +271,6 @@ const Navigation = () => {
         setSearchOpen(true);
     };
 
-    const handleStepClick = (step) => {
-        if (!step) return;
-        if (stepsOpen && stepsRef.current) {
-            const rect = stepsRef.current.getBoundingClientRect();
-            setStepsPanelHeight(rect.height);
-        }
-        const stepKey = `${step.type}-${step.fromFulcrumId || 'x'}-${step.toFulcrumId || 'y'}`;
-        setSelectedStepKey(stepKey);
-        const targetIds = [];
-        const isTurnStep = ['TURN_LEFT', 'TURN_RIGHT', 'U_TURN'].includes(step.type);
-        if (isTurnStep) {
-            if (step.fromFulcrumId) targetIds.push(step.fromFulcrumId);
-        } else {
-            if (step.fromFulcrumId) targetIds.push(step.fromFulcrumId);
-            if (step.toFulcrumId && step.toFulcrumId !== step.fromFulcrumId) {
-                targetIds.push(step.toFulcrumId);
-            }
-        }
-        const path = route?.path || [];
-        const fromIndex = path.findIndex((item) => item.id === step.fromFulcrumId);
-        const toIndex = path.findIndex((item) => item.id === step.toFulcrumId);
-        let segments = [];
-        if (!isTurnStep) {
-            if (fromIndex >= 0 && toIndex >= 0) {
-                const start = Math.min(fromIndex, toIndex);
-                const end = Math.max(fromIndex, toIndex);
-                for (let i = start; i < end; i += 1) {
-                    segments.push([path[i], path[i + 1]]);
-                }
-            } else {
-                const fromItem = path.find((item) => item.id === step.fromFulcrumId);
-                const toItem = path.find((item) => item.id === step.toFulcrumId);
-                if (fromItem && toItem) {
-                    segments = [[fromItem, toItem]];
-                }
-            }
-        }
-        const floorId = step.floorId || route?.path?.find((item) => item.id === step.toFulcrumId)?.floorId
-            || route?.path?.find((item) => item.id === step.fromFulcrumId)?.floorId;
-
-        if (!targetIds.length) return;
-        const animate = floorId ? floorId === activeFloorId : true;
-        const focusPayload = { targetIds, floorId, segments, animate };
-        setLastFocus(focusPayload);
-        if (floorId && floorId !== activeFloorId) {
-            setFocusTargets([]);
-            setFocusSegments([]);
-            setPendingFocus(focusPayload);
-            setActiveFloorId(floorId);
-        } else {
-            setPendingFocus(focusPayload);
-        }
-    };
-
-    const handleFloorSelect = (floorId) => {
-        setActiveFloorId(floorId);
-        setPendingFocus(null);
-        if (lastFocus && lastFocus.floorId !== floorId) {
-            setFocusTargets([]);
-            setFocusSegments([]);
-        }
-    };
-
-
     if (loading) {
         return (
             <div className="navigation-state">
@@ -491,133 +300,45 @@ const Navigation = () => {
 
     return (
         <div className="navigation-page">
-            <div className="navigation-search" ref={searchRef}>
-                <input
-                    type="search"
-                    className={`navigation-search-input${searchOpen ? ' is-open' : ''}`}
-                    placeholder="Search destination"
-                    value={searchValue}
-                    onChange={handleSearchChange}
-                    onFocus={handleSearchFocus}
-                    ref={searchInputRef}
-                />
-                {searchOpen && (
-                    <div className="navigation-search-results is-open">
-                        {searchResults.length ? (
-                            searchResults.map((item) => (
-                                <button
-                                    type="button"
-                                    key={item.id}
-                                    className="navigation-search-item"
-                                    onClick={() => handleSelectDestination(item)}
-                                >
-                                    <span className="navigation-search-name">
-                                        {item.name}
-                                        <span className="navigation-search-divider"> — </span>
-                                        <span className="navigation-search-floor">
-                                            {floorLabelMap.get(item.floorId) || 'Floor'}
-                                        </span>
-                                    </span>
-                                </button>
-                            ))
-                        ) : (
-                            <div className="navigation-search-empty">No matches</div>
-                        )}
-                    </div>
-                )}
-            </div>
-            <div className="navigation-layers">
-                {floors.map((floorItem) => {
-                    const isActive = floorItem.id === activeFloorId;
-                    return (
-                        <div
-                            key={floorItem.id}
-                            className={`navigation-layer${isActive ? ' is-active' : ''}`}
-                        >
-                            {floorItem.svgPlan ? (
-                                <NavigationMap
-                                    svgContent={floorItem.svgPlan}
-                                    fulcrums={isActive ? activeMarkers : []}
-                                    routeSegments={isActive ? activeSegments : []}
-                                    focusFulcrum={isActive ? focusFulcrum : null}
-                                    endFulcrumId={isActive ? route?.endFulcrumId : null}
-                                    focusTargets={isActive ? focusTargets : []}
-                                    focusSegments={isActive ? focusSegments : []}
-                                    focusAnimate={isActive ? focusAnimate : true}
-                                    focusYOffset={stepsOpen ? stepsPanelHeight : 0}
-                                />
-                            ) : (
-                                <div className="navigation-layer-placeholder">
-                                    <h2>No map available</h2>
-                                    <p>This floor does not have an SVG plan yet.</p>
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
-            {selectedEndId && (
-                <div
-                    className={`navigation-steps${stepsOpen ? ' is-open' : ''}`}
-                    ref={stepsRef}
-                >
-                    <button
-                        type="button"
-                        className="navigation-steps-toggle"
-                        onClick={() => setStepsOpen((prev) => !prev)}
-                        aria-expanded={stepsOpen}
-                    >
-                        <span>Route hints</span>
-                        <span className="navigation-steps-chevron">{stepsOpen ? '▾' : '▸'}</span>
-                    </button>
-                    {stepsOpen && (
-                        <div className="navigation-steps-content">
-                            {route?.steps?.length ? (
-                                <ol className="navigation-steps-list">
-                                    {route.steps.map((step, index) => {
-                                        const stepKey = `${step.type}-${step.fromFulcrumId || 'x'}-${step.toFulcrumId || 'y'}-${index}`;
-                                        const isSelected = selectedStepKey === `${step.type}-${step.fromFulcrumId || 'x'}-${step.toFulcrumId || 'y'}`;
-                                        return (
-                                        <li key={stepKey} className="navigation-step">
-                                            <button
-                                                type="button"
-                                                className={`navigation-step-button${isSelected ? ' is-selected' : ''}`}
-                                                onClick={() => handleStepClick(step)}
-                                            >
-                                            {step.text}
-                                            </button>
-                                        </li>
-                                    )})}
-                            </ol>
-                            ) : (
-                                <div className="navigation-steps-empty">
-                                    No hints available yet.
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
-            <div className="floor-switcher" role="tablist" aria-label="Floors">
-                <span className="floor-switcher-label">Floors</span>
-                <div className="floor-switcher-list">
-                    {floors.map((floorItem) => {
-                        const isActive = floorItem.id === activeFloorId;
-                        return (
-                            <button
-                                key={floorItem.id}
-                                type="button"
-                                className={`floor-switcher-button${isActive ? ' is-active' : ''}`}
-                                onClick={() => handleFloorSelect(floorItem.id)}
-                                aria-pressed={isActive}
-                                title={floorItem.name || undefined}
-                            >
-                                {formatFloorLabel(floorItem)}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
+            <NavigationSearch
+                searchRef={searchRef}
+                searchInputRef={searchInputRef}
+                searchOpen={searchOpen}
+                searchValue={searchValue}
+                searchResults={searchResults}
+                floorLabelMap={floorLabelMap}
+                onSearchChange={handleSearchChange}
+                onSearchFocus={handleSearchFocus}
+                onSelectDestination={handleSelectDestination}
+            />
+            <NavigationLayers
+                floors={floors}
+                activeFloorId={activeFloorId}
+                activeMarkers={activeMarkers}
+                activeSegments={activeSegments}
+                focusFulcrum={focusFulcrum}
+                route={route}
+                focusTargets={focusTargets}
+                focusSegments={focusSegments}
+                focusAnimate={focusAnimate}
+                stepsOpen={stepsOpen}
+                stepsPanelHeight={stepsPanelHeight}
+            />
+            <NavigationStepsPanel
+                selectedEndId={selectedEndId}
+                stepsOpen={stepsOpen}
+                stepsRef={stepsRef}
+                route={route}
+                selectedStepKey={selectedStepKey}
+                onToggleSteps={() => setStepsOpen((prev) => !prev)}
+                onStepClick={onStepClick}
+            />
+            <FloorSwitcher
+                floors={floors}
+                activeFloorId={activeFloorId}
+                formatFloorLabel={formatFloorLabel}
+                onFloorSelect={onFloorSelect}
+            />
         </div>
     );
 };
