@@ -64,7 +64,7 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         selectedFulcrum: null,
         selectedConnection: null,
         dragStartFulcrum: null,
-        gridEnabled: true,
+        gridEnabled: false,
         gridStep: GRID_STEP_DEFAULT,
         gridOffset: { x: 0, y: 0 }
     });
@@ -131,7 +131,7 @@ export const useFloorEditor = (floor, onSave, onClose) => {
             selectedFulcrum: null,
             selectedConnection: null,
             dragStartFulcrum: null,
-            gridEnabled: prev.gridEnabled ?? true,
+            gridEnabled: prev.gridEnabled ?? false,
             gridStep: clampGridStep(prev.gridStep ?? GRID_STEP_DEFAULT),
             gridOffset: savedGridOffset ?? normalizeGridOffset(prev.gridOffset)
         }));

@@ -289,6 +289,11 @@ const SvgCanvas = ({
         onConnectionContextMenu?.(connection, event);
     };
 
+    const isSameConnection = useCallback((a, b) => {
+        if (!a || !b) return false;
+        return a.from === b.from && a.to === b.to;
+    }, []);
+
     const getGroupedConnections = useCallback(() => {
         const grouped = [];
         const processedPairs = new Set();
@@ -560,6 +565,7 @@ const SvgCanvas = ({
 
                         const fromPos = getFulcrumDisplayPosition(fromFulcrum, imageRect);
                         const toPos = getFulcrumDisplayPosition(toFulcrum, imageRect);
+                        const isHovered = group.connections.some(conn => isSameConnection(hoveredConnection, conn));
 
                         return (
                             <FulcrumConnection
@@ -568,7 +574,7 @@ const SvgCanvas = ({
                                 fromFulcrum={fromPos}
                                 toFulcrum={toPos}
                                 weight={group.weights[0]}
-                                isHovered={hoveredConnection === group.connections[0]}
+                                isHovered={isHovered}
                                 connectionType={group.type}
                                 onMouseEnter={() => setHoveredConnection(group.connections[0])}
                                 onMouseLeave={() => setHoveredConnection(null)}
@@ -585,18 +591,29 @@ const SvgCanvas = ({
 
                         const fromPos = getFulcrumDisplayPosition(fromFulcrum, imageRect);
                         const toPos = getFulcrumDisplayPosition(toFulcrum, imageRect);
+                        const dx = toPos.x - fromPos.x;
+                        const dy = toPos.y - fromPos.y;
+                        const length = Math.sqrt(dx * dx + dy * dy);
+                        if (!Number.isFinite(length) || length === 0) return null;
+                        const weightT = 0.78;
+                        const weightTReturn = 1 - weightT;
+                        const isGroupHovered = hoveredConnection
+                            && ((hoveredConnection.from === group.from && hoveredConnection.to === group.to)
+                                || (hoveredConnection.from === group.to && hoveredConnection.to === group.from));
 
                         if (group.type === 'bidirectional') {
                             const connectionAtoB = group.connections.find(conn => conn.from === group.from && conn.to === group.to);
                             const connectionBtoA = group.connections.find(conn => conn.from === group.to && conn.to === group.from);
+                            const showWeightA = isGroupHovered;
+                            const showWeightB = isGroupHovered;
 
                             return (
                                 <React.Fragment key={`weights-${group.from}-${group.to}-${index}`}>
                                     <div
-                                        className="connection-weight-standalone"
+                                        className={`connection-weight-standalone${showWeightA ? ' is-visible' : ''}`}
                                         style={{
-                                            left: `${fromPos.x + (toPos.x - fromPos.x) * 0.7}px`,
-                                            top: `${fromPos.y + (toPos.y - fromPos.y) * 0.7}px`,
+                                            left: `${fromPos.x + dx * weightT}px`,
+                                            top: `${fromPos.y + dy * weightT}px`,
                                             position: 'absolute',
                                             transform: 'translate(-50%, -50%) scale(var(--weight-scale, 1))',
                                             '--weight-scale': uiScale,
@@ -609,10 +626,10 @@ const SvgCanvas = ({
                                         {connectionAtoB?.weight}
                                     </div>
                                     <div
-                                        className="connection-weight-standalone"
+                                        className={`connection-weight-standalone${showWeightB ? ' is-visible' : ''}`}
                                         style={{
-                                            left: `${fromPos.x + (toPos.x - fromPos.x) * 0.3}px`,
-                                            top: `${fromPos.y + (toPos.y - fromPos.y) * 0.3}px`,
+                                            left: `${fromPos.x + dx * weightTReturn}px`,
+                                            top: `${fromPos.y + dy * weightTReturn}px`,
                                             position: 'absolute',
                                             transform: 'translate(-50%, -50%) scale(var(--weight-scale, 1))',
                                             '--weight-scale': uiScale,
@@ -628,13 +645,15 @@ const SvgCanvas = ({
                             );
                         }
 
+                        const showWeight = isSameConnection(hoveredConnection, group.connections[0]);
+
                         return (
                             <div
                                 key={`weight-${group.from}-${group.to}`}
-                                className="connection-weight-standalone"
+                                className={`connection-weight-standalone${showWeight ? ' is-visible' : ''}`}
                                 style={{
-                                    left: `${fromPos.x + (toPos.x - fromPos.x) * 0.7}px`,
-                                    top: `${fromPos.y + (toPos.y - fromPos.y) * 0.7}px`,
+                                    left: `${fromPos.x + dx * weightT}px`,
+                                    top: `${fromPos.y + dy * weightT}px`,
                                     position: 'absolute',
                                     transform: 'translate(-50%, -50%) scale(var(--weight-scale, 1))',
                                     '--weight-scale': uiScale,

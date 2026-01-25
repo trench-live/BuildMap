@@ -189,11 +189,17 @@
     font-size: 12px;
     font-weight: 600;
     color: #374151;
-    pointer-events: auto;
+    opacity: 0;
+    pointer-events: none;
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
     z-index: 25;
-    transition: all 0.2s ease;
+    transition: opacity 0.2s ease, transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.connection-weight-standalone.is-visible {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .connection-weight-standalone:hover {
@@ -202,6 +208,5 @@
     transform: translate(-50%, -50%) scale(calc(var(--weight-scale, 1) * 1.1));
     z-index: 26;
 }
-
 
 
