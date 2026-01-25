@@ -2,9 +2,13 @@ import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { useSvgCanvas } from '../../hooks';
 import CanvasBackground from '../CanvasBackground/CanvasBackground';
 import SvgContent from '../SvgContent/SvgContent';
-import FulcrumPoint from '../FulcrumPoint/FulcrumPoint';
-import FulcrumConnection from '../FulcrumConnection/FulcrumConnection';
-import { getRelativeCoordinates, getFulcrumDisplayPosition } from '../../hooks';
+import ConnectionsLayer from './components/ConnectionsLayer';
+import ConnectionWeightsLayer from './components/ConnectionWeightsLayer';
+import FulcrumsLayer from './components/FulcrumsLayer';
+import useCanvasSize from './hooks/useCanvasSize';
+import useConnectionDrag from './hooks/useConnectionDrag';
+import useGridDrag from './hooks/useGridDrag';
+import { getRelativeCoordinates } from '../../hooks';
 import './SvgCanvas.css';
 
 const SvgCanvas = ({
@@ -22,16 +26,6 @@ const SvgCanvas = ({
     const containerRef = useRef(null);
     const [hoveredFulcrum, setHoveredFulcrum] = useState(null);
     const [hoveredConnection, setHoveredConnection] = useState(null);
-    const [tempConnection, setTempConnection] = useState(null);
-    const [isCreatingConnection, setIsCreatingConnection] = useState(false);
-    const [isGridDragging, setIsGridDragging] = useState(false);
-    const [gridDragState, setGridDragState] = useState(null);
-    const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
-    const bodyCursorRef = useRef(null);
-    const bodyUserSelectRef = useRef(null);
-    const gridHandleRef = useRef(null);
-    const lastGridClickRef = useRef(0);
-    const lastPointerUnlockRef = useRef(0);
     const uiScale = useMemo(() => {
         const scaleValue = editorState.scale || 1;
         const inverse = 1 / scaleValue;
@@ -58,47 +52,11 @@ const SvgCanvas = ({
         if (wrapped < 0) wrapped += step;
         return Number(wrapped.toFixed(6));
     }, []);
-
-    const updateSize = useCallback(() => {
-        if (!containerRef.current) return;
-        const rect = containerRef.current.getBoundingClientRect();
-        const width = rect.width;
-        const height = rect.height;
-
-        if (width > 0 && height > 0) {
-            updateContainerSize?.(width, height);
-            setCanvasSize({ width, height });
-        }
-    }, [updateContainerSize]);
-
-    useEffect(() => {
-        updateSize();
-
-        const container = containerRef.current;
-        if (!container) return;
-
-        const resizeObserver = new ResizeObserver(() => updateSize());
-        resizeObserver.observe(container);
-
-        const handleResize = () => updateSize();
-        window.addEventListener('resize', handleResize);
-
-        const viewport = window.visualViewport;
-        const handleViewportResize = () => updateSize();
-        viewport?.addEventListener('resize', handleViewportResize);
-
-        return () => {
-            resizeObserver.disconnect();
-            window.removeEventListener('resize', handleResize);
-            viewport?.removeEventListener('resize', handleViewportResize);
-        };
-    }, [updateSize]);
-
-    useEffect(() => {
-        if (!editorState.svgContent) return;
-        const timer = setTimeout(updateSize, 100);
-        return () => clearTimeout(timer);
-    }, [editorState.svgContent, updateSize]);
+    const { canvasSize } = useCanvasSize({
+        containerRef,
+        svgContent: editorState.svgContent,
+        updateContainerSize
+    });
 
     const imageRect = useMemo(() => {
         if (!canvasSize.width || !canvasSize.height) {
@@ -143,6 +101,36 @@ const SvgCanvas = ({
         };
     }, [editorState.gridEnabled, editorState.gridStep, imageRect]);
 
+    const {
+        isGridDragging,
+        gridHandleRef,
+        handleGridHandleMouseDown,
+        handleGridReset
+    } = useGridDrag({
+        containerRef,
+        editorState,
+        setEditorState,
+        gridMetrics,
+        imageRect,
+        wrapOffset
+    });
+
+    const {
+        isCreatingConnection,
+        tempConnection,
+        handleFulcrumDragStart,
+        handleMouseMove,
+        handleMouseUp,
+        handleMouseDown
+    } = useConnectionDrag({
+        containerRef,
+        editorState,
+        imageRect,
+        fulcrums,
+        onConnectionCreate,
+        handleCanvasMouseDown
+    });
+
     const handleContextMenu = (e) => {
         e.preventDefault();
         const container = containerRef.current;
@@ -171,117 +159,6 @@ const SvgCanvas = ({
         onFulcrumCreate?.({ x: nextX, y: nextY }, e);
     };
 
-    const handleGridHandleMouseDown = (e) => {
-        if (!gridMetrics) return;
-        const container = containerRef.current;
-        if (!container) return;
-        e.preventDefault();
-        e.stopPropagation();
-
-        const now = e.timeStamp || Date.now();
-        if (now - lastGridClickRef.current < 280) {
-            lastGridClickRef.current = 0;
-            handleGridReset(e);
-            return;
-        }
-        lastGridClickRef.current = now;
-
-        const coords = getRelativeCoordinates(
-            e,
-            container,
-            imageRect,
-            editorState.offset,
-            editorState.scale
-        );
-
-        setGridDragState({
-            startX: coords.x,
-            startY: coords.y,
-            startOffsetX: editorState.gridOffset?.x ?? 0,
-            startOffsetY: editorState.gridOffset?.y ?? 0,
-            hasMoved: false
-        });
-    };
-
-    const handleGridReset = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setEditorState(prev => ({
-            ...prev,
-            gridOffset: { x: 0, y: 0 }
-        }));
-    };
-
-    const handleFulcrumDragStart = (fulcrum, e) => {
-        e.stopPropagation();
-        const container = containerRef.current;
-        if (!container) return;
-
-        const displayPos = getFulcrumDisplayPosition(fulcrum, imageRect);
-
-        setIsCreatingConnection(true);
-        setTempConnection({
-            from: fulcrum,
-            fromPos: { x: displayPos.x, y: displayPos.y },
-            toPos: { x: displayPos.x, y: displayPos.y }
-        });
-    };
-
-    const handleMouseMove = (e) => {
-        if (!isCreatingConnection || !tempConnection) return;
-        const container = containerRef.current;
-        if (!container) return;
-
-        const coords = getRelativeCoordinates(
-            e,
-            container,
-            imageRect,
-            editorState.offset,
-            editorState.scale
-        );
-
-        setTempConnection(prev => ({
-            ...prev,
-            toPos: { x: coords.canvasX, y: coords.canvasY }
-        }));
-    };
-
-    const handleMouseUp = (e) => {
-        if (!isCreatingConnection || !tempConnection) return;
-        const container = containerRef.current;
-
-        const rect = container ? container.getBoundingClientRect() : null;
-        const mouseX = rect ? e.clientX - rect.left : e.clientX;
-        const mouseY = rect ? e.clientY - rect.top : e.clientY;
-        const scale = editorState.scale || 1;
-        const offset = editorState.offset || { x: 0, y: 0 };
-
-        const targetFulcrum = fulcrums.find(fulcrum => {
-            const displayPos = getFulcrumDisplayPosition(fulcrum, imageRect);
-            const screenX = displayPos.x * scale + offset.x;
-            const screenY = displayPos.y * scale + offset.y;
-            const distance = Math.sqrt(
-                Math.pow(mouseX - screenX, 2) +
-                Math.pow(mouseY - screenY, 2)
-            );
-            return distance < 30;
-        });
-
-        if (targetFulcrum && targetFulcrum.id !== tempConnection.from.id) {
-            onConnectionCreate?.(tempConnection.from, targetFulcrum);
-        }
-
-        setTempConnection(null);
-        setIsCreatingConnection(false);
-    };
-
-    const handleMouseDown = (e) => {
-        if (isCreatingConnection) {
-            e.preventDefault();
-            return;
-        }
-        handleCanvasMouseDown(e);
-    };
 
     const handleConnectionContextMenu = (connection, event) => {
         event.preventDefault();
@@ -368,133 +245,6 @@ const SvgCanvas = ({
         };
     }, [handleWheel, handleMouseMove, handleMouseUp]);
 
-    useEffect(() => {
-        if (!isGridDragging) return;
-        const body = document.body;
-        if (!body) return;
-        bodyCursorRef.current = body.style.cursor;
-        bodyUserSelectRef.current = body.style.userSelect;
-        body.style.cursor = 'none';
-        body.style.userSelect = 'none';
-
-        return () => {
-            if (!body) return;
-            body.style.cursor = bodyCursorRef.current ?? '';
-            body.style.userSelect = bodyUserSelectRef.current ?? '';
-        };
-    }, [isGridDragging]);
-
-    useEffect(() => {
-        if (!gridDragState || !gridMetrics) return;
-
-        const handleGridMove = (e) => {
-            const container = containerRef.current;
-            if (!container) return;
-            const isPointerLocked = document.pointerLockElement === gridHandleRef.current;
-
-            if (isPointerLocked) {
-                const scaleValue = editorState.scale || 1;
-                const denomX = imageRect.width * scaleValue;
-                const denomY = imageRect.height * scaleValue;
-                if (!denomX || !denomY) return;
-
-                const deltaX = e.movementX / denomX;
-                const deltaY = e.movementY / denomY;
-
-                setEditorState(prev => {
-                    const currentX = prev.gridOffset?.x ?? 0;
-                    const currentY = prev.gridOffset?.y ?? 0;
-                    const nextOffsetX = wrapOffset(currentX + deltaX, gridMetrics.stepXNorm);
-                    const nextOffsetY = wrapOffset(currentY + deltaY, gridMetrics.stepYNorm);
-                    return {
-                        ...prev,
-                        gridOffset: { x: nextOffsetX, y: nextOffsetY }
-                    };
-                });
-                return;
-            }
-
-            const coords = getRelativeCoordinates(
-                e,
-                container,
-                imageRect,
-                editorState.offset,
-                editorState.scale
-            );
-
-            const deltaX = coords.x - gridDragState.startX;
-            const deltaY = coords.y - gridDragState.startY;
-            const absMove = Math.hypot(deltaX, deltaY);
-            if (!gridDragState.hasMoved && absMove < 0.004) {
-                return;
-            }
-
-            if (!gridDragState.hasMoved) {
-                setGridDragState(prev => prev ? { ...prev, hasMoved: true } : prev);
-                setIsGridDragging(true);
-                const now = Date.now();
-                if (gridHandleRef.current?.requestPointerLock && now - lastPointerUnlockRef.current > 200) {
-                    try {
-                        gridHandleRef.current.requestPointerLock();
-                    } catch {
-                        // ignore pointer lock errors
-                    }
-                }
-            }
-
-            const nextOffsetX = wrapOffset(
-                gridDragState.startOffsetX + deltaX,
-                gridMetrics.stepXNorm
-            );
-            const nextOffsetY = wrapOffset(
-                gridDragState.startOffsetY + deltaY,
-                gridMetrics.stepYNorm
-            );
-
-            setEditorState(prev => ({
-                ...prev,
-                gridOffset: { x: nextOffsetX, y: nextOffsetY }
-            }));
-        };
-
-        const handleGridUp = () => {
-            setIsGridDragging(false);
-            setGridDragState(null);
-            if (document.pointerLockElement === gridHandleRef.current) {
-                document.exitPointerLock?.();
-            }
-        };
-
-        document.addEventListener('mousemove', handleGridMove);
-        document.addEventListener('mouseup', handleGridUp, true);
-
-        return () => {
-            document.removeEventListener('mousemove', handleGridMove);
-            document.removeEventListener('mouseup', handleGridUp, true);
-        };
-    }, [
-        gridDragState,
-        gridMetrics,
-        imageRect,
-        editorState.offset,
-        editorState.scale,
-        setEditorState,
-        wrapOffset
-    ]);
-
-    useEffect(() => {
-        const handlePointerLockChange = () => {
-            if (!isGridDragging) return;
-            if (document.pointerLockElement !== gridHandleRef.current) {
-                setIsGridDragging(false);
-                setGridDragState(null);
-                lastPointerUnlockRef.current = Date.now();
-            }
-        };
-        document.addEventListener('pointerlockchange', handlePointerLockChange);
-        return () => document.removeEventListener('pointerlockchange', handlePointerLockChange);
-    }, [isGridDragging]);
-
     return (
         <div
             ref={containerRef}
@@ -558,133 +308,34 @@ const SvgCanvas = ({
                 ) : null}
 
                 <div className="fulcrums-overlay">
-                    {groupedConnections.map((group, index) => {
-                        const fromFulcrum = fulcrums.find(f => f.id === group.from);
-                        const toFulcrum = fulcrums.find(f => f.id === group.to);
-                        if (!fromFulcrum || !toFulcrum) return null;
-
-                        const fromPos = getFulcrumDisplayPosition(fromFulcrum, imageRect);
-                        const toPos = getFulcrumDisplayPosition(toFulcrum, imageRect);
-                        const isHovered = group.connections.some(conn => isSameConnection(hoveredConnection, conn));
-
-                        return (
-                            <FulcrumConnection
-                                key={`line-${group.from}-${group.to}-${index}`}
-                                connection={group.connections[0]}
-                                fromFulcrum={fromPos}
-                                toFulcrum={toPos}
-                                weight={group.weights[0]}
-                                isHovered={isHovered}
-                                connectionType={group.type}
-                                onMouseEnter={() => setHoveredConnection(group.connections[0])}
-                                onMouseLeave={() => setHoveredConnection(null)}
-                                onContextMenu={handleConnectionContextMenu}
-                                showWeight={false}
-                            />
-                        );
-                    })}
-
-                    {groupedConnections.map((group, index) => {
-                        const fromFulcrum = fulcrums.find(f => f.id === group.from);
-                        const toFulcrum = fulcrums.find(f => f.id === group.to);
-                        if (!fromFulcrum || !toFulcrum) return null;
-
-                        const fromPos = getFulcrumDisplayPosition(fromFulcrum, imageRect);
-                        const toPos = getFulcrumDisplayPosition(toFulcrum, imageRect);
-                        const dx = toPos.x - fromPos.x;
-                        const dy = toPos.y - fromPos.y;
-                        const length = Math.sqrt(dx * dx + dy * dy);
-                        if (!Number.isFinite(length) || length === 0) return null;
-                        const weightT = 0.78;
-                        const weightTReturn = 1 - weightT;
-                        const isGroupHovered = hoveredConnection
-                            && ((hoveredConnection.from === group.from && hoveredConnection.to === group.to)
-                                || (hoveredConnection.from === group.to && hoveredConnection.to === group.from));
-
-                        if (group.type === 'bidirectional') {
-                            const connectionAtoB = group.connections.find(conn => conn.from === group.from && conn.to === group.to);
-                            const connectionBtoA = group.connections.find(conn => conn.from === group.to && conn.to === group.from);
-                            const showWeightA = isGroupHovered;
-                            const showWeightB = isGroupHovered;
-
-                            return (
-                                <React.Fragment key={`weights-${group.from}-${group.to}-${index}`}>
-                                    <div
-                                        className={`connection-weight-standalone${showWeightA ? ' is-visible' : ''}`}
-                                        style={{
-                                            left: `${fromPos.x + dx * weightT}px`,
-                                            top: `${fromPos.y + dy * weightT}px`,
-                                            position: 'absolute',
-                                            transform: 'translate(-50%, -50%) scale(var(--weight-scale, 1))',
-                                            '--weight-scale': uiScale,
-                                            zIndex: 25
-                                        }}
-                                        onMouseEnter={() => setHoveredConnection(connectionAtoB)}
-                                        onMouseLeave={() => setHoveredConnection(null)}
-                                        onContextMenu={(e) => handleConnectionContextMenu(connectionAtoB, e)}
-                                    >
-                                        {connectionAtoB?.weight}
-                                    </div>
-                                    <div
-                                        className={`connection-weight-standalone${showWeightB ? ' is-visible' : ''}`}
-                                        style={{
-                                            left: `${fromPos.x + dx * weightTReturn}px`,
-                                            top: `${fromPos.y + dy * weightTReturn}px`,
-                                            position: 'absolute',
-                                            transform: 'translate(-50%, -50%) scale(var(--weight-scale, 1))',
-                                            '--weight-scale': uiScale,
-                                            zIndex: 25
-                                        }}
-                                        onMouseEnter={() => setHoveredConnection(connectionBtoA)}
-                                        onMouseLeave={() => setHoveredConnection(null)}
-                                        onContextMenu={(e) => handleConnectionContextMenu(connectionBtoA, e)}
-                                    >
-                                        {connectionBtoA?.weight}
-                                    </div>
-                                </React.Fragment>
-                            );
-                        }
-
-                        const showWeight = isSameConnection(hoveredConnection, group.connections[0]);
-
-                        return (
-                            <div
-                                key={`weight-${group.from}-${group.to}`}
-                                className={`connection-weight-standalone${showWeight ? ' is-visible' : ''}`}
-                                style={{
-                                    left: `${fromPos.x + dx * weightT}px`,
-                                    top: `${fromPos.y + dy * weightT}px`,
-                                    position: 'absolute',
-                                    transform: 'translate(-50%, -50%) scale(var(--weight-scale, 1))',
-                                    '--weight-scale': uiScale,
-                                    zIndex: 25
-                                }}
-                                onMouseEnter={() => setHoveredConnection(group.connections[0])}
-                                onMouseLeave={() => setHoveredConnection(null)}
-                                onContextMenu={(e) => handleConnectionContextMenu(group.connections[0], e)}
-                            >
-                                {group.weights[0]}
-                            </div>
-                        );
-                    })}
-
-                    {fulcrums.map(fulcrum => {
-                        const displayPos = getFulcrumDisplayPosition(fulcrum, imageRect);
-
-                        return (
-                            <FulcrumPoint
-                                key={fulcrum.id}
-                                fulcrum={fulcrum}
-                                position={displayPos}
-                                isHovered={hoveredFulcrum?.id === fulcrum.id}
-                                uiScale={uiScale}
-                                onMouseEnter={() => setHoveredFulcrum(fulcrum)}
-                                onMouseLeave={() => setHoveredFulcrum(null)}
-                                onContextMenu={(f, e) => onFulcrumContextMenu && onFulcrumContextMenu(f, e)}
-                                onDragStart={handleFulcrumDragStart}
-                            />
-                        );
-                    })}
+                    <ConnectionsLayer
+                        groupedConnections={groupedConnections}
+                        fulcrums={fulcrums}
+                        imageRect={imageRect}
+                        hoveredConnection={hoveredConnection}
+                        setHoveredConnection={setHoveredConnection}
+                        onConnectionContextMenu={handleConnectionContextMenu}
+                        isSameConnection={isSameConnection}
+                    />
+                    <ConnectionWeightsLayer
+                        groupedConnections={groupedConnections}
+                        fulcrums={fulcrums}
+                        imageRect={imageRect}
+                        hoveredConnection={hoveredConnection}
+                        setHoveredConnection={setHoveredConnection}
+                        onConnectionContextMenu={handleConnectionContextMenu}
+                        isSameConnection={isSameConnection}
+                        uiScale={uiScale}
+                    />
+                    <FulcrumsLayer
+                        fulcrums={fulcrums}
+                        imageRect={imageRect}
+                        hoveredFulcrum={hoveredFulcrum}
+                        setHoveredFulcrum={setHoveredFulcrum}
+                        uiScale={uiScale}
+                        onFulcrumContextMenu={onFulcrumContextMenu}
+                        onFulcrumDragStart={handleFulcrumDragStart}
+                    />
                 </div>
             </div>
         </div>
