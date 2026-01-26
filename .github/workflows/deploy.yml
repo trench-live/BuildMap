@@ -107,6 +107,12 @@ jobs:
               echo "$SUDO_PASS" | sudo -S env DOCKER_PASSWORD="$DOCKER_PASSWORD" DOCKER_HUB_LOGIN="$DOCKER_HUB_LOGIN" sh -c 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_HUB_LOGIN" --password-stdin'
             fi
 
-            echo "$SUDO_PASS" | sudo -S docker compose pull
-            echo "$SUDO_PASS" | sudo -S docker compose up -d
+            if docker compose version >/dev/null 2>&1; then
+              echo "$SUDO_PASS" | sudo -S docker compose pull
+              echo "$SUDO_PASS" | sudo -S docker compose up -d
+            else
+              echo "$SUDO_PASS" | sudo -S docker-compose pull
+              echo "$SUDO_PASS" | sudo -S docker-compose up -d
+            fi
+
             echo "$SUDO_PASS" | sudo -S docker image prune -f
