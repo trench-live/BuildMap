@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { convertImageToSvg } from '../utils';
+import { isValidImageType, scheduleContainerUpdate } from './utils/imageUpload';
 
 export const useImageUpload = (setEditorState, updateContainerSize) => {
     const handleImageUpload = useCallback(async (file) => {
@@ -9,8 +10,7 @@ export const useImageUpload = (setEditorState, updateContainerSize) => {
         }
 
         // Проверяем тип файла
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/svg+xml'];
-        if (!validTypes.includes(file.type)) {
+        if (!isValidImageType(file.type)) {
             alert('Неподдерживаемый формат файла. Используйте JPG, PNG, GIF или SVG.');
             return;
         }
@@ -29,12 +29,7 @@ export const useImageUpload = (setEditorState, updateContainerSize) => {
             console.log('✅ Image converted to SVG successfully');
 
             // Даем время на рендеринг, затем центрируем
-            setTimeout(() => {
-                if (updateContainerSize) {
-                    // Триггерим обновление размеров
-                    updateContainerSize();
-                }
-            }, 100);
+            scheduleContainerUpdate(updateContainerSize);
 
         } catch (error) {
             console.error('❌ Error converting image to SVG:', error);

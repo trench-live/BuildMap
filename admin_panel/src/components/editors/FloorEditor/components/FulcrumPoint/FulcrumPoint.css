@@ -18,12 +18,12 @@
 .fulcrum-point:hover {
     transform: translate(-50%, -50%) scale(calc(var(--point-scale, 1) * 1.2));
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    z-index: 20;
+    z-index: 40;
 }
 
 .fulcrum-point.hovered {
     transform: translate(-50%, -50%) scale(calc(var(--point-scale, 1) * 1.1));
-    z-index: 15;
+    z-index: 40;
 }
 
 .fulcrum-point.selected {

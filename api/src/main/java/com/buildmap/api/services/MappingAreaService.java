@@ -3,11 +3,13 @@ package com.buildmap.api.services;
 import com.buildmap.api.dto.mapping_area.MappingAreaSaveDto;
 import com.buildmap.api.dto.mapping_area.MappingAreaUpdateDto;
 import com.buildmap.api.dto.mapping_area.mappers.MappingAreaMapper;
+import com.buildmap.api.entities.mapping_area.Floor;
 import com.buildmap.api.entities.mapping_area.MappingArea;
 import com.buildmap.api.exceptions.MappingAreaNotFoundException;
 import com.buildmap.api.repos.MappingAreaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -52,9 +54,18 @@ public class MappingAreaService {
         return mappingAreaRepository.save(existingArea);
     }
 
+    @Transactional
     public void safeDelete(Long id) {
         MappingArea area = getById(id);
         area.setDeleted(true);
+        if (area.getFloors() != null) {
+            for (Floor floor : area.getFloors()) {
+                floor.setDeleted(true);
+                if (floor.getFulcrums() != null) {
+                    floor.getFulcrums().forEach(fulcrum -> fulcrum.setDeleted(true));
+                }
+            }
+        }
         mappingAreaRepository.save(area);
     }
 

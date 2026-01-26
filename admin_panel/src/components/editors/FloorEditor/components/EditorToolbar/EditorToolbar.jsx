@@ -1,116 +1,66 @@
 import React from 'react';
-import Button from '../../../../common/Modal/components/Button/Button';
+import ToolbarLeft from './components/ToolbarLeft';
+import ToolbarRight from './components/ToolbarRight';
 import './EditorToolbar.css';
 
+const labels = {
+    gridEnabled: 'Сетка: вкл',
+    gridDisabled: 'Сетка: выкл',
+    upload: '📁 Загрузить изображение',
+    resetView: '🏠 Сбросить вид',
+    gridDecrease: 'Сетка -',
+    gridIncrease: 'Сетка +',
+    gridDecreaseTitle: 'Уменьшить шаг сетки',
+    gridIncreaseTitle: 'Увеличить шаг сетки',
+    statScaleIcon: '📏',
+    statFulcrumIcon: '📍',
+    statConnectionIcon: '🔗',
+    clear: '🗑️ Очистить',
+    save: '💾 Сохранить',
+    saving: '💾 Сохранение...',
+};
+
 const EditorToolbar = ({
-                           onImageUpload,
-                           onResetView,
-                           onClearCanvas,
-                           onSave,
-                           onToggleGrid,
-                           onGridStepIncrease,
-                           onGridStepDecrease,
-                           scale,
-                           gridEnabled = false,
-                           hasContent,
-                           isSaving,
-                           fulcrumsCount = 0,
-                           connectionsCount = 0
-                       }) => {
-    const gridLabel = gridEnabled ? 'Сетка: вкл' : 'Сетка: выкл';
-    const handleImageUploadClick = () => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*,.svg';
-        input.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                onImageUpload(file); // Передаем файл, а не event
-            }
-        };
-        input.click();
-    };
+    onImageUpload,
+    onResetView,
+    onClearCanvas,
+    onSave,
+    onToggleGrid,
+    onGridStepIncrease,
+    onGridStepDecrease,
+    scale,
+    gridEnabled = false,
+    hasContent,
+    isSaving,
+    fulcrumsCount = 0,
+    connectionsCount = 0
+}) => {
+    const gridLabel = gridEnabled ? labels.gridEnabled : labels.gridDisabled;
 
     return (
         <div className="editor-toolbar">
-            <div className="toolbar-left">
-                <div className="toolbar-group">
-                    <Button
-                        variant="secondary"
-                        size="small"
-                        onClick={handleImageUploadClick}
-                    >
-                        📁 Загрузить изображение
-                    </Button>
-                </div>
+            <ToolbarLeft
+                onImageUpload={onImageUpload}
+                onResetView={onResetView}
+                onToggleGrid={onToggleGrid}
+                onGridStepIncrease={onGridStepIncrease}
+                onGridStepDecrease={onGridStepDecrease}
+                scale={scale}
+                gridEnabled={gridEnabled}
+                gridLabel={gridLabel}
+                hasContent={hasContent}
+                fulcrumsCount={fulcrumsCount}
+                connectionsCount={connectionsCount}
+                labels={labels}
+            />
 
-                <div className="toolbar-group">
-                    <Button
-                        variant="secondary"
-                        size="small"
-                        onClick={onResetView}
-                        disabled={!hasContent}
-                    >
-                        🏠 Сбросить вид
-                    </Button>
-                </div>
-
-                <div className="toolbar-group">
-                    <Button
-                        variant="secondary"
-                        size="small"
-                        onClick={onToggleGrid}
-                        className="grid-toggle"
-                    >
-                        {gridLabel}
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        size="small"
-                        onClick={onGridStepDecrease}
-                        disabled={!gridEnabled}
-                        title="Уменьшить шаг сетки"
-                    >
-                        Сетка -
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        size="small"
-                        onClick={onGridStepIncrease}
-                        disabled={!gridEnabled}
-                        title="Увеличить шаг сетки"
-                    >
-                        Сетка +
-                    </Button>
-                </div>
-
-                <div className="toolbar-stats">
-                    <span className="stat-item">📏 {Math.round(scale * 100)}%</span>
-                    <span className="stat-item">📍 {fulcrumsCount}</span>
-                    <span className="stat-item">🔗 {connectionsCount}</span>
-                </div>
-            </div>
-
-            <div className="toolbar-right">
-                <div className="toolbar-group">
-                    <Button
-                        variant="secondary"
-                        size="small"
-                        onClick={onClearCanvas}
-                        disabled={!hasContent}
-                    >
-                        🗑️ Очистить
-                    </Button>
-                    <Button
-                        variant="primary"
-                        size="small"
-                        onClick={onSave}
-                        disabled={isSaving || !hasContent}
-                    >
-                        {isSaving ? '💾 Сохранение...' : '💾 Сохранить'}
-                    </Button>
-                </div>
-            </div>
+            <ToolbarRight
+                onClearCanvas={onClearCanvas}
+                onSave={onSave}
+                hasContent={hasContent}
+                isSaving={isSaving}
+                labels={labels}
+            />
         </div>
     );
 };

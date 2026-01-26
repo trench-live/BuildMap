@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fulcrumAPI } from '../../../../services/api';
 import { useFulcrumActions } from './useFulcrumActions';
+import { filterActiveFulcrums, buildConnectionsFromFulcrums } from './utils/fulcrumConnections';
 
 export const useFulcrums = (floorId) => {
     const [fulcrums, setFulcrums] = useState([]);
@@ -41,26 +42,14 @@ export const useFulcrums = (floorId) => {
             console.log('📋 Raw fulcrums from API:', fulcrumsData);
 
             // Фильтруем удаленные точки (deleted: true)
-            const activeFulcrums = fulcrumsData.filter(fulcrum => !fulcrum.deleted);
+            const activeFulcrums = filterActiveFulcrums(fulcrumsData);
 
             console.log('✅ Active fulcrums after filter:', activeFulcrums);
 
             setFulcrums(activeFulcrums);
 
             // Извлекаем connections из fulcrums
-            const allConnections = [];
-            activeFulcrums.forEach(fulcrum => {
-                if (fulcrum.connections) {
-                    fulcrum.connections.forEach(connection => {
-                        allConnections.push({
-                            from: fulcrum.id,
-                            to: connection.connectedFulcrumId,
-                            weight: connection.weight
-                        });
-                    });
-                }
-            });
-            setConnections(allConnections);
+            setConnections(buildConnectionsFromFulcrums(activeFulcrums));
 
         } catch (err) {
             handleError('load_fulcrums_error', err);

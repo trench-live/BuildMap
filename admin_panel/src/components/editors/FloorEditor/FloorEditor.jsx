@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useFloorEditor, useImageUpload, useFulcrums } from './hooks';
+import useEditorModals from './hooks/useEditorModals';
 import EditorHeader from './components/EditorHeader/EditorHeader';
 import EditorToolbar from './components/EditorToolbar/EditorToolbar';
 import SvgCanvas from './components/SvgCanvas/SvgCanvas';
@@ -32,7 +33,6 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
     const {
         fulcrums,
         connections,
-        isLoading: fulcrumsLoading,
         createFulcrum,
         updateFulcrum,
         deleteFulcrum,
@@ -42,23 +42,30 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
     } = useFulcrums(floor?.id);
 
     // Состояние для модальных окон
-    const [fulcrumModal, setFulcrumModal] = useState({
-        visible: false,
-        mode: 'create', // 'create' или 'edit'
-        fulcrum: null,
-        position: null
+    const {
+        fulcrumModal,
+        connectionModal,
+        handleFulcrumCreate,
+        handleFulcrumContextMenu,
+        handleConnectionCreate,
+        handleConnectionContextMenu,
+        handleFulcrumSave,
+        handleFulcrumDelete,
+        handleConnectionSave,
+        handleConnectionDelete,
+        closeFulcrumModal,
+        closeConnectionModal
+    } = useEditorModals({
+        fulcrums,
+        connections,
+        createFulcrum,
+        updateFulcrum,
+        deleteFulcrum,
+        addConnection,
+        removeConnection
     });
 
-    const [connectionModal, setConnectionModal] = useState({
-        visible: false,
-        mode: 'create', // 'create' или 'edit'
-        connection: null,
-        fromFulcrum: null,
-        toFulcrum: null,
-        isBidirectional: true
-    });
-
-    // Перезагружаем fulcrums при каждом открытии редактора
+    // ????????????? fulcrums ??? ?????? ???????? ?????????
     useEffect(() => {
         if (visible && floor?.id) {
             reloadFulcrums();
@@ -87,199 +94,6 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
             setIsSaving(false);
         }
     }, [editorState.svgContent, handleFloorSave, reloadFulcrums]);
-
-    // Обработка создания fulcrum по ПКМ
-    const handleFulcrumCreate = (position, event) => {
-        setFulcrumModal({
-            visible: true,
-            mode: 'create',
-            fulcrum: null,
-            position: position
-        });
-    };
-
-    // Обработка контекстного меню fulcrum (ПКМ по существующей точке)
-    const handleFulcrumContextMenu = (fulcrum, event) => {
-        event.preventDefault();
-        event.stopPropagation();
-
-        setFulcrumModal({
-            visible: true,
-            mode: 'edit',
-            fulcrum: fulcrum,
-            position: null
-        });
-    };
-
-    // Обработка создания связи (перетаскивание)
-    const handleConnectionCreate = (fromFulcrum, toFulcrum) => {
-        setConnectionModal({
-            visible: true,
-            mode: 'create',
-            connection: null,
-            fromFulcrum: fromFulcrum,
-            toFulcrum: toFulcrum,
-            isBidirectional: true
-        });
-    };
-
-    // Обработка контекстного меню связи (ПКМ по связи)
-    const handleConnectionContextMenu = (connection, event) => {
-        event.preventDefault();
-        event.stopPropagation();
-
-        const fromFulcrum = fulcrums.find(f => f.id === connection.from);
-        const toFulcrum = fulcrums.find(f => f.id === connection.to);
-        const hasReverseConnection = connections.some(conn =>
-            conn.from === connection.to && conn.to === connection.from
-        );
-
-        setConnectionModal({
-            visible: true,
-            mode: 'edit',
-            connection: connection,
-            fromFulcrum: fromFulcrum,
-            toFulcrum: toFulcrum,
-            isBidirectional: hasReverseConnection
-        });
-    };
-
-    const normalizeConnectionWeight = (value) => {
-        const parsed = Number(value);
-        if (!Number.isFinite(parsed) || parsed < 1) return 1;
-        return parsed;
-    };
-
-    const syncInterfloorConnections = async (fulcrumId, rows = []) => {
-        for (const row of rows) {
-            if (row.forwardEnabled) {
-                await removeConnection(fulcrumId, row.id);
-                await addConnection(fulcrumId, {
-                    connectedFulcrumId: row.id,
-                    weight: normalizeConnectionWeight(row.forwardWeight)
-                });
-            } else {
-                await removeConnection(fulcrumId, row.id);
-            }
-
-            if (row.backwardEnabled) {
-                await removeConnection(row.id, fulcrumId);
-                await addConnection(row.id, {
-                    connectedFulcrumId: fulcrumId,
-                    weight: normalizeConnectionWeight(row.backwardWeight)
-                });
-            } else {
-                await removeConnection(row.id, fulcrumId);
-            }
-        }
-    };
-
-    // Сохранение fulcrum
-    const handleFulcrumSave = async (payload) => {
-        const { fulcrumData, connectionRows } = payload;
-        try {
-            if (fulcrumModal.mode === 'create') {
-                const newFulcrum = await createFulcrum(fulcrumData);
-                await syncInterfloorConnections(newFulcrum.id, connectionRows);
-                console.log('Fulcrum created:', newFulcrum);
-            } else {
-                // При обновлении отправляем все данные, включая координаты и floorId
-                const updatedFulcrum = await updateFulcrum(fulcrumModal.fulcrum.id, fulcrumData);
-                await syncInterfloorConnections(updatedFulcrum.id, connectionRows);
-                console.log('Fulcrum updated');
-            }
-            setFulcrumModal({ visible: false, mode: 'create', fulcrum: null, position: null });
-        } catch (error) {
-            alert(error.message);
-        }
-    };
-
-    // Удаление fulcrum
-    const handleFulcrumDelete = async () => {
-        if (fulcrumModal.mode === 'edit' && fulcrumModal.fulcrum) {
-            try {
-                await deleteFulcrum(fulcrumModal.fulcrum.id);
-                setFulcrumModal({ visible: false, mode: 'create', fulcrum: null, position: null });
-            } catch (error) {
-                alert(error.message);
-            }
-        }
-    };
-
-    // Сохранение связи
-    const handleConnectionSave = async (connectionData) => {
-        try {
-            const fromId = connectionModal.fromFulcrum.id;
-            const toId = connectionModal.toFulcrum.id;
-            const weight = connectionData.weight;
-            const bidirectional = connectionData.bidirectional;
-            const reverseExists = connections.some(conn =>
-                conn.from === toId && conn.to === fromId
-            );
-
-            if (connectionModal.mode === 'create') {
-                await addConnection(fromId, {
-                    connectedFulcrumId: toId,
-                    weight
-                });
-
-                if (bidirectional) {
-                    if (reverseExists) {
-                        await removeConnection(toId, fromId);
-                    }
-                    await addConnection(toId, {
-                        connectedFulcrumId: fromId,
-                        weight
-                    });
-                }
-
-                console.log('Connection created');
-            } else {
-                // ?"?>?? ???+???????>???????? ?????????? ?????????? ???????>???'?? ???'???????? ?? ???????????'?? ??????????
-                await removeConnection(connectionModal.connection.from, connectionModal.connection.to);
-                await addConnection(fromId, {
-                    connectedFulcrumId: toId,
-                    weight
-                });
-
-                if (bidirectional) {
-                    if (reverseExists) {
-                        await removeConnection(toId, fromId);
-                    }
-                    await addConnection(toId, {
-                        connectedFulcrumId: fromId,
-                        weight
-                    });
-                } else if (reverseExists) {
-                    await removeConnection(toId, fromId);
-                }
-
-                console.log('Connection updated');
-            }
-            setConnectionModal({
-                visible: false,
-                mode: 'create',
-                connection: null,
-                fromFulcrum: null,
-                toFulcrum: null,
-                isBidirectional: true
-            });
-        } catch (error) {
-            alert(error.message);
-        }
-    };
-
-    // Удаление связи
-    const handleConnectionDelete = async () => {
-        if (connectionModal.mode === 'edit' && connectionModal.connection) {
-            try {
-                await removeConnection(connectionModal.connection.from, connectionModal.connection.to);
-                setConnectionModal({ visible: false, mode: 'create', connection: null, fromFulcrum: null, toFulcrum: null, isBidirectional: true });
-            } catch (error) {
-                alert(error.message);
-            }
-        }
-    };
 
     if (!visible) return null;
 
@@ -332,7 +146,7 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                     mappingAreaId={floor?.mappingAreaId}
                     onSave={handleFulcrumSave}
                     onDelete={handleFulcrumDelete}
-                    onClose={() => setFulcrumModal({ visible: false, mode: 'create', fulcrum: null, position: null })}
+                    onClose={closeFulcrumModal}
                 />
 
                 {/* Модальное окно для связи */}
@@ -345,14 +159,7 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                     toFulcrum={connectionModal.toFulcrum}
                     onSave={handleConnectionSave}
                     onDelete={handleConnectionDelete}
-                    onClose={() => setConnectionModal({
-                        visible: false,
-                        mode: 'create',
-                        connection: null,
-                        fromFulcrum: null,
-                        toFulcrum: null,
-                        isBidirectional: true
-                    })}
+                    onClose={closeConnectionModal}
                 />
             </div>
         </div>

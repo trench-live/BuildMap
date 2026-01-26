@@ -13,6 +13,7 @@ import com.buildmap.api.services.FulcrumService;
 import com.buildmap.api.services.navigation.dijkstra_algorithm.DijkstraAlgorithm;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,7 @@ public class NavigationService {
     private final DijkstraAlgorithm dijkstraAlgorithm;
     private static final double LANDMARK_RADIUS = 0.1;
 
+    @Transactional(readOnly = true)
     public RouteDto findShortestPath(RouteRequestDto request) {
         // 1. Получаем стартовую и конечную точки для определения зоны
         Fulcrum startFulcrum = fulcrumService.getById(request.getStartFulcrumId());

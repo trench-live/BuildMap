@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../../../services/api';
 import AreaCard from '../AreaCard/AreaCard';
 import './AreasList.css';
@@ -9,6 +10,8 @@ const AreasList = ({
                        onEditArea,
                        onDeleteArea
                    }) => {
+    const navigate = useNavigate();
+
     if (!areas || areas.length === 0) {
         return (
             <div className="areas-empty">
@@ -23,8 +26,7 @@ const AreasList = ({
     };
 
     const handleNavigateToFloors = (area) => {
-        // TODO: Реализовать навигацию к этажам
-        console.log('Navigate to floors for area:', area.id);
+        navigate(`/floors?area=${area.id}`);
     };
 
     return (
