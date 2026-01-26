@@ -1,0 +1,5 @@
+target
+buildmap.db
+*.log
+.idea
+node_modules

@@ -9,6 +9,7 @@ import com.buildmap.api.entities.mapping_area.fulcrum.Fulcrum;
 import com.buildmap.api.entities.mapping_area.fulcrum.FulcrumConnection;
 import com.buildmap.api.exceptions.ConnectionAlreadyExistsException;
 import com.buildmap.api.exceptions.FulcrumNotFoundException;
+import com.buildmap.api.exceptions.ValidationException;
 import com.buildmap.api.repos.FulcrumRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,7 @@ public class FulcrumService {
     @Transactional
     public Fulcrum create(FulcrumSaveDto fulcrumDto) {
         validateQrSettings(fulcrumDto);
-        // Просто проверяем существование этажа (для валидации)
+        floorService.getById(fulcrumDto.getFloorId());
 
         Fulcrum fulcrum = fulcrumMapper.toEntity(fulcrumDto);
         return fulcrumRepository.save(fulcrum);
@@ -55,6 +56,7 @@ public class FulcrumService {
     @Transactional
     public Fulcrum update(Long id, FulcrumSaveDto fulcrumDto) {
         validateQrSettings(fulcrumDto);
+        floorService.getById(fulcrumDto.getFloorId());
         Fulcrum existingFulcrum = getById(id);
         fulcrumMapper.updateEntity(fulcrumDto, existingFulcrum);
         return fulcrumRepository.save(existingFulcrum);
@@ -76,6 +78,7 @@ public class FulcrumService {
     public void addConnection(Long fulcrumId, FulcrumConnectionSaveDto connectionDto) {
         Fulcrum fulcrum = getById(fulcrumId);
         Fulcrum connectedFulcrum = getById(connectionDto.getConnectedFulcrumId());
+        ensureSameMappingArea(fulcrum, connectedFulcrum);
 
         boolean connectionExists = fulcrum.getConnections().stream()
                 .anyMatch(conn -> conn.getConnectedFulcrum().getId().equals(connectedFulcrum.getId()));
@@ -92,6 +95,7 @@ public class FulcrumService {
     public void removeConnection(Long fulcrumId, Long connectedFulcrumId) {
         Fulcrum fulcrum = getById(fulcrumId);
         Fulcrum connectedFulcrum = getById(connectedFulcrumId);
+        ensureSameMappingArea(fulcrum, connectedFulcrum);
 
         fulcrum.removeConnection(connectedFulcrum);
         fulcrumRepository.save(fulcrum);
@@ -107,6 +111,14 @@ public class FulcrumService {
     private void validateQrSettings(FulcrumSaveDto fulcrumDto) {
         if (Boolean.TRUE.equals(fulcrumDto.getHasQr()) && fulcrumDto.getFacingDirection() == null) {
             throw new IllegalArgumentException("Facing direction is required when QR is enabled");
+        }
+    }
+
+    private void ensureSameMappingArea(Fulcrum left, Fulcrum right) {
+        MappingArea leftArea = left != null ? left.getMappingArea() : null;
+        MappingArea rightArea = right != null ? right.getMappingArea() : null;
+        if (leftArea == null || rightArea == null || !leftArea.getId().equals(rightArea.getId())) {
+            throw new ValidationException("Fulcrums must belong to the same mapping area");
         }
     }
 

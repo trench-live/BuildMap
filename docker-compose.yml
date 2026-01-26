@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  api:
+    image: ${DOCKERHUB_USER}/buildmap-api:${IMAGE_TAG:-latest}
+    container_name: buildmap_api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:sqlite:/app/buildmap.db}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      AUTH_DEV_ENABLED: ${AUTH_DEV_ENABLED:-false}
+      AUTH_DEV_SECRET: ${AUTH_DEV_SECRET:-dev}
+      QR_BASE_URL: ${QR_BASE_URL:-http://localhost:3001}
+      JAVA_OPTS: ${JAVA_OPTS:-}
+    volumes:
+      - ./data/buildmap.db:/app/buildmap.db
+
+  admin_panel:
+    image: ${DOCKERHUB_USER}/buildmap-admin:${IMAGE_TAG:-latest}
+    container_name: buildmap_admin
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+  buildmap_nav:
+    image: ${DOCKERHUB_USER}/buildmap-nav:${IMAGE_TAG:-latest}
+    container_name: buildmap_nav
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    depends_on:
+      - api

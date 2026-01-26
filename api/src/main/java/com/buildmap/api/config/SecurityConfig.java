@@ -4,6 +4,7 @@ import com.buildmap.api.services.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -29,9 +30,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
-                        .requestMatchers("/api/fulcrum/**").permitAll()
-                        .requestMatchers("/api/navigation/**").permitAll()
-                        .requestMatchers("/api/floor/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/fulcrum/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/floor/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/navigation/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/navigation/path").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
