@@ -1,0 +1,111 @@
+name: Deploy to Server
+
+on:
+  workflow_call:
+    inputs:
+      server_host:
+        type: string
+        required: false
+        default: "82.146.48.183"
+      server_port:
+        type: string
+        required: false
+        default: "22"
+      deploy_path:
+        type: string
+        required: false
+        default: "buildmap"
+      admin_api_url:
+        type: string
+        required: true
+      admin_api_base_url:
+        type: string
+        required: true
+      nav_api_base_url:
+        type: string
+        required: true
+      qr_base_url:
+        type: string
+        required: false
+        default: "http://82.146.48.183:3001"
+      auth_dev_enabled:
+        type: string
+        required: false
+        default: "false"
+    secrets:
+      DOCKER_HUB_LOGIN:
+        required: true
+      DOCKER_HUB_PASSWORD:
+        required: false
+      DOCKER_HUB_TOKEN:
+        required: false
+      TELEGRAM_TOKEN:
+        required: true
+      SERVER_USER:
+        required: true
+      SERVER_PASSWORD:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Upload docker-compose
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ inputs.server_host }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ inputs.server_port }}
+          source: "docker-compose.yml"
+          target: ${{ inputs.deploy_path }}
+
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DOCKER_HUB_LOGIN: ${{ secrets.DOCKER_HUB_LOGIN }}
+          DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          SUDO_PASS: ${{ secrets.SERVER_PASSWORD }}
+          ADMIN_API_URL: ${{ inputs.admin_api_url }}
+          ADMIN_API_BASE_URL: ${{ inputs.admin_api_base_url }}
+          NAV_API_BASE_URL: ${{ inputs.nav_api_base_url }}
+          QR_BASE_URL: ${{ inputs.qr_base_url }}
+          AUTH_DEV_ENABLED: ${{ inputs.auth_dev_enabled }}
+        with:
+          host: ${{ inputs.server_host }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ inputs.server_port }}
+          envs: DOCKER_HUB_LOGIN,DOCKER_HUB_PASSWORD,DOCKER_HUB_TOKEN,TELEGRAM_TOKEN,ADMIN_API_URL,ADMIN_API_BASE_URL,NAV_API_BASE_URL,QR_BASE_URL,AUTH_DEV_ENABLED
+          script: |
+            set -e
+
+            mkdir -p ~/${{ inputs.deploy_path }}/data
+            cd ~/${{ inputs.deploy_path }}
+
+            cat > .env <<EOF
+            DOCKERHUB_USER=${DOCKER_HUB_LOGIN}
+            IMAGE_TAG=latest
+            ADMIN_API_URL=${ADMIN_API_URL}
+            ADMIN_API_BASE_URL=${ADMIN_API_BASE_URL}
+            NAV_API_BASE_URL=${NAV_API_BASE_URL}
+            SPRING_DATASOURCE_URL=jdbc:sqlite:/app/buildmap.db
+            TELEGRAM_BOT_TOKEN=${TELEGRAM_TOKEN}
+            AUTH_DEV_ENABLED=${AUTH_DEV_ENABLED}
+            AUTH_DEV_SECRET=dev
+            QR_BASE_URL=${QR_BASE_URL}
+            EOF
+
+            DOCKER_PASSWORD="${DOCKER_HUB_TOKEN:-$DOCKER_HUB_PASSWORD}"
+            if [ -n "$DOCKER_PASSWORD" ]; then
+              echo "$DOCKER_PASSWORD" | sudo -S docker login -u "$DOCKER_HUB_LOGIN" --password-stdin
+            fi
+
+            sudo -S docker compose pull
+            sudo -S docker compose up -d
+            sudo -S docker image prune -f

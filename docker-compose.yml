@@ -15,7 +15,7 @@ services:
       QR_BASE_URL: ${QR_BASE_URL:-http://localhost:3001}
       JAVA_OPTS: ${JAVA_OPTS:-}
     volumes:
-      - /opt/buildmap/data/buildmap.db:/app/buildmap.db
+      - ./data/buildmap.db:/app/buildmap.db
 
   admin_panel:
     image: ${DOCKERHUB_USER}/buildmap-admin:${IMAGE_TAG:-latest}
