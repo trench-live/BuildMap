@@ -4,8 +4,9 @@ import ModalHeader from '../../../../common/Modal/components/ModalHeader/ModalHe
 import ModalContent from '../../../../common/Modal/components/ModalContent/ModalContent';
 import ModalActions from '../../../../common/Modal/components/ModalActions/ModalActions';
 import Button from '../../../../common/Modal/components/Button/Button';
-import { FULCRUM_POINT_ICONS } from '../FulcrumPoint/types/fulcrumTypes';
 import { useConnectionForm } from './hooks/useConnectionForm';
+import ConnectionInfo from './components/ConnectionInfo';
+import ConnectionFormFields from './components/ConnectionFormFields';
 import './ConnectionModal.css';
 
 const ConnectionModal = ({
@@ -30,7 +31,6 @@ const ConnectionModal = ({
         getSubmitData
     } = useConnectionForm();
 
-    // Инициализация формы при открытии модального окна
     useEffect(() => {
         if (visible) {
             if (mode === 'edit' && connection) {
@@ -67,74 +67,22 @@ const ConnectionModal = ({
         <div className="modal-overlay">
             <Modal size="small" className="connection-modal">
                 <ModalHeader
-                    title={mode === 'create' ? 'Создание связи' : 'Редактирование связи'}
+                    title={mode === 'create' ? '\u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 \u0441\u0432\u044f\u0437\u0438' : '\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435 \u0441\u0432\u044f\u0437\u0438'}
                     onClose={onClose}
                 />
 
                 <form onSubmit={handleSubmit}>
                     <ModalContent>
-                        {/* Информация о связываемых точках */}
-                        <div className="connection-info">
-                            <div className="fulcrum-info">
-                                <span className="fulcrum-icon">
-                                    {fromFulcrum ? FULCRUM_POINT_ICONS[fromFulcrum.type] : '📍'}
-                                </span>
-                                <div className="fulcrum-details">
-                                    <div className="fulcrum-name">{fromFulcrum?.name || 'Неизвестно'}</div>
-                                    <div className="fulcrum-type">{fromFulcrum?.type || ''}</div>
-                                </div>
-                            </div>
+                        <ConnectionInfo
+                            fromFulcrum={fromFulcrum}
+                            toFulcrum={toFulcrum}
+                        />
 
-                            <div className="connection-arrow">→</div>
-
-                            <div className="fulcrum-info">
-                                <span className="fulcrum-icon">
-                                    {toFulcrum ? FULCRUM_POINT_ICONS[toFulcrum.type] : '📍'}
-                                </span>
-                                <div className="fulcrum-details">
-                                    <div className="fulcrum-name">{toFulcrum?.name || 'Неизвестно'}</div>
-                                    <div className="fulcrum-type">{toFulcrum?.type || ''}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="connection-weight">
-                                Вес связи *
-                                <span className="hint">(влияет на расчет маршрута)</span>
-                            </label>
-                            <input
-                                id="connection-weight"
-                                type="number"
-                                value={formData.weight}
-                                onChange={(e) => updateField('weight', e.target.value)}
-                                min="0.1"
-                                max="100"
-                                step="0.1"
-                                required
-                                className={errors.weight ? 'error' : ''}
-                            />
-                            {errors.weight && <span className="error-message">{errors.weight}</span>}
-                            <div className="weight-examples">
-                                <small>
-                                    Примеры: 1.0 - нормально, 2.0 - сложнее пройти, 0.5 - легче пройти
-                                </small>
-                            </div>
-                        </div>
-                        <div className="form-group checkbox-group">
-                            <label htmlFor="connection-bidirectional" className="checkbox-label">
-                                <input
-                                    id="connection-bidirectional"
-                                    type="checkbox"
-                                    checked={Boolean(formData.bidirectional)}
-                                    onChange={(e) => updateField('bidirectional', e.target.checked)}
-                                />
-                                <span className="checkbox-text">
-                                    {' Двунаправленная связь'}
-                                </span>
-                            </label>
-                            <span className="hint">{'Автоматически создать/обновить обратную связь.'}</span>
-                        </div>
+                        <ConnectionFormFields
+                            formData={formData}
+                            errors={errors}
+                            updateField={updateField}
+                        />
                     </ModalContent>
 
                     <ModalActions align="right">
@@ -145,7 +93,7 @@ const ConnectionModal = ({
                                 onClick={onDelete}
                                 disabled={isSubmitting}
                             >
-                                Удалить
+                                {'\u0423\u0434\u0430\u043b\u0438\u0442\u044c'}
                             </Button>
                         )}
                         <Button
@@ -154,14 +102,14 @@ const ConnectionModal = ({
                             onClick={onClose}
                             disabled={isSubmitting}
                         >
-                            Отмена
+                            {'\u041e\u0442\u043c\u0435\u043d\u0430'}
                         </Button>
                         <Button
                             type="submit"
                             variant="primary"
                             disabled={isSubmitting}
                         >
-                            {isSubmitting ? 'Сохранение...' : (mode === 'create' ? 'Создать' : 'Сохранить')}
+                            {isSubmitting ? '\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435...' : (mode === 'create' ? '\u0421\u043e\u0437\u0434\u0430\u0442\u044c' : '\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c')}
                         </Button>
                     </ModalActions>
                 </form>

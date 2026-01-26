@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { floorAPI } from '../../services/api';
 import { useFloors } from './hooks/useFloors';
 import { useFloorForm } from './hooks/useFloorForm';
@@ -13,11 +14,19 @@ import {
 } from './components';
 import './Floors.css';
 
+const parseAreaId = (value) => {
+    if (!value) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
 const Floors = () => {
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [editorVisible, setEditorVisible] = useState(false);
     const [floorToDelete, setFloorToDelete] = useState(null);
     const [editingFloor, setEditingFloor] = useState(null);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const requestedAreaId = parseAreaId(searchParams.get('area'));
 
     const {
         areas,
@@ -46,6 +55,18 @@ const Floors = () => {
             loadFloorsCountForAllAreas();
         }
     });
+
+    useEffect(() => {
+        if (!requestedAreaId || !areas?.length) return;
+        const areaExists = areas.some(area => area.id === requestedAreaId);
+        if (!areaExists) return;
+        if (expandedArea !== requestedAreaId) {
+            toggleArea(requestedAreaId);
+        }
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.delete('area');
+        setSearchParams(nextParams, { replace: true });
+    }, [requestedAreaId, areas, expandedArea, toggleArea, searchParams, setSearchParams]);
 
     const handleDeleteClick = (floor) => {
         setFloorToDelete(floor);

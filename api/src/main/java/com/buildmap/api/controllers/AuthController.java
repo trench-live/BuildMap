@@ -53,8 +53,14 @@ public class AuthController {
 
     @PostMapping("/test-login")
     public ResponseEntity<AuthResponseDto> testLogin(@RequestBody TestLoginRequest request) {
+        if (!devAuthEnabled) {
+            return ResponseEntity.status(403).build();
+        }
+        if (request.getSecret() == null || !request.getSecret().equals(devAuthSecret)) {
+            return ResponseEntity.status(401).build();
+        }
+
         System.out.println("=== TEST LOGIN ===");
-        System.out.println("Request: " + request);
 
         try {
             // Создаем или находим пользователя
@@ -137,6 +143,7 @@ public class AuthController {
     static class TestLoginRequest {
         private Long userId;
         private String name;
+        private String secret;
     }
 
     @Data
@@ -150,7 +157,7 @@ public class AuthController {
     @PostMapping("/telegram")
     public ResponseEntity<AuthResponseDto> telegramAuth(@RequestBody TelegramAuthDto authData) {
         System.out.println("=== TELEGRAM AUTH STARTED ===");
-        System.out.println("Received Telegram data: " + authData);
+        System.out.println("Received Telegram data for id: " + authData.getId());
 
         try {
             // Валидируем данные от Telegram
@@ -179,8 +186,6 @@ public class AuthController {
 
             // Генерируем JWT токен
             String token = jwtService.generateToken(user.getId());
-            System.out.println("🔑 Token generated: " + token.substring(0, 20) + "...");
-
             // Преобразуем в DTO
             UserDto userDto = userMapper.toDto(user);
 

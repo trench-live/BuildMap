@@ -1,15 +1,13 @@
 import React from 'react';
+import HeaderTitle from './components/HeaderTitle';
+import CloseButton from './components/CloseButton';
 import './EditorHeader.css';
 
-const EditorHeader = ({ floorName, onClose }) => {
-    return (
-        <div className="editor-header">
-            <h3>Редактор этажа: {floorName}</h3>
-            <button className="close-btn" onClick={onClose} aria-label="Закрыть редактор">
-                ×
-            </button>
-        </div>
-    );
-};
+const EditorHeader = ({ floorName, onClose }) => (
+    <div className="editor-header">
+        <HeaderTitle floorName={floorName} />
+        <CloseButton onClose={onClose} />
+    </div>
+);
 
 export default EditorHeader;

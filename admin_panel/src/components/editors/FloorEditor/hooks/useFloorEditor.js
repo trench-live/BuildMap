@@ -2,55 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { floorAPI } from '../../../../services/api';
 import { EDITOR_MODES } from '../types/editorTypes';
 
-const GRID_STEP_DEFAULT = 0.04;
-const GRID_STEP_MIN = 0.005;
-const GRID_STEP_MAX = 0.2;
-const GRID_OFFSET_STORAGE_PREFIX = 'buildmap.floorEditor.gridOffset.';
-
-const clampGridStep = (value) => {
-    if (!Number.isFinite(value)) return GRID_STEP_DEFAULT;
-    const clamped = Math.max(GRID_STEP_MIN, Math.min(GRID_STEP_MAX, value));
-    return Number(clamped.toFixed(6));
-};
-
-const clamp01 = (value) => Math.min(1, Math.max(0, value));
-
-const normalizeGridOffset = (offset) => {
-    if (!offset || typeof offset !== 'object') {
-        return { x: 0, y: 0 };
-    }
-    const x = Number(offset.x);
-    const y = Number(offset.y);
-    return {
-        x: Number.isFinite(x) ? clamp01(x) : 0,
-        y: Number.isFinite(y) ? clamp01(y) : 0
-    };
-};
-
-const loadGridOffset = (floorId) => {
-    if (!floorId) return null;
-    try {
-        const raw = localStorage.getItem(`${GRID_OFFSET_STORAGE_PREFIX}${floorId}`);
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        return normalizeGridOffset(parsed);
-    } catch {
-        return null;
-    }
-};
-
-const saveGridOffset = (floorId, offset) => {
-    if (!floorId) return;
-    try {
-        const normalized = normalizeGridOffset(offset);
-        localStorage.setItem(
-            `${GRID_OFFSET_STORAGE_PREFIX}${floorId}`,
-            JSON.stringify(normalized)
-        );
-    } catch {
-        // ignore storage errors
-    }
-};
+import {
+    GRID_STEP_DEFAULT,
+    clampGridStep,
+    normalizeGridOffset,
+    loadGridOffset,
+    saveGridOffset
+} from './utils/gridSettings';
+import { calculateSvgFit } from './utils/svgFit';
 
 export const useFloorEditor = (floor, onSave, onClose) => {
     const [editorState, setEditorState] = useState({
@@ -64,7 +23,7 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         selectedFulcrum: null,
         selectedConnection: null,
         dragStartFulcrum: null,
-        gridEnabled: true,
+        gridEnabled: false,
         gridStep: GRID_STEP_DEFAULT,
         gridOffset: { x: 0, y: 0 }
     });
@@ -75,44 +34,16 @@ export const useFloorEditor = (floor, onSave, onClose) => {
 
     // Центруем и подгоняем изображение под контейнер
     const centerAndFitImage = useCallback((svgContent, containerWidth, containerHeight) => {
-        if (!svgContent || !containerWidth || !containerHeight) return;
+        const fit = calculateSvgFit(svgContent, containerWidth, containerHeight);
+        if (!fit) return;
 
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = svgContent;
-        const svgElement = tempDiv.querySelector('svg');
-        if (!svgElement) return;
-
-        const viewBox = svgElement.getAttribute('viewBox');
-        let svgWidth;
-        let svgHeight;
-
-        if (viewBox) {
-            const [, , width, height] = viewBox.split(' ').map(Number);
-            svgWidth = width;
-            svgHeight = height;
-        } else {
-            svgWidth = svgElement.width.baseVal.value || 800;
-            svgHeight = svgElement.height.baseVal.value || 600;
-        }
-
-        const scaleX = containerWidth / svgWidth;
-        const scaleY = containerHeight / svgHeight;
-        // Не уменьшаем масштаб ниже 1.0 при первом открытии
-        const scale = Math.max(1, Math.min(scaleX, scaleY));
-
-        // Центруем, но не даём сместиться за границы контейнера
-        const offsetX = Math.max(0, (containerWidth - svgWidth * scale) / 2);
-        const offsetY = Math.max(0, (containerHeight - svgHeight * scale) / 2);
-
-        setSvgSize({ width: svgWidth, height: svgHeight });
+        setSvgSize({ width: fit.svgWidth, height: fit.svgHeight });
 
         setEditorState(prev => ({
             ...prev,
-            scale,
-            offset: { x: offsetX, y: offsetY }
+            scale: fit.scale,
+            offset: { x: fit.offsetX, y: fit.offsetY }
         }));
-
-        tempDiv.remove();
     }, []);
 
     // Загружаем данные этажа при смене floor
@@ -131,7 +62,7 @@ export const useFloorEditor = (floor, onSave, onClose) => {
             selectedFulcrum: null,
             selectedConnection: null,
             dragStartFulcrum: null,
-            gridEnabled: prev.gridEnabled ?? true,
+            gridEnabled: prev.gridEnabled ?? false,
             gridStep: clampGridStep(prev.gridStep ?? GRID_STEP_DEFAULT),
             gridOffset: savedGridOffset ?? normalizeGridOffset(prev.gridOffset)
         }));

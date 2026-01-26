@@ -21,6 +21,8 @@ public class TelegramAuthService {
     @Value("${telegram.bot.token:}")
     private String botToken;
 
+    @Value("${auth.dev.enabled:false}")
+    private boolean devAuthEnabled;
     private void ensureBotTokenConfigured() {
         if (botToken == null || botToken.isBlank()) {
             throw new IllegalStateException("Telegram bot token is not configured (telegram.bot.token)");
@@ -55,6 +57,9 @@ public class TelegramAuthService {
     }
 
     private boolean isDevelopmentData(TelegramAuthDto authData) {
+        if (!devAuthEnabled) {
+            return false;
+        }
         // Разрешаем данные с development хешами
         return authData.getHash() != null &&
                 (authData.getHash().startsWith("dev_hash_") ||
