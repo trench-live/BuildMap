@@ -28,6 +28,10 @@ on:
         type: string
         required: false
         default: "http://82.146.48.183:3001"
+      cors_allowed_origins:
+        type: string
+        required: false
+        default: ""
       auth_dev_enabled:
         type: string
         required: false
@@ -75,19 +79,24 @@ jobs:
           ADMIN_API_BASE_URL: ${{ inputs.admin_api_base_url }}
           NAV_API_BASE_URL: ${{ inputs.nav_api_base_url }}
           QR_BASE_URL: ${{ inputs.qr_base_url }}
+          CORS_ALLOWED_ORIGINS: ${{ inputs.cors_allowed_origins }}
           AUTH_DEV_ENABLED: ${{ inputs.auth_dev_enabled }}
         with:
           host: ${{ inputs.server_host }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ inputs.server_port }}
-          envs: DOCKER_HUB_LOGIN,DOCKER_HUB_PASSWORD,DOCKER_HUB_TOKEN,TELEGRAM_TOKEN,SUDO_PASS,ADMIN_API_URL,ADMIN_API_BASE_URL,NAV_API_BASE_URL,QR_BASE_URL,AUTH_DEV_ENABLED
+          envs: DOCKER_HUB_LOGIN,DOCKER_HUB_PASSWORD,DOCKER_HUB_TOKEN,TELEGRAM_TOKEN,SUDO_PASS,ADMIN_API_URL,ADMIN_API_BASE_URL,NAV_API_BASE_URL,QR_BASE_URL,CORS_ALLOWED_ORIGINS,AUTH_DEV_ENABLED
           script: |
             set -e
 
             mkdir -p ~/${{ inputs.deploy_path }}/data
             cd ~/${{ inputs.deploy_path }}
             touch data/buildmap.db
+
+            if [ -z "$CORS_ALLOWED_ORIGINS" ]; then
+              CORS_ALLOWED_ORIGINS="http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001,https://buildmap.ru,https://www.buildmap.ru,https://admin.buildmap.ru,https://api.buildmap.ru,https://*.loca.lt,http://*.loca.lt"
+            fi
 
             cat > .env <<EOF
             DOCKERHUB_USER=${DOCKER_HUB_LOGIN}
@@ -100,6 +109,7 @@ jobs:
             AUTH_DEV_ENABLED=${AUTH_DEV_ENABLED}
             AUTH_DEV_SECRET=dev
             QR_BASE_URL=${QR_BASE_URL}
+            CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
             EOF
 
             DOCKER_PASSWORD="${DOCKER_HUB_TOKEN:-$DOCKER_HUB_PASSWORD}"

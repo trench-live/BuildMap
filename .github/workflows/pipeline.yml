@@ -28,6 +28,7 @@ jobs:
       admin_api_base_url: ${{ vars.ADMIN_API_BASE_URL }}
       nav_api_base_url: ${{ vars.NAV_API_BASE_URL }}
       qr_base_url: ${{ vars.QR_BASE_URL }}
+      cors_allowed_origins: ${{ vars.CORS_ALLOWED_ORIGINS }}
       auth_dev_enabled: ${{ vars.AUTH_DEV_ENABLED }}
     secrets:
       DOCKER_HUB_LOGIN: ${{ secrets.DOCKER_HUB_LOGIN }}

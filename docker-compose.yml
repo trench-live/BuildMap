@@ -13,6 +13,7 @@ services:
       AUTH_DEV_ENABLED: ${AUTH_DEV_ENABLED:-false}
       AUTH_DEV_SECRET: ${AUTH_DEV_SECRET:-dev}
       QR_BASE_URL: ${QR_BASE_URL:-http://localhost:3001}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001,https://buildmap.ru,https://www.buildmap.ru,https://admin.buildmap.ru,https://api.buildmap.ru,https://*.loca.lt,http://*.loca.lt}
       JAVA_OPTS: ${JAVA_OPTS:-}
     volumes:
       - ./data/buildmap.db:/app/buildmap.db
