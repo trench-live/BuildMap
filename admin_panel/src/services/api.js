@@ -1,6 +1,24 @@
 import axios from 'axios';
 
-export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+const getDefaultApiBaseUrl = () => {
+    if (typeof window === 'undefined') {
+        return 'http://localhost:8080';
+    }
+
+    const { hostname, protocol } = window.location;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://localhost:8080';
+    }
+
+    if (hostname.startsWith('api.')) {
+        return `${protocol}//${hostname}`;
+    }
+
+    const baseHost = hostname.replace(/^admin\./, '').replace(/^www\./, '');
+    return `${protocol}//api.${baseHost}`;
+};
+
+export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || getDefaultApiBaseUrl();
 
 const api = axios.create({
     baseURL: API_BASE_URL,

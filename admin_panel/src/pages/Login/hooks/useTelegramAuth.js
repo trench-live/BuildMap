@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
+import { API_BASE_URL } from '../../../services/api';
 
 export const useTelegramAuth = () => {
     const { login } = useAuth();
@@ -16,7 +17,7 @@ export const useTelegramAuth = () => {
         try {
             console.log('🔄 Processing Telegram auth with data:', telegramUser);
 
-            const API_URL = 'http://localhost:8080/api/auth/telegram';
+            const API_URL = `${API_BASE_URL}/api/auth/telegram`;
             console.log('🌐 Sending to backend:', API_URL);
 
             const response = await fetch(API_URL, {
@@ -93,3 +94,4 @@ export const useTelegramAuth = () => {
         handleTelegramAuth
     };
 };
+
