@@ -24,7 +24,7 @@ public class SecurityConfig {
     @Autowired
     private JwtService jwtService;
 
-    @Value("${app.cors.allowed-origins}")
+    @Value("${cors.allowed-origins:}")
     private String allowedOrigins;
 
     @Bean
@@ -54,7 +54,22 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        List<String> originPatterns = Arrays.stream(allowedOrigins.split(","))
+        String originSource = allowedOrigins == null ? "" : allowedOrigins.trim();
+        if (originSource.isEmpty()) {
+            originSource = String.join(",",
+                    "http://localhost:3000",
+                    "http://localhost:3001",
+                    "http://127.0.0.1:3000",
+                    "http://127.0.0.1:3001",
+                    "https://buildmap.ru",
+                    "https://www.buildmap.ru",
+                    "https://admin.buildmap.ru",
+                    "https://api.buildmap.ru",
+                    "https://*.loca.lt",
+                    "http://*.loca.lt"
+            );
+        }
+        List<String> originPatterns = Arrays.stream(originSource.split(","))
                 .map(String::trim)
                 .filter(origin -> !origin.isEmpty())
                 .collect(Collectors.toList());
