@@ -104,7 +104,7 @@ jobs:
             ADMIN_API_URL=${ADMIN_API_URL}
             ADMIN_API_BASE_URL=${ADMIN_API_BASE_URL}
             NAV_API_BASE_URL=${NAV_API_BASE_URL}
-            SPRING_DATASOURCE_URL=jdbc:sqlite:/app/buildmap.db
+            SPRING_DATASOURCE_URL=jdbc:sqlite:/app/data/buildmap.db
             TELEGRAM_BOT_TOKEN=${TELEGRAM_TOKEN}
             AUTH_DEV_ENABLED=${AUTH_DEV_ENABLED}
             AUTH_DEV_SECRET=dev
