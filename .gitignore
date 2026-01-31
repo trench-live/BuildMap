@@ -211,3 +211,11 @@ application.yml
 # Database
 *.db
 *.sqlite
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Docker data
+data/

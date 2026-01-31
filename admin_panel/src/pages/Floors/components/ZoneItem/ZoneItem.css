@@ -1,0 +1,7 @@
+.zone-item {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    background: white;
+    overflow: hidden;
+}

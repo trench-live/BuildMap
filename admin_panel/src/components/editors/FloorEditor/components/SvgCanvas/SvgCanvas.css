@@ -1,0 +1,212 @@
+.svg-canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #f8fafc;
+    border: none;
+    border-radius: 0;
+    overflow: hidden;
+    cursor: grab;
+    user-select: none;
+}
+
+.svg-canvas.dragging {
+    cursor: grabbing;
+}
+
+.svg-canvas.creating-connection {
+    cursor: crosshair;
+}
+
+.svg-canvas.creating-connection .fulcrum-point {
+    cursor: crosshair;
+}
+
+.canvas-content-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    will-change: transform;
+    transition: transform 0.1s ease-out;
+}
+
+.svg-canvas.dragging .canvas-content-wrapper {
+    transition: none;
+}
+
+/* Основной контейнер для всего контента с трансформациями */
+
+.canvas-image-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.canvas-image-layer .svg-content {
+    width: 100%;
+    height: 100%;
+}
+
+.canvas-image-layer .svg-content svg {
+    width: 100%;
+    height: 100%;
+}
+
+.grid-handle {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 12px;
+    background: rgba(15, 23, 42, 0.8);
+    color: #f8fafc;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    cursor: grab;
+    user-select: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 30;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.grid-handle:hover {
+    transform: translateX(-50%) scale(1.03);
+}
+
+.grid-handle.is-dragging {
+    cursor: grabbing;
+    opacity: 1;
+}
+
+.svg-canvas:hover .grid-handle {
+    opacity: 1;
+}
+
+.grid-handle-icon {
+    display: inline-block;
+    line-height: 1;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+.grid-handle-text {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.svg-canvas.grid-dragging {
+    cursor: none;
+}
+
+.grid-overlay {
+    position: absolute;
+    pointer-events: none;
+    z-index: 2;
+    background-image:
+        linear-gradient(to right, rgba(148, 163, 184, 0.25) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.25) 1px, transparent 1px),
+        linear-gradient(to right, rgba(148, 163, 184, 0.45) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.45) 1px, transparent 1px);
+    background-size:
+        var(--grid-step-x) var(--grid-step-y),
+        var(--grid-step-x) var(--grid-step-y),
+        var(--grid-major-step-x) var(--grid-major-step-y),
+        var(--grid-major-step-x) var(--grid-major-step-y);
+    background-position:
+        var(--grid-offset-x) var(--grid-offset-y),
+        var(--grid-offset-x) var(--grid-offset-y),
+        var(--grid-offset-x) var(--grid-offset-y),
+        var(--grid-offset-x) var(--grid-offset-y);
+}
+.fulcrums-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* Разрешаем события для всех интерактивных элементов */
+.fulcrum-point,
+.fulcrum-connection * {
+    pointer-events: auto;
+}
+
+.temp-connection {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 4;
+}
+
+.connection-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.temp-connection {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 8; /* Выше обычных линий, но ниже весов */
+}
+
+.connection-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.connection-weight-standalone {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    opacity: 0;
+    pointer-events: none;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    z-index: 25;
+    transition: opacity 0.2s ease, transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.connection-weight-standalone.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.connection-weight-standalone:hover {
+    background: #f3f4f6;
+    border-color: #3b82f6;
+    transform: translate(-50%, -50%) scale(calc(var(--weight-scale, 1) * 1.1));
+    z-index: 26;
+}
+
+

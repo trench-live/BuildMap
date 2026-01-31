@@ -1,0 +1,41 @@
+.areas-page {
+    padding: 0;
+}
+
+.card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: 1px solid;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #1890ff;
+    color: white;
+    border-color: #1890ff;
+}
+
+.btn-primary:hover {
+    background: #40a9ff;
+    border-color: #40a9ff;
+}
+
+.btn-secondary {
+    background: white;
+    color: #333;
+    border-color: #ddd;
+}
+
+.btn-secondary:hover {
+    background: #f8f9fa;
+}

@@ -1,0 +1,124 @@
+.floors-page {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Zone Item */
+.zone-item {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    background: white;
+    overflow: hidden;
+}
+
+/* Buttons */
+.btn {
+    padding: 8px 16px;
+    border: 1px solid;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+}
+
+.btn-secondary {
+    background: white;
+    color: #333;
+    border-color: #ddd;
+}
+
+.btn-secondary:hover {
+    background: #f8f9fa;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .floors-page {
+        padding: 16px;
+    }
+
+    .floor-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .floor-actions {
+        justify-content: stretch;
+    }
+
+    .floor-actions .btn {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+/* Общие стили кнопок для всего приложения */
+.btn {
+    padding: 8px 16px;
+    border: 1px solid;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #0056b3;
+    border-color: #0056b3;
+}
+
+.btn-secondary {
+    background: white;
+    color: #333;
+    border-color: #ddd;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #f8f9fa;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.btn-lg {
+    padding: 12px 24px;
+    font-size: 16px;
+}

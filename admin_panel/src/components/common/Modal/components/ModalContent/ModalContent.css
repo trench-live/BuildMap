@@ -1,0 +1,15 @@
+.modal-content {
+    padding: 20px;
+}
+
+.modal-content-center {
+    text-align: center;
+}
+
+.modal-content-left {
+    text-align: left;
+}
+
+.modal-content-right {
+    text-align: right;
+}
