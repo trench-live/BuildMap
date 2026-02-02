@@ -20,4 +20,5 @@ public interface FloorRepository extends JpaRepository<Floor, Long> {
     Optional<Floor> findByFulcrumId(@Param("fulcrumId") Long fulcrumId);
 
     boolean existsByMappingAreaIdAndLevelAndDeletedFalse(Long mappingAreaId, Integer level);
+    boolean existsByIdAndMappingAreaUsersId(Long id, Long userId);
 }

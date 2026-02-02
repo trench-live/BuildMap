@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { mappingAreaAPI, userAPI } from '../../../services/api';
+import { useAuth } from '../../../hooks/useAuth';
 
 export const useDashboard = () => {
+    const { user } = useAuth();
     const [stats, setStats] = useState({
         totalUsers: 0,
         totalAreas: 0,
@@ -12,24 +14,25 @@ export const useDashboard = () => {
     const [error, setError] = useState(null);
 
     const loadDashboardData = async () => {
+        if (!user?.id) return;
+
         try {
             setLoading(true);
             setError(null);
 
-            const [usersResponse, areasResponse] = await Promise.all([
-                userAPI.getAll(false),
-                mappingAreaAPI.getAll(false)
-            ]);
-
-            const users = usersResponse.data;
+            const isAdmin = user.role === 'ADMIN';
+            const areasResponse = isAdmin
+                ? await mappingAreaAPI.getAll(false)
+                : await mappingAreaAPI.getByUser(user.id, false);
             const areas = areasResponse.data;
+            const users = isAdmin ? (await userAPI.getAll(false)).data : [user];
 
             const recent = areas.slice(0, 3);
 
             setStats({
                 totalUsers: users.length,
                 totalAreas: areas.length,
-                activeUsers: users.filter(u => !u.deleted).length
+                activeUsers: users.filter(u => !u.deleted).length || users.length
             });
 
             setRecentAreas(recent);
@@ -44,7 +47,7 @@ export const useDashboard = () => {
 
     useEffect(() => {
         loadDashboardData();
-    }, []);
+    }, [user?.id, user?.role]);
 
     return {
         stats,

@@ -1,11 +1,35 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { mappingAreaAPI } from '../../../services/api';
 import { useApi } from '../../../hooks/useApi';
+import { useAuth } from '../../../hooks/useAuth';
 
 export const useAreas = () => {
-    const { data: areas, loading, error, execute: loadAreas } = useApi(() => mappingAreaAPI.getAll(false));
+    const { user } = useAuth();
+    const {
+        data: areas,
+        loading,
+        error,
+        execute: loadAreas,
+        setData: setAreas
+    } = useApi(() => {
+        if (user?.role === 'ADMIN') {
+            return mappingAreaAPI.getAll(false);
+        }
+        return mappingAreaAPI.getByUser(user.id, false);
+    }, false);
     const [areaToDelete, setAreaToDelete] = useState(null);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+
+    useEffect(() => {
+        if (!user?.id) {
+            setAreas([]);
+            return;
+        }
+
+        loadAreas().catch(() => {
+            // Error state is handled inside useApi.
+        });
+    }, [user?.id, user?.role]);
 
     const handleDeleteClick = (area) => {
         setAreaToDelete(area);

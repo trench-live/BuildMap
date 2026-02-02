@@ -1,14 +1,37 @@
 import { useState, useEffect } from 'react';
 import { floorAPI, mappingAreaAPI } from '../../../services/api';
 import { useApi } from '../../../hooks/useApi';
+import { useAuth } from '../../../hooks/useAuth';
 
 export const useFloors = () => {
+    const { user } = useAuth();
     const [expandedArea, setExpandedArea] = useState(null);
     const [floors, setFloors] = useState({});
     const [loadingFloors, setLoadingFloors] = useState({});
     const [floorsCount, setFloorsCount] = useState({});
 
-    const { data: areas, loading: areasLoading, execute: loadAreas } = useApi(() => mappingAreaAPI.getAll(false));
+    const {
+        data: areas,
+        loading: areasLoading,
+        execute: loadAreas,
+        setData: setAreas
+    } = useApi(() => {
+        if (user?.role === 'ADMIN') {
+            return mappingAreaAPI.getAll(false);
+        }
+        return mappingAreaAPI.getByUser(user.id, false);
+    }, false);
+
+    useEffect(() => {
+        if (!user?.id) {
+            setAreas([]);
+            return;
+        }
+
+        loadAreas().catch(() => {
+            // Error state is handled inside useApi.
+        });
+    }, [user?.id, user?.role]);
 
     useEffect(() => {
         if (areas && areas.length > 0) {

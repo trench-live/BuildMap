@@ -4,6 +4,7 @@ import com.buildmap.api.exceptions.*;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.validation.FieldError;
@@ -35,6 +36,7 @@ public class GlobalExceptionHandler {
     private static final String UNEXPECTED_ERROR = "An unexpected error occurred";
     private static final String BUSINESS_RULE_VIOLATION = "Business rule violation";
     private static final String INVALID_TELEGRAM_DATA = "Invalid Telegram data";
+    private static final String ACCESS_DENIED = "Access denied";
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> handleHttpMessageNotReadableException(
@@ -140,6 +142,11 @@ public class GlobalExceptionHandler {
     private boolean isTelegramIdConstraintViolation(JpaSystemException ex) {
         return ex.getMessage() != null &&
                 ex.getMessage().contains(TELEGRAM_ID_CONSTRAINT);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDeniedException(AccessDeniedException ex) {
+        return buildResponse(HttpStatus.FORBIDDEN, ACCESS_DENIED, ex.getMessage());
     }
 
     // Generic exception handler
