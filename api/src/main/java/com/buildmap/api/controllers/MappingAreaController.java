@@ -5,6 +5,8 @@ import com.buildmap.api.dto.mapping_area.MappingAreaSaveDto;
 import com.buildmap.api.dto.mapping_area.MappingAreaUpdateDto;
 import com.buildmap.api.dto.mapping_area.mappers.MappingAreaMapper;
 import com.buildmap.api.entities.mapping_area.MappingArea;
+import com.buildmap.api.entities.user.User;
+import com.buildmap.api.services.AuthorizationService;
 import com.buildmap.api.services.MappingAreaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,11 +22,15 @@ import java.util.List;
 public class MappingAreaController {
 
     private final MappingAreaService mappingAreaService;
-
+    private final AuthorizationService authorizationService;
     private final MappingAreaMapper mappingAreaMapper;
 
     @PostMapping
     public ResponseEntity<MappingAreaDto> create(@Valid @RequestBody MappingAreaSaveDto mappingAreaDto) {
+        User currentUser = authorizationService.getCurrentUser();
+        if (!authorizationService.isAdmin(currentUser)) {
+            mappingAreaDto.setUserIds(List.of(currentUser.getId()));
+        }
         MappingArea mappingArea = mappingAreaMapper.toEntity(mappingAreaDto);
         MappingArea created = mappingAreaService.create(mappingArea);
         return ResponseEntity.status(HttpStatus.CREATED).body(mappingAreaMapper.toDto(created));
@@ -33,6 +39,8 @@ public class MappingAreaController {
     @GetMapping
     public ResponseEntity<List<MappingAreaDto>> getAll(
             @RequestParam(name = "deleted", required = false) Boolean deleted) {
+        User currentUser = authorizationService.getCurrentUser();
+        authorizationService.requireAdmin(currentUser);
         List<MappingArea> mappingAreas = mappingAreaService.getAll(deleted);
         return ResponseEntity.ok(mappingAreaMapper.toDtoList(mappingAreas));
     }
@@ -41,12 +49,16 @@ public class MappingAreaController {
     public ResponseEntity<List<MappingAreaDto>> getByUser(
             @PathVariable Long userId,
             @RequestParam(name = "deleted", required = false) Boolean deleted) {
+        User currentUser = authorizationService.getCurrentUser();
+        authorizationService.requireSelfOrAdmin(currentUser, userId);
         List<MappingArea> mappingAreas = mappingAreaService.getByUserId(userId, deleted);
         return ResponseEntity.ok(mappingAreaMapper.toDtoList(mappingAreas));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<MappingAreaDto> getById(@PathVariable Long id) {
+        User currentUser = authorizationService.getCurrentUser();
+        authorizationService.requireAreaOwnerOrAdmin(currentUser, id);
         MappingArea mappingArea = mappingAreaService.getById(id);
         return ResponseEntity.ok(mappingAreaMapper.toDto(mappingArea));
     }
@@ -54,19 +66,25 @@ public class MappingAreaController {
     @PutMapping("/{id}")
     public ResponseEntity<MappingAreaDto> update(
             @PathVariable Long id,
-            @Valid @RequestBody MappingAreaUpdateDto mappingAreaUpdateDto) { // Используем UpdateDto вместо SaveDto
+            @Valid @RequestBody MappingAreaUpdateDto mappingAreaUpdateDto) {
+        User currentUser = authorizationService.getCurrentUser();
+        authorizationService.requireAreaOwnerOrAdmin(currentUser, id);
         MappingArea updated = mappingAreaService.update(id, mappingAreaUpdateDto);
         return ResponseEntity.ok(mappingAreaMapper.toDto(updated));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> safeDelete(@PathVariable Long id) {
+        User currentUser = authorizationService.getCurrentUser();
+        authorizationService.requireAreaOwnerOrAdmin(currentUser, id);
         mappingAreaService.safeDelete(id);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/force/{id}")
     public ResponseEntity<Void> forceDelete(@PathVariable Long id) {
+        User currentUser = authorizationService.getCurrentUser();
+        authorizationService.requireAdmin(currentUser);
         mappingAreaService.delete(id);
         return ResponseEntity.noContent().build();
     }

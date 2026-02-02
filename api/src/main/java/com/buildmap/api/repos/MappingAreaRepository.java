@@ -23,4 +23,5 @@ public interface MappingAreaRepository extends JpaRepository<MappingArea, Long> 
     // Оставляем существующие методы
     List<MappingArea> findByDeletedTrue();
     List<MappingArea> findByDeletedFalse();
+    boolean existsByIdAndUsersId(Long id, Long userId);
 }

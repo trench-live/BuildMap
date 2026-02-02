@@ -47,7 +47,6 @@ public class AuthController {
 
     @GetMapping("/test-connection")
     public ResponseEntity<String> testConnection() {
-        System.out.println("=== CONNECTION TEST ENDPOINT CALLED ===");
         return ResponseEntity.ok("Backend is reachable! Current time: " + new Date());
     }
 
@@ -60,7 +59,6 @@ public class AuthController {
             return ResponseEntity.status(401).build();
         }
 
-        System.out.println("=== TEST LOGIN ===");
 
         try {
             // Создаем или находим пользователя
@@ -82,11 +80,9 @@ public class AuthController {
             String token = jwtService.generateToken(user.getId());
             UserDto userDto = userMapper.toDto(user);
 
-            System.out.println("✅ Test login successful for: " + user.getName());
             return ResponseEntity.ok(new AuthResponseDto(token, userDto));
 
         } catch (Exception e) {
-            System.out.println("❌ Test login failed: " + e.getMessage());
             throw e;
         }
     }
@@ -156,47 +152,36 @@ public class AuthController {
 
     @PostMapping("/telegram")
     public ResponseEntity<AuthResponseDto> telegramAuth(@RequestBody TelegramAuthDto authData) {
-        System.out.println("=== TELEGRAM AUTH STARTED ===");
-        System.out.println("Received Telegram data for id: " + authData.getId());
 
         try {
             // Валидируем данные от Telegram
             if (!telegramAuthService.validateTelegramAuth(authData)) {
-                System.out.println("❌ Telegram validation failed!");
                 throw new ValidationException("Invalid Telegram authentication data");
             }
 
-            System.out.println("✅ Telegram validation passed");
 
             String telegramId = authData.getId().toString();
             User user;
 
             // Проверяем, существует ли пользователь
             if (userRepository.existsByTelegramId(telegramId)) {
-                System.out.println("🔍 User exists, logging in...");
                 user = userRepository.findByTelegramId(telegramId)
                         .orElseThrow(() -> new ValidationException("User not found"));
             } else {
-                System.out.println("👤 Creating new user...");
                 user = telegramAuthService.createUserFromTelegramData(authData);
                 user = userService.create(user);
             }
 
-            System.out.println("🆔 User ID: " + user.getId());
 
             // Генерируем JWT токен
             String token = jwtService.generateToken(user.getId());
             // Преобразуем в DTO
             UserDto userDto = userMapper.toDto(user);
 
-            System.out.println("✅ Auth successful for user: " + userDto.getName());
-            System.out.println("=== TELEGRAM AUTH COMPLETED ===");
 
             return ResponseEntity.ok(new AuthResponseDto(token, userDto));
 
         } catch (Exception e) {
-            System.out.println("❌ Auth failed: " + e.getMessage());
-            e.printStackTrace();
             throw e;
         }
     }
