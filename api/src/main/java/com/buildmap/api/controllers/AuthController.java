@@ -13,10 +13,16 @@ import com.buildmap.api.services.JwtService;
 import com.buildmap.api.services.TelegramAuthService;
 import com.buildmap.api.services.UserService;
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Date;
 
@@ -59,32 +65,23 @@ public class AuthController {
             return ResponseEntity.status(401).build();
         }
 
+        String telegramId = "test_" + request.getUserId();
+        User existingUser = userRepository.findByTelegramId(telegramId).orElse(null);
 
-        try {
-            // Создаем или находим пользователя
-            User user;
-            String telegramId = "test_" + request.getUserId();
-
-            if (userRepository.existsByTelegramId(telegramId)) {
-                user = userRepository.findByTelegramId(telegramId)
-                        .orElseThrow(() -> new ValidationException("Test user not found"));
-            } else {
-                user = new User();
-                user.setName(request.getName());
-                user.setTelegramId(telegramId);
-                user.setRole(Role.USER);
-                user = userService.create(user);
-            }
-
-            // Генерируем JWT токен
-            String token = jwtService.generateToken(user.getId());
-            UserDto userDto = userMapper.toDto(user);
-
-            return ResponseEntity.ok(new AuthResponseDto(token, userDto));
-
-        } catch (Exception e) {
-            throw e;
+        User user;
+        if (existingUser != null) {
+            user = prepareUserForLogin(existingUser);
+        } else {
+            user = new User();
+            user.setName(request.getName());
+            user.setTelegramId(telegramId);
+            user.setRole(Role.USER);
+            user = userService.create(user);
         }
+
+        String token = jwtService.generateToken(user.getId());
+        UserDto userDto = userMapper.toDto(user);
+        return ResponseEntity.ok(new AuthResponseDto(token, userDto));
     }
 
     @PostMapping("/dev-login")
@@ -99,13 +96,15 @@ public class AuthController {
         User user;
         if (request.getUserId() != null) {
             try {
-                user = userService.getById(request.getUserId());
+                user = prepareUserForLogin(userService.getById(request.getUserId()));
             } catch (UserNotFoundException ex) {
                 user = createDevUser(request, "user_" + request.getUserId());
             }
         } else if (request.getTelegramId() != null && !request.getTelegramId().isBlank()) {
-            user = userRepository.findByTelegramId(request.getTelegramId())
-                    .orElseGet(() -> createDevUser(request, request.getTelegramId()));
+            User existingUser = userRepository.findByTelegramId(request.getTelegramId()).orElse(null);
+            user = existingUser != null
+                    ? prepareUserForLogin(existingUser)
+                    : createDevUser(request, request.getTelegramId());
         } else {
             throw new ValidationException("userId or telegramId is required");
         }
@@ -120,7 +119,7 @@ public class AuthController {
         if (telegramId == null || telegramId.isBlank()) {
             telegramId = "dev_" + fallbackKey;
         }
-        if (userRepository.existsByTelegramIdAndDeletedFalse(telegramId)) {
+        if (userRepository.existsByTelegramId(telegramId)) {
             telegramId = telegramId + "_" + System.currentTimeMillis();
         }
 
@@ -152,43 +151,28 @@ public class AuthController {
 
     @PostMapping("/telegram")
     public ResponseEntity<AuthResponseDto> telegramAuth(@RequestBody TelegramAuthDto authData) {
-
-        try {
-            // Валидируем данные от Telegram
-            if (!telegramAuthService.validateTelegramAuth(authData)) {
-                throw new ValidationException("Invalid Telegram authentication data");
-            }
-
-
-            String telegramId = authData.getId().toString();
-            User user;
-
-            // Проверяем, существует ли пользователь
-            if (userRepository.existsByTelegramId(telegramId)) {
-                user = userRepository.findByTelegramId(telegramId)
-                        .orElseThrow(() -> new ValidationException("User not found"));
-            } else {
-                user = telegramAuthService.createUserFromTelegramData(authData);
-                user = userService.create(user);
-            }
-
-
-            // Генерируем JWT токен
-            String token = jwtService.generateToken(user.getId());
-            // Преобразуем в DTO
-            UserDto userDto = userMapper.toDto(user);
-
-
-            return ResponseEntity.ok(new AuthResponseDto(token, userDto));
-
-        } catch (Exception e) {
-            throw e;
+        if (!telegramAuthService.validateTelegramAuth(authData)) {
+            throw new ValidationException("Invalid Telegram authentication data");
         }
+
+        String telegramId = authData.getId().toString();
+        User existingUser = userRepository.findByTelegramId(telegramId).orElse(null);
+
+        User user;
+        if (existingUser != null) {
+            user = prepareUserForLogin(existingUser);
+        } else {
+            user = telegramAuthService.createUserFromTelegramData(authData);
+            user = userService.create(user);
+        }
+
+        String token = jwtService.generateToken(user.getId());
+        UserDto userDto = userMapper.toDto(user);
+        return ResponseEntity.ok(new AuthResponseDto(token, userDto));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout() {
-        // В будущем можно добавить blacklist токенов
         return ResponseEntity.ok().build();
     }
 
@@ -204,8 +188,23 @@ public class AuthController {
         }
 
         Long userId = jwtService.getUserIdFromToken(token);
-        User user = userService.getById(userId);
+        User user;
+        try {
+            user = userService.getActiveById(userId);
+        } catch (UserNotFoundException ex) {
+            return ResponseEntity.status(401).build();
+        }
 
         return ResponseEntity.ok(userMapper.toDto(user));
+    }
+
+    private User prepareUserForLogin(User user) {
+        if (user.isBlocked()) {
+            throw new AccessDeniedException("User account is blocked");
+        }
+        if (user.isDeleted()) {
+            return userService.restore(user.getId());
+        }
+        return user;
     }
 }

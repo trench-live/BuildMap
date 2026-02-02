@@ -17,4 +17,6 @@ public interface FulcrumRepository extends JpaRepository<Fulcrum, Long> {
     List<Fulcrum> findByFloorId(Long floorId);
     List<Fulcrum> findByFloorIdAndDeletedTrue(Long floorId);
     List<Fulcrum> findByFloorIdAndDeletedFalse(Long floorId);
+
+    boolean existsByIdAndFloorMappingAreaUsersId(Long id, Long userId);
 }

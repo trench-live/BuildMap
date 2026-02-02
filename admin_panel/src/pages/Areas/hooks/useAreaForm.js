@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { mappingAreaAPI } from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuth';
 
-export const useAreaForm = (onSuccess) => {
+export const useAreaForm = (onSuccess, ownerUserId = null) => {
     const { user } = useAuth();
     const [modalVisible, setModalVisible] = useState(false);
     const [editingArea, setEditingArea] = useState(null);
@@ -26,10 +26,11 @@ export const useAreaForm = (onSuccess) => {
                     description: formData.description
                 });
             } else {
+                const areaOwnerId = ownerUserId || user.id;
                 await mappingAreaAPI.create({
                     name: formData.name,
                     description: formData.description,
-                    userIds: [user.id]
+                    userIds: [areaOwnerId]
                 });
             }
 

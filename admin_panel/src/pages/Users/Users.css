@@ -1,0 +1,158 @@
+.users-page {
+    padding: 0;
+}
+
+.card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: 1px solid;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #1890ff;
+    color: #fff;
+    border-color: #1890ff;
+}
+
+.btn-primary:hover {
+    background: #40a9ff;
+    border-color: #40a9ff;
+}
+
+.btn-secondary {
+    background: #fff;
+    color: #333;
+    border-color: #ddd;
+}
+
+.btn-secondary:hover {
+    background: #f8f9fa;
+}
+
+.users-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.users-header h2 {
+    margin: 0;
+}
+
+.users-error {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #ffd4d4;
+    border-radius: 8px;
+    background: #fff5f5;
+    margin-bottom: 16px;
+}
+
+.users-table-wrap {
+    overflow-x: auto;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.users-table th,
+.users-table td {
+    border-bottom: 1px solid #efefef;
+    padding: 10px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.users-table th {
+    font-weight: 600;
+    background: #fafafa;
+}
+
+.users-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.users-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.btn-danger {
+    background: #fff1f0;
+    color: #c62828;
+    border-color: #ffcdd2;
+}
+
+.btn-danger:hover {
+    background: #ffe3e1;
+}
+
+.btn-warning {
+    background: #fff7e6;
+    color: #ad6800;
+    border-color: #ffd591;
+}
+
+.btn-warning:hover {
+    background: #ffe7ba;
+}
+
+.btn-success {
+    background: #f6ffed;
+    color: #389e0d;
+    border-color: #b7eb8f;
+}
+
+.btn-success:hover {
+    background: #d9f7be;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-active {
+    background: #f6ffed;
+    color: #237804;
+    border: 1px solid #b7eb8f;
+}
+
+.status-deleted {
+    background: #fff7e6;
+    color: #ad6800;
+    border: 1px solid #ffd591;
+}
+
+.status-blocked {
+    background: #fff1f0;
+    color: #cf1322;
+    border: 1px solid #ffa39e;
+}

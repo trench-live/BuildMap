@@ -9,5 +9,6 @@ public class UserDto {
     private String name;
     private String telegramId;
     private boolean deleted;
+    private boolean blocked;
     private Role role;
 }

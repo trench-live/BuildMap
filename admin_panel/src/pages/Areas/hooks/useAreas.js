@@ -3,7 +3,7 @@ import { mappingAreaAPI } from '../../../services/api';
 import { useApi } from '../../../hooks/useApi';
 import { useAuth } from '../../../hooks/useAuth';
 
-export const useAreas = () => {
+export const useAreas = (targetUserId = null) => {
     const { user } = useAuth();
     const {
         data: areas,
@@ -11,7 +11,10 @@ export const useAreas = () => {
         error,
         execute: loadAreas,
         setData: setAreas
-    } = useApi(() => {
+    } = useApi((targetUserId) => {
+        if (user?.role === 'ADMIN' && targetUserId) {
+            return mappingAreaAPI.getByUser(targetUserId, false);
+        }
         if (user?.role === 'ADMIN') {
             return mappingAreaAPI.getAll(false);
         }
@@ -19,6 +22,7 @@ export const useAreas = () => {
     }, false);
     const [areaToDelete, setAreaToDelete] = useState(null);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+    const reloadAreas = () => loadAreas(targetUserId);
 
     useEffect(() => {
         if (!user?.id) {
@@ -26,10 +30,10 @@ export const useAreas = () => {
             return;
         }
 
-        loadAreas().catch(() => {
+        reloadAreas().catch(() => {
             // Error state is handled inside useApi.
         });
-    }, [user?.id, user?.role]);
+    }, [user?.id, user?.role, targetUserId]);
 
     const handleDeleteClick = (area) => {
         setAreaToDelete(area);
@@ -44,7 +48,7 @@ export const useAreas = () => {
             alert('Зона удалена!');
             setDeleteModalVisible(false);
             setAreaToDelete(null);
-            loadAreas();
+            reloadAreas();
         } catch (error) {
             alert('Ошибка удаления: ' + (error.response?.data?.message || error.message));
             setDeleteModalVisible(false);
@@ -61,7 +65,7 @@ export const useAreas = () => {
         areas,
         loading,
         error,
-        loadAreas,
+        loadAreas: reloadAreas,
         areaToDelete,
         deleteModalVisible,
         handleDeleteClick,
