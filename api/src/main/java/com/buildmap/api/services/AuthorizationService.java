@@ -2,7 +2,9 @@ package com.buildmap.api.services;
 
 import com.buildmap.api.entities.user.Role;
 import com.buildmap.api.entities.user.User;
+import com.buildmap.api.exceptions.UserNotFoundException;
 import com.buildmap.api.repos.FloorRepository;
+import com.buildmap.api.repos.FulcrumRepository;
 import com.buildmap.api.repos.MappingAreaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -17,6 +19,7 @@ public class AuthorizationService {
     private final UserService userService;
     private final MappingAreaRepository mappingAreaRepository;
     private final FloorRepository floorRepository;
+    private final FulcrumRepository fulcrumRepository;
 
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -26,7 +29,11 @@ public class AuthorizationService {
 
         Object principal = authentication.getPrincipal();
         Long userId = extractUserId(principal);
-        return userService.getById(userId);
+        try {
+            return userService.getActiveById(userId);
+        } catch (UserNotFoundException ex) {
+            throw new AccessDeniedException("User not found or deleted");
+        }
     }
 
     public boolean isAdmin(User user) {
@@ -61,6 +68,15 @@ public class AuthorizationService {
         }
         if (!floorRepository.existsByIdAndMappingAreaUsersId(floorId, user.getId())) {
             throw new AccessDeniedException("Access denied for floor");
+        }
+    }
+
+    public void requireFulcrumOwnerOrAdmin(User user, Long fulcrumId) {
+        if (isAdmin(user)) {
+            return;
+        }
+        if (!fulcrumRepository.existsByIdAndFloorMappingAreaUsersId(fulcrumId, user.getId())) {
+            throw new AccessDeniedException("Access denied for fulcrum");
         }
     }
 

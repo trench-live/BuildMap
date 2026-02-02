@@ -35,4 +35,7 @@ public class User {
 
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
+
+    @Column(name = "is_blocked", nullable = false)
+    private boolean blocked = false;
 }

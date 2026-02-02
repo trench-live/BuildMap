@@ -73,6 +73,8 @@ export const userAPI = {
     update: (id, userData) => api.put(`/api/user/${id}`, userData),
     delete: (id) => api.delete(`/api/user/${id}`),
     forceDelete: (id) => api.delete(`/api/user/force/${id}`),
+    block: (id) => api.patch(`/api/user/${id}/block`),
+    unblock: (id) => api.patch(`/api/user/${id}/unblock`),
 };
 
 export const mappingAreaAPI = {

@@ -6,6 +6,8 @@ import com.buildmap.api.dto.fulcrum.connections.FulcrumConnectionSaveDto;
 import com.buildmap.api.dto.fulcrum.mappers.FulcrumMapper;
 import com.buildmap.api.entities.mapping_area.Floor;
 import com.buildmap.api.entities.mapping_area.fulcrum.Fulcrum;
+import com.buildmap.api.entities.user.User;
+import com.buildmap.api.services.AuthorizationService;
 import com.buildmap.api.services.FloorService;
 import com.buildmap.api.services.FulcrumService;
 import com.buildmap.api.services.QrPdfService;
@@ -29,17 +31,19 @@ public class FulcrumController {
     private final FulcrumMapper fulcrumMapper;
     private final FloorService floorService;
     private final QrPdfService qrPdfService;
+    private final AuthorizationService authorizationService;
 
     @PostMapping
     public ResponseEntity<FulcrumDto> create(@Valid @RequestBody FulcrumSaveDto fulcrumDto) {
-        // Проверяем существование этажа
+        User currentUser = authorizationService.getCurrentUser();
         Floor floor = floorService.getById(fulcrumDto.getFloorId());
+        authorizationService.requireAreaOwnerOrAdmin(currentUser, floor.getMappingArea().getId());
 
         Fulcrum created = fulcrumService.create(fulcrumDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(fulcrumMapper.toDto(created));
     }
 
-    @GetMapping("/floor/{floorId}") // Точки конкретного этажа
+    @GetMapping("/floor/{floorId}")
     public ResponseEntity<List<FulcrumDto>> getByFloorId(
             @PathVariable Long floorId,
             @RequestParam(name = "deleted", required = false) Boolean deleted) {
@@ -47,7 +51,7 @@ public class FulcrumController {
         return ResponseEntity.ok(fulcrumMapper.toDtoList(fulcrums));
     }
 
-    @GetMapping("/area/{areaId}") // Все точки зоны (всех этажей)
+    @GetMapping("/area/{areaId}")
     public ResponseEntity<List<FulcrumDto>> getByAreaId(
             @PathVariable Long areaId,
             @RequestParam(name = "deleted", required = false) Boolean deleted) {
@@ -78,6 +82,8 @@ public class FulcrumController {
 
     @GetMapping("/{fulcrumId}")
     public ResponseEntity<FulcrumDto> getById(@PathVariable Long fulcrumId) {
+        User currentUser = authorizationService.getCurrentUser();
+        authorizationService.requireFulcrumOwnerOrAdmin(currentUser, fulcrumId);
         Fulcrum fulcrum = fulcrumService.getById(fulcrumId);
         return ResponseEntity.ok(fulcrumMapper.toDto(fulcrum));
     }
@@ -86,18 +92,24 @@ public class FulcrumController {
     public ResponseEntity<FulcrumDto> update(
             @PathVariable Long fulcrumId,
             @Valid @RequestBody FulcrumSaveDto fulcrumDto) {
+        User currentUser = authorizationService.getCurrentUser();
+        authorizationService.requireFulcrumOwnerOrAdmin(currentUser, fulcrumId);
         Fulcrum updated = fulcrumService.update(fulcrumId, fulcrumDto);
         return ResponseEntity.ok(fulcrumMapper.toDto(updated));
     }
 
     @DeleteMapping("/{fulcrumId}")
     public ResponseEntity<Void> safeDelete(@PathVariable Long fulcrumId) {
+        User currentUser = authorizationService.getCurrentUser();
+        authorizationService.requireFulcrumOwnerOrAdmin(currentUser, fulcrumId);
         fulcrumService.safeDelete(fulcrumId);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/force/{fulcrumId}")
     public ResponseEntity<Void> forceDelete(@PathVariable Long fulcrumId) {
+        User currentUser = authorizationService.getCurrentUser();
+        authorizationService.requireAdmin(currentUser);
         fulcrumService.delete(fulcrumId);
         return ResponseEntity.noContent().build();
     }
@@ -106,6 +118,9 @@ public class FulcrumController {
     public ResponseEntity<Void> addConnection(
             @PathVariable Long fulcrumId,
             @RequestBody @Valid FulcrumConnectionSaveDto connectionDto) {
+        User currentUser = authorizationService.getCurrentUser();
+        authorizationService.requireFulcrumOwnerOrAdmin(currentUser, fulcrumId);
+        authorizationService.requireFulcrumOwnerOrAdmin(currentUser, connectionDto.getConnectedFulcrumId());
         fulcrumService.addConnection(fulcrumId, connectionDto);
         return ResponseEntity.ok().build();
     }
@@ -114,6 +129,9 @@ public class FulcrumController {
     public ResponseEntity<Void> removeConnection(
             @PathVariable Long fulcrumId,
             @PathVariable Long connectedFulcrumId) {
+        User currentUser = authorizationService.getCurrentUser();
+        authorizationService.requireFulcrumOwnerOrAdmin(currentUser, fulcrumId);
+        authorizationService.requireFulcrumOwnerOrAdmin(currentUser, connectedFulcrumId);
         fulcrumService.removeConnection(fulcrumId, connectedFulcrumId);
         return ResponseEntity.noContent().build();
     }

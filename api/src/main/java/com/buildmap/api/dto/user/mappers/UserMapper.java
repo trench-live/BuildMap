@@ -17,11 +17,13 @@ public interface UserMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "mappingAreas", ignore = true)
     @Mapping(target = "deleted", ignore = true)
+    @Mapping(target = "blocked", ignore = true)
     User toEntity(UserSaveDto dto);
 
     // Для обновления
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "mappingAreas", ignore = true)
     @Mapping(target = "deleted", ignore = true)
+    @Mapping(target = "blocked", ignore = true)
     void updateEntity(UserSaveDto dto, @MappingTarget User user);
 }

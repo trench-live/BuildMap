@@ -1,6 +1,7 @@
 package com.buildmap.api.repos;
 
 import com.buildmap.api.entities.user.User;
+import com.buildmap.api.entities.user.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,6 +14,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByDeletedTrue();
     boolean existsByTelegramId(String telegramId);
     Optional<User> findByTelegramId(String telegramId);
-
-    boolean existsByTelegramIdAndDeletedFalse(String telegramId);
+    Optional<User> findByIdAndDeletedFalseAndBlockedFalse(Long id);
+    long countByRoleAndDeletedFalseAndBlockedFalse(Role role);
 }

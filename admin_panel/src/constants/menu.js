@@ -6,6 +6,12 @@ export const MENU_ITEMS = [
         permission: 'VIEW_DASHBOARD'
     },
     {
+        key: '/users',
+        icon: '👥',
+        label: 'Пользователи',
+        permission: 'VIEW_USERS'
+    },
+    {
         key: '/areas',
         icon: '🗺️',
         label: 'Мои зоны',

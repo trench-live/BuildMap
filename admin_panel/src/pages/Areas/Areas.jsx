@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useAreas } from './hooks/useAreas';
 import { useAreaForm } from './hooks/useAreaForm';
@@ -14,6 +15,10 @@ import './Areas.css';
 
 const Areas = () => {
     const { user } = useAuth();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const targetUserIdParam = searchParams.get('userId');
+    const targetUserId = targetUserIdParam ? Number(targetUserIdParam) : null;
+    const isValidTargetUserId = Number.isFinite(targetUserId) && targetUserId > 0;
 
     const {
         areas,
@@ -25,7 +30,7 @@ const Areas = () => {
         handleDeleteConfirm,
         handleDeleteCancel,
         loadAreas
-    } = useAreas();
+    } = useAreas(user?.role === 'ADMIN' && isValidTargetUserId ? targetUserId : null);
 
     const {
         modalVisible,
@@ -36,7 +41,10 @@ const Areas = () => {
         handleEditArea,
         handleCreateArea,
         handleCloseModal
-    } = useAreaForm(loadAreas);
+    } = useAreaForm(
+        loadAreas,
+        user?.role === 'ADMIN' && isValidTargetUserId ? targetUserId : null
+    );
 
     const handleFormDataChange = (field, value) => {
         setFormData(prev => ({
@@ -48,6 +56,22 @@ const Areas = () => {
     return (
         <div className="areas-page">
             <div className="card">
+                {user?.role === 'ADMIN' && isValidTargetUserId && (
+                    <div className="areas-user-filter">
+                        <span>Viewing areas for user #{targetUserId}</span>
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => {
+                                const params = new URLSearchParams(searchParams);
+                                params.delete('userId');
+                                setSearchParams(params, { replace: true });
+                            }}
+                        >
+                            Show all
+                        </button>
+                    </div>
+                )}
                 <AreasHeader onCreateArea={handleCreateArea} />
 
                 {loading && <LoadingState />}
