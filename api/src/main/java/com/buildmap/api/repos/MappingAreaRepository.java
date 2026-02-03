@@ -24,4 +24,8 @@ public interface MappingAreaRepository extends JpaRepository<MappingArea, Long> 
     List<MappingArea> findByDeletedTrue();
     List<MappingArea> findByDeletedFalse();
     boolean existsByIdAndUsersId(Long id, Long userId);
+    long countByDeletedFalse();
+
+    @Query("SELECT COUNT(ma) FROM MappingArea ma JOIN ma.users u WHERE u.id = :userId AND ma.deleted = false")
+    long countByUserIdAndDeletedFalse(@Param("userId") Long userId);
 }

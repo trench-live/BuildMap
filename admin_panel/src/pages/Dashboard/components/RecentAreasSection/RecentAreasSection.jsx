@@ -3,13 +3,13 @@ import AreaCard from '../AreaCard/AreaCard';
 import EmptyAreasState from '../EmptyAreasState/EmptyAreasState';
 import './RecentAreasSection.css';
 
-const RecentAreasSection = ({ areas }) => {
+const RecentAreasSection = ({ areas, title = 'Recent work areas' }) => {
     return (
         <section className="recent-section">
-            <h2>Недавние рабочие области</h2>
+            <h2>{title}</h2>
             {areas.length > 0 ? (
                 <div className="areas-list">
-                    {areas.map(area => (
+                    {areas.map((area) => (
                         <AreaCard key={area.id} area={area} />
                     ))}
                 </div>

@@ -1,5 +1,6 @@
 package com.buildmap.api.services;
 
+import com.buildmap.api.dto.user.UserAdminListDto;
 import com.buildmap.api.dto.user.UserSaveDto;
 import com.buildmap.api.dto.user.mappers.UserMapper;
 import com.buildmap.api.entities.user.Role;
@@ -7,6 +8,7 @@ import com.buildmap.api.entities.user.User;
 import com.buildmap.api.exceptions.TelegramIdExistsException;
 import com.buildmap.api.exceptions.UserNotFoundException;
 import com.buildmap.api.exceptions.ValidationException;
+import com.buildmap.api.repos.UserAdminListProjection;
 import com.buildmap.api.repos.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,13 @@ public class UserService {
         return deleted ?
                 userRepository.findByDeletedTrue() :
                 userRepository.findByDeletedFalse();
+    }
+
+    public List<UserAdminListDto> getAdminList() {
+        return userRepository.findAdminListWithActiveAreasCount()
+                .stream()
+                .map(this::toAdminListDto)
+                .toList();
     }
 
     public User getById(Long id) {
@@ -118,5 +127,17 @@ public class UserService {
         if (activeAdmins <= 1) {
             throw new ValidationException("Cannot modify the last active admin");
         }
+    }
+
+    private UserAdminListDto toAdminListDto(UserAdminListProjection projection) {
+        UserAdminListDto dto = new UserAdminListDto();
+        dto.setId(projection.getId());
+        dto.setName(projection.getName());
+        dto.setTelegramId(projection.getTelegramId());
+        dto.setRole(projection.getRole());
+        dto.setDeleted(projection.isDeleted());
+        dto.setBlocked(projection.isBlocked());
+        dto.setAreasCount(projection.getAreasCount());
+        return dto;
     }
 }

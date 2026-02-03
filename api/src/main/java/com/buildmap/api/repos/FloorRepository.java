@@ -21,4 +21,15 @@ public interface FloorRepository extends JpaRepository<Floor, Long> {
 
     boolean existsByMappingAreaIdAndLevelAndDeletedFalse(Long mappingAreaId, Integer level);
     boolean existsByIdAndMappingAreaUsersId(Long id, Long userId);
+
+    @Query("SELECT COUNT(f) FROM Floor f WHERE f.deleted = false AND f.mappingArea.deleted = false")
+    long countActiveInActiveAreas();
+
+    @Query("""
+            SELECT COUNT(f) FROM Floor f
+            JOIN f.mappingArea ma
+            JOIN ma.users u
+            WHERE u.id = :userId AND ma.deleted = false AND f.deleted = false
+            """)
+    long countActiveByUserIdInActiveAreas(@Param("userId") Long userId);
 }
