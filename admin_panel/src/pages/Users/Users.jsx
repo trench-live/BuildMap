@@ -1,12 +1,58 @@
-import React from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DeleteModal, Modal, ModalContent, ModalHeader, ModalOverlay } from '../../components/common/Modal';
 import { useUsers } from './hooks/useUsers';
 import './Users.css';
 
+const FilterDropdown = ({ value, options, onChange }) => {
+    const [open, setOpen] = useState(false);
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+        const handleOutsideClick = (event) => {
+            if (!containerRef.current?.contains(event.target)) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }, []);
+
+    const selectedOption = options.find((option) => option.value === value) || options[0];
+
+    return (
+        <div className="users-filter-dropdown" ref={containerRef}>
+            <button
+                type="button"
+                className={`users-filter-trigger ${open ? 'is-open' : ''}`}
+                onClick={() => setOpen((previous) => !previous)}
+            >
+                <span>{selectedOption.label}</span>
+                <span className="users-filter-caret" />
+            </button>
+            {open && (
+                <div className="users-filter-menu">
+                    {options.map((option) => (
+                        <button
+                            key={option.value}
+                            type="button"
+                            className={`users-filter-option ${option.value === value ? 'is-active' : ''}`}
+                            onClick={() => {
+                                onChange(option.value);
+                                setOpen(false);
+                            }}
+                        >
+                            {option.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const Users = () => {
     const {
         users,
-        areaCounts,
         loading,
         error,
         pendingUserId,
@@ -29,6 +75,16 @@ const Users = () => {
         reload
     } = useUsers();
 
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [roleFilter, setRoleFilter] = useState('all');
+
+    const getUserStatusKey = (user) => {
+        if (user.blocked) return 'blocked';
+        if (user.deleted) return 'deleted';
+        return 'active';
+    };
+
     const getUserStatus = (user) => {
         if (user.blocked) return { text: 'Blocked', className: 'status-badge status-blocked' };
         if (user.deleted) return { text: 'Deleted', className: 'status-badge status-deleted' };
@@ -42,6 +98,25 @@ const Users = () => {
     const isLastActiveAdmin = (user) =>
         user.role === 'ADMIN' && !user.deleted && !user.blocked && activeAdminCount === 1;
 
+    const filteredUsers = useMemo(() => {
+        const normalizedQuery = searchQuery.trim().toLowerCase();
+        return users.filter((user) => {
+            const statusMatches = statusFilter === 'all' || getUserStatusKey(user) === statusFilter;
+            const roleMatches = roleFilter === 'all' || user.role === roleFilter;
+            if (!statusMatches || !roleMatches) {
+                return false;
+            }
+            if (!normalizedQuery) {
+                return true;
+            }
+            return (
+                String(user.id).includes(normalizedQuery)
+                || (user.name || '').toLowerCase().includes(normalizedQuery)
+                || (user.telegramId || '').toLowerCase().includes(normalizedQuery)
+            );
+        });
+    }, [users, searchQuery, statusFilter, roleFilter]);
+
     return (
         <div className="users-page">
             <div className="card">
@@ -49,6 +124,37 @@ const Users = () => {
                     <h2>Users</h2>
                     <button type="button" className="btn btn-secondary" onClick={reload}>Reload</button>
                 </div>
+                <div className="users-toolbar">
+                    <input
+                        type="text"
+                        className="users-search"
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        placeholder="Search by id, name, telegram id"
+                    />
+                    <div className="users-filters">
+                        <FilterDropdown
+                            value={statusFilter}
+                            onChange={setStatusFilter}
+                            options={[
+                                { value: 'all', label: 'All statuses' },
+                                { value: 'active', label: 'Active' },
+                                { value: 'blocked', label: 'Blocked' },
+                                { value: 'deleted', label: 'Deleted' },
+                            ]}
+                        />
+                        <FilterDropdown
+                            value={roleFilter}
+                            onChange={setRoleFilter}
+                            options={[
+                                { value: 'all', label: 'All roles' },
+                                { value: 'ADMIN', label: 'ADMIN' },
+                                { value: 'USER', label: 'USER' },
+                            ]}
+                        />
+                    </div>
+                </div>
+                <p className="users-result-count">Found: {filteredUsers.length}</p>
 
                 {loading && <p>Loading users...</p>}
                 {error && (
@@ -73,7 +179,7 @@ const Users = () => {
                             </tr>
                             </thead>
                             <tbody>
-                            {users.map((user) => {
+                            {filteredUsers.map((user) => {
                                 const status = getUserStatus(user);
                                 const lastActiveAdmin = isLastActiveAdmin(user);
                                 const isSelf = currentUserId === user.id;
@@ -83,7 +189,7 @@ const Users = () => {
                                         <td>{user.name}</td>
                                         <td>{user.telegramId}</td>
                                         <td>{user.role}</td>
-                                        <td>{areaCounts[user.id] ?? 0}</td>
+                                        <td>{user.areasCount ?? 0}</td>
                                         <td>
                                             <span className={status.className}>
                                                 {status.text}
@@ -137,6 +243,11 @@ const Users = () => {
                                     </tr>
                                 );
                             })}
+                            {filteredUsers.length === 0 && (
+                                <tr>
+                                    <td colSpan={7} className="users-empty">No users match the selected filters.</td>
+                                </tr>
+                            )}
                             </tbody>
                         </table>
                     </div>
@@ -198,6 +309,7 @@ const Users = () => {
                 itemName={deleteUser?.name}
                 itemType="user"
                 warningText="All related areas, floors and fulcrums will be marked deleted."
+                isProcessing={deleteVisible && pendingUserId === deleteUser?.id}
                 onConfirm={confirmDelete}
                 onCancel={closeDelete}
             />

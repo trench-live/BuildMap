@@ -65,9 +65,15 @@ export const authAPI = {
     devLogin: (payload) => api.post('/api/auth/dev-login', payload),
 };
 
+export const dashboardAPI = {
+    getAdminStats: () => api.get('/api/dashboard/admin'),
+    getMyStats: () => api.get('/api/dashboard/me'),
+};
+
 // Остальные API методы остаются без изменений
 export const userAPI = {
     getAll: (deleted = false) => api.get(`/api/user?deleted=${deleted}`),
+    getAdminList: () => api.get('/api/user/admin-list'),
     getById: (id) => api.get(`/api/user/${id}`),
     create: (userData) => api.post('/api/user', userData),
     update: (id, userData) => api.put(`/api/user/${id}`, userData),
@@ -100,7 +106,8 @@ export const floorAPI = {
 
 export const fulcrumAPI = {
     getByFloor: (floorId) => api.get(`/api/fulcrum/floor/${floorId}`),
-    getByArea: (areaId) => api.get(`/api/fulcrum/area/${areaId}`),
+    getByArea: (areaId, deleted = false) =>
+        api.get(`/api/fulcrum/area/${areaId}?deleted=${deleted}`),
     getById: (id) => api.get(`/api/fulcrum/${id}`),
     create: (fulcrumData) => api.post('/api/fulcrum', fulcrumData),
     update: (id, fulcrumData) => api.put(`/api/fulcrum/${id}`, fulcrumData),

@@ -1,5 +1,6 @@
 package com.buildmap.api.controllers;
 
+import com.buildmap.api.dto.user.UserAdminListDto;
 import com.buildmap.api.dto.user.UserDto;
 import com.buildmap.api.dto.user.UserSaveDto;
 import com.buildmap.api.dto.user.mappers.UserMapper;
@@ -45,6 +46,13 @@ public class UserController {
         return ResponseEntity.ok(userMapper.toDtoList(users));
     }
 
+    @GetMapping("/admin-list")
+    public ResponseEntity<List<UserAdminListDto>> getAdminList() {
+        User currentUser = authorizationService.getCurrentUser();
+        authorizationService.requireAdmin(currentUser);
+        return ResponseEntity.ok(userService.getAdminList());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<UserDto> getById(@PathVariable long id) {
         User currentUser = authorizationService.getCurrentUser();
@@ -77,10 +85,7 @@ public class UserController {
     @DeleteMapping({"/{id}"})
     public ResponseEntity<User> delete(@PathVariable long id) {
         User currentUser = authorizationService.getCurrentUser();
-        authorizationService.requireAdmin(currentUser);
-        if (currentUser.getId() == id) {
-            throw new ValidationException("Admin cannot delete own account");
-        }
+        authorizationService.requireSelfOrAdmin(currentUser, id);
         userService.safeDelete(id);
         return ResponseEntity.noContent().build();
     }

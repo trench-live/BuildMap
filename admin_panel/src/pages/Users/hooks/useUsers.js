@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
-import { mappingAreaAPI, userAPI } from '../../../services/api';
+import { userAPI } from '../../../services/api';
 
 const buildUpdatePayload = (formData, fallbackUser) => ({
     name: formData.name.trim(),
@@ -13,7 +13,6 @@ export const useUsers = () => {
     const navigate = useNavigate();
     const { user: currentUser } = useAuth();
     const [users, setUsers] = useState([]);
-    const [areaCounts, setAreaCounts] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [pendingUserId, setPendingUserId] = useState(null);
@@ -32,20 +31,10 @@ export const useUsers = () => {
             setLoading(true);
             setError(null);
 
-            const usersResponse = await userAPI.getAll(false);
-            const usersData = usersResponse.data || [];
+            const usersResponse = await userAPI.getAdminList();
+            const usersData = (usersResponse.data || [])
+                .sort((first, second) => second.id - first.id);
             setUsers(usersData);
-
-            const counts = {};
-            await Promise.all(usersData.map(async (user) => {
-                try {
-                    const response = await mappingAreaAPI.getByUser(user.id, false);
-                    counts[user.id] = response.data.length;
-                } catch {
-                    counts[user.id] = 0;
-                }
-            }));
-            setAreaCounts(counts);
         } catch (loadError) {
             setError(loadError.response?.data?.message || loadError.message);
         } finally {
@@ -147,7 +136,6 @@ export const useUsers = () => {
 
     return {
         users,
-        areaCounts,
         loading,
         error,
         pendingUserId,

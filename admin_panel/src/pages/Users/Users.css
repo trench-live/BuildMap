@@ -51,6 +51,119 @@
     margin: 0;
 }
 
+.users-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.users-search {
+    flex: 1;
+    min-width: 220px;
+    max-width: 420px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 14px;
+}
+
+.users-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.users-filter-dropdown {
+    position: relative;
+    min-width: 170px;
+}
+
+.users-filter-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    min-height: 38px;
+    padding: 8px 10px;
+    font-size: 14px;
+    background: #fff;
+    color: #333;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.users-filter-trigger:hover {
+    border-color: #b5c6ff;
+    background-color: #fbfcff;
+}
+
+.users-filter-trigger.is-open {
+    border-color: #7ea1ff;
+    box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.15);
+}
+
+.users-filter-caret {
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid #667085;
+    border-bottom: 2px solid #667085;
+    transform: rotate(45deg);
+    transition: transform 0.2s ease;
+}
+
+.users-filter-trigger.is-open .users-filter-caret {
+    transform: rotate(-135deg);
+    margin-top: 4px;
+}
+
+.users-filter-menu {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #d8e1ff;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(16, 24, 40, 0.12);
+    padding: 6px;
+}
+
+.users-filter-option {
+    border: none;
+    background: transparent;
+    text-align: left;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+}
+
+.users-filter-option:hover {
+    background: #eef3ff;
+}
+
+.users-filter-option.is-active {
+    background: #dfeaff;
+    color: #1d4ed8;
+    font-weight: 600;
+}
+
+.users-result-count {
+    margin: 0 0 12px 0;
+    color: #666;
+    font-size: 13px;
+}
+
 .users-error {
     display: flex;
     justify-content: space-between;
@@ -82,6 +195,12 @@
 .users-table th {
     font-weight: 600;
     background: #fafafa;
+}
+
+.users-empty {
+    text-align: center;
+    color: #666;
+    padding: 18px 10px;
 }
 
 .users-actions {
