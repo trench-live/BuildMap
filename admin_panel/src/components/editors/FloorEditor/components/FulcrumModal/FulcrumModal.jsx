@@ -182,7 +182,7 @@ const FulcrumModal = ({
                         <Button
                             type="submit"
                             variant="primary"
-                            disabled={isSubmitting || !formData.name.trim()}
+                            disabled={isSubmitting}
                         >
                             {isSubmitting ? 'Сохранение...' : (mode === 'create' ? 'Создать' : 'Сохранить')}
                         </Button>

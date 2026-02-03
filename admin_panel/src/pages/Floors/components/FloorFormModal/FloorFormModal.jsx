@@ -3,23 +3,40 @@ import { ModalOverlay, Modal, ModalHeader, ModalContent, ModalActions } from '..
 import { getFloorLabel } from '../../utils/floorLabels';
 import './FloorFormModal.css';
 
+const FLOOR_SUFFIX = 'этаж';
+const getDefaultFloorName = (level) => `${level} ${FLOOR_SUFFIX}`;
+
+const labels = {
+    editTitle: 'Редактирование этажа',
+    createTitle: 'Создание этажа',
+    floorName: 'Название этажа *',
+    floorNamePlaceholder: 'Например: N Этаж',
+    defaultHintPrefix: 'Если оставить пустым, будет: ',
+    floorLevel: 'Уровень этажа',
+    description: 'Описание',
+    descriptionPlaceholder: 'Описание этажа...',
+    cancel: 'Отмена',
+    save: 'Сохранить',
+    create: 'Создать'
+};
+
 const FloorFormModal = ({
-                            visible,
-                            editingFloor,
-                            formData,
-                            onClose,
-                            onSave,
-                            onFormDataChange
-                        }) => {
+    visible,
+    editingFloor,
+    formData,
+    onClose,
+    onSave,
+    onFormDataChange
+}) => {
     if (!visible) return null;
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        onSave(e);
+    const handleSubmit = (event) => {
+        event.preventDefault();
+        onSave(event);
     };
 
     const handleFieldChange = (field, value) => {
-        onFormDataChange(prev => ({
+        onFormDataChange((prev) => ({
             ...prev,
             [field]: value
         }));
@@ -29,29 +46,31 @@ const FloorFormModal = ({
         <ModalOverlay onClick={onClose}>
             <Modal size="md">
                 <ModalHeader
-                    title={editingFloor ? 'Редактирование этажа' : 'Создание этажа'}
+                    title={editingFloor ? labels.editTitle : labels.createTitle}
                     onClose={onClose}
                 />
 
                 <ModalContent>
                     <form onSubmit={handleSubmit}>
                         <div className="form-group">
-                            <label>Название этажа *</label>
+                            <label>{labels.floorName}</label>
                             <input
                                 type="text"
-                                required
                                 value={formData.name}
-                                onChange={(e) => handleFieldChange('name', e.target.value)}
-                                placeholder="Например: Главный холл"
+                                onChange={(event) => handleFieldChange('name', event.target.value)}
+                                placeholder={labels.floorNamePlaceholder}
                             />
+                            <div className="form-hint">
+                                {labels.defaultHintPrefix}{getDefaultFloorName(formData.level || 1)}
+                            </div>
                         </div>
 
                         <div className="form-group">
-                            <label>Уровень этажа</label>
+                            <label>{labels.floorLevel}</label>
                             <input
                                 type="number"
                                 value={formData.level}
-                                onChange={(e) => handleFieldChange('level', parseInt(e.target.value) || 1)}
+                                onChange={(event) => handleFieldChange('level', parseInt(event.target.value, 10) || 1)}
                                 min="-5"
                                 max="50"
                             />
@@ -61,21 +80,21 @@ const FloorFormModal = ({
                         </div>
 
                         <div className="form-group">
-                            <label>Описание</label>
+                            <label>{labels.description}</label>
                             <textarea
                                 rows="3"
                                 value={formData.description}
-                                onChange={(e) => handleFieldChange('description', e.target.value)}
-                                placeholder="Описание этажа..."
+                                onChange={(event) => handleFieldChange('description', event.target.value)}
+                                placeholder={labels.descriptionPlaceholder}
                             />
                         </div>
 
                         <ModalActions align="right">
                             <button type="button" className="btn btn-secondary" onClick={onClose}>
-                                Отмена
+                                {labels.cancel}
                             </button>
                             <button type="submit" className="btn btn-primary">
-                                {editingFloor ? 'Сохранить' : 'Создать'}
+                                {editingFloor ? labels.save : labels.create}
                             </button>
                         </ModalActions>
                     </form>
