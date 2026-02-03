@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { floorAPI, mappingAreaAPI } from '../../../services/api';
 import { useApi } from '../../../hooks/useApi';
 import { useAuth } from '../../../hooks/useAuth';
@@ -10,36 +10,26 @@ export const useFloors = () => {
     const [loadingFloors, setLoadingFloors] = useState({});
     const [floorsCount, setFloorsCount] = useState({});
 
+    const getAreasRequest = useCallback(() => {
+        if (user?.role === 'ADMIN') {
+            return mappingAreaAPI.getAll(false);
+        }
+        return mappingAreaAPI.getByUser(user.id, false);
+    }, [user?.id, user?.role]);
+
     const {
         data: areas,
         loading: areasLoading,
         execute: loadAreas,
         setData: setAreas
-    } = useApi(() => {
-        if (user?.role === 'ADMIN') {
-            return mappingAreaAPI.getAll(false);
-        }
-        return mappingAreaAPI.getByUser(user.id, false);
-    }, false);
+    } = useApi(getAreasRequest, false);
 
-    useEffect(() => {
-        if (!user?.id) {
-            setAreas([]);
+    const loadFloorsCountForAllAreas = useCallback(async () => {
+        if (!areas?.length) {
+            setFloorsCount({});
             return;
         }
 
-        loadAreas().catch(() => {
-            // Error state is handled inside useApi.
-        });
-    }, [user?.id, user?.role]);
-
-    useEffect(() => {
-        if (areas && areas.length > 0) {
-            loadFloorsCountForAllAreas();
-        }
-    }, [areas]);
-
-    const loadFloorsCountForAllAreas = async () => {
         const counts = {};
         for (const area of areas) {
             try {
@@ -51,7 +41,22 @@ export const useFloors = () => {
             }
         }
         setFloorsCount(counts);
-    };
+    }, [areas]);
+
+    useEffect(() => {
+        if (!user?.id) {
+            setAreas([]);
+            return;
+        }
+
+        loadAreas().catch(() => {
+            // Error state is handled inside useApi.
+        });
+    }, [loadAreas, setAreas, user?.id]);
+
+    useEffect(() => {
+        loadFloorsCountForAllAreas();
+    }, [loadFloorsCountForAllAreas]);
 
     const loadFloorsForArea = async (areaId) => {
         setLoadingFloors(prev => ({ ...prev, [areaId]: true }));

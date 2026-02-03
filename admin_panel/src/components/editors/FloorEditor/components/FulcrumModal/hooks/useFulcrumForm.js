@@ -1,114 +1,111 @@
 import { useState, useCallback } from 'react';
 import { FACING_DIRECTIONS, FULCRUM_TYPES } from '../../../types/editorTypes';
 
-export const useFulcrumForm = (initialData = null) => {
-    const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        type: FULCRUM_TYPES.ROOM,
-        facingDirection: FACING_DIRECTIONS.UP,
-        hasQr: false,
-        x: 0,
-        y: 0,
-        floorId: null,
-        ...initialData
-    });
+const DEFAULT_FULCRUM_NAMES = {
+    [FULCRUM_TYPES.ROOM]: 'Room',
+    [FULCRUM_TYPES.CORRIDOR]: 'Corridor',
+    [FULCRUM_TYPES.STAIRS]: 'Stairs',
+    [FULCRUM_TYPES.ELEVATOR]: 'Elevator',
+    [FULCRUM_TYPES.ENTRANCE]: 'Entrance',
+    [FULCRUM_TYPES.HALL]: 'Hall',
+    [FULCRUM_TYPES.RESTROOM]: 'Restroom',
+    [FULCRUM_TYPES.KITCHEN]: 'Kitchen',
+    [FULCRUM_TYPES.RECEPTION]: 'Reception',
+    [FULCRUM_TYPES.EMERGENCY_EXIT]: 'Emergency exit',
+    [FULCRUM_TYPES.LANDMARK]: 'Landmark'
+};
 
+export const getDefaultFulcrumName = (type) => DEFAULT_FULCRUM_NAMES[type] || type || 'Point';
+
+const buildInitialFormData = (data = null) => ({
+    name: data?.name || '',
+    description: data?.description || '',
+    type: data?.type || FULCRUM_TYPES.ROOM,
+    facingDirection: data?.facingDirection || FACING_DIRECTIONS.UP,
+    hasQr: Boolean(data?.hasQr),
+    x: data?.x ?? 0,
+    y: data?.y ?? 0,
+    floorId: data?.floorId ?? null
+});
+
+export const useFulcrumForm = (initialData = null) => {
+    const [formData, setFormData] = useState(buildInitialFormData(initialData));
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Валидация формы
     const validateForm = useCallback(() => {
-        const newErrors = {};
+        const nextErrors = {};
 
-        if (!formData.name.trim()) {
-            newErrors.name = 'Название обязательно';
-        } else if (formData.name.length > 50) {
-            newErrors.name = 'Название не должно превышать 50 символов';
+        if (formData.name.length > 50) {
+            nextErrors.name = 'Name must be at most 50 characters';
         }
 
         if (formData.description && formData.description.length > 200) {
-            newErrors.description = 'Описание не должно превышать 200 символов';
+            nextErrors.description = 'Description must be at most 200 characters';
         }
 
         if (!Object.values(FULCRUM_TYPES).includes(formData.type)) {
-            newErrors.type = 'Неверный тип точки';
+            nextErrors.type = 'Invalid point type';
         }
 
         if (formData.hasQr && !Object.values(FACING_DIRECTIONS).includes(formData.facingDirection)) {
-            newErrors.facingDirection = 'Invalid direction.';
+            nextErrors.facingDirection = 'Invalid direction';
         }
 
         if (formData.x === undefined || formData.x === null) {
-            newErrors.x = 'Координата X обязательна';
+            nextErrors.x = 'X is required';
         }
 
         if (formData.y === undefined || formData.y === null) {
-            newErrors.y = 'Координата Y обязательна';
+            nextErrors.y = 'Y is required';
         }
 
         if (!formData.floorId) {
-            newErrors.floorId = 'ID этажа обязателен';
+            nextErrors.floorId = 'Floor id is required';
         }
 
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        setErrors(nextErrors);
+        return Object.keys(nextErrors).length === 0;
     }, [formData]);
 
-    // Обновление поля формы
     const updateField = useCallback((field, value) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
             [field]: value
         }));
 
-        // Очищаем ошибку при изменении поля
         if (errors[field]) {
-            setErrors(prev => ({
+            setErrors((prev) => ({
                 ...prev,
                 [field]: ''
             }));
         }
     }, [errors]);
 
-    // Установка координат
     const setCoordinates = useCallback((x, y) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
             x,
             y
         }));
     }, []);
 
-    // Установка floorId
     const setFloorId = useCallback((floorId) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
             floorId
         }));
     }, []);
 
-    // Сброс формы
     const resetForm = useCallback((newData = null) => {
-        setFormData({
-            name: '',
-            description: '',
-            type: FULCRUM_TYPES.ROOM,
-            facingDirection: FACING_DIRECTIONS.UP,
-            hasQr: false,
-            x: 0,
-            y: 0,
-            floorId: null,
-            ...newData
-        });
+        setFormData(buildInitialFormData(newData));
         setErrors({});
         setIsSubmitting(false);
     }, []);
 
-    // Подготовка данных для отправки
     const getSubmitData = useCallback(() => {
         return {
-            name: formData.name.trim(),
+            name: formData.name.trim() || getDefaultFulcrumName(formData.type),
             description: formData.description.trim(),
             type: formData.type,
             facingDirection: formData.hasQr ? formData.facingDirection : null,

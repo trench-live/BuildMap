@@ -1,17 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { mappingAreaAPI } from '../../../services/api';
 import { useApi } from '../../../hooks/useApi';
 import { useAuth } from '../../../hooks/useAuth';
 
 export const useAreas = (targetUserId = null) => {
     const { user } = useAuth();
-    const {
-        data: areas,
-        loading,
-        error,
-        execute: loadAreas,
-        setData: setAreas
-    } = useApi((targetUserId) => {
+    const getAreasRequest = useCallback(() => {
         if (user?.role === 'ADMIN' && targetUserId) {
             return mappingAreaAPI.getByUser(targetUserId, false);
         }
@@ -19,10 +13,18 @@ export const useAreas = (targetUserId = null) => {
             return mappingAreaAPI.getAll(false);
         }
         return mappingAreaAPI.getByUser(user.id, false);
-    }, false);
+    }, [targetUserId, user?.id, user?.role]);
+
+    const {
+        data: areas,
+        loading,
+        error,
+        execute: loadAreas,
+        setData: setAreas
+    } = useApi(getAreasRequest, false);
     const [areaToDelete, setAreaToDelete] = useState(null);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-    const reloadAreas = () => loadAreas(targetUserId);
+    const reloadAreas = useCallback(() => loadAreas(), [loadAreas]);
 
     useEffect(() => {
         if (!user?.id) {
@@ -33,7 +35,7 @@ export const useAreas = (targetUserId = null) => {
         reloadAreas().catch(() => {
             // Error state is handled inside useApi.
         });
-    }, [user?.id, user?.role, targetUserId]);
+    }, [reloadAreas, setAreas, user?.id]);
 
     const handleDeleteClick = (area) => {
         setAreaToDelete(area);

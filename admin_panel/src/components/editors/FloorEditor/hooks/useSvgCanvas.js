@@ -88,7 +88,7 @@ export const useSvgCanvas = (editorState, setEditorState) => {
             document.removeEventListener('mouseup', handleGlobalMouseUp);
             document.removeEventListener('mousemove', handleGlobalMouseMove);
         };
-    }, [editorState.isDragging, handleMouseMove]);
+    }, [editorState.isDragging, handleMouseMove, setEditorState]);
 
     return {
         handleMouseDown,

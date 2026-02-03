@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const getErrorMessage = (error) => {
     if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
@@ -21,7 +21,7 @@ export const useApi = (apiFunction, immediate = true) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const execute = async (...args) => {
+    const execute = useCallback(async (...args) => {
         try {
             setLoading(true);
             setError(null);
@@ -35,13 +35,13 @@ export const useApi = (apiFunction, immediate = true) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [apiFunction]);
 
     useEffect(() => {
         if (immediate) {
             execute();
         }
-    }, []);
+    }, [execute, immediate]);
 
     return {
         data,

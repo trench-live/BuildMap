@@ -16,7 +16,6 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
         handleSave: handleFloorSave,
         handleResetView,
         handleClearCanvas,
-        setMode,
         svgSize,
         updateContainerSize,
         toggleGrid,

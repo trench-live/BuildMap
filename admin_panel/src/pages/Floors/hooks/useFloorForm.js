@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { floorAPI } from '../../../services/api';
 
+const FLOOR_SUFFIX = '\u044d\u0442\u0430\u0436';
+const getDefaultFloorName = (level) => `${level} ${FLOOR_SUFFIX}`;
+
 export const useFloorForm = (expandedArea, onSuccess) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [editingFloor, setEditingFloor] = useState(null);
@@ -10,41 +13,45 @@ export const useFloorForm = (expandedArea, onSuccess) => {
         description: ''
     });
 
-    const handleSaveFloor = async (e) => {
-        e.preventDefault();
-        if (!formData.name.trim()) {
-            alert('Введите название этажа');
-            return;
-        }
+    const resetFormState = () => {
+        setModalVisible(false);
+        setEditingFloor(null);
+        setFormData({ name: '', level: 1, description: '' });
+    };
+
+    const handleSaveFloor = async (event) => {
+        event.preventDefault();
+        const fallbackName = getDefaultFloorName(formData.level || 1);
+        const resolvedName = formData.name.trim() || fallbackName;
 
         try {
             if (editingFloor) {
                 await floorAPI.update(editingFloor.id, {
-                    name: formData.name,
+                    name: resolvedName,
                     level: formData.level,
                     description: formData.description
                 });
             } else {
                 await floorAPI.create({
                     ...formData,
+                    name: resolvedName,
                     mappingAreaId: expandedArea
                 });
             }
 
-            setModalVisible(false);
-            setEditingFloor(null);
-            setFormData({ name: '', level: 1, description: '' });
+            resetFormState();
             onSuccess?.();
         } catch (error) {
-            alert('Ошибка: ' + (error.response?.data?.message || error.message));
+            alert('Error: ' + (error.response?.data?.message || error.message));
         }
     };
 
-    const openCreateModal = (areaId, currentFloorsCount = 0) => {
+    const openCreateModal = (_areaId, currentFloorsCount = 0) => {
+        const nextLevel = currentFloorsCount + 1;
         setEditingFloor(null);
         setFormData({
             name: '',
-            level: currentFloorsCount + 1,
+            level: nextLevel,
             description: ''
         });
         setModalVisible(true);
@@ -61,9 +68,7 @@ export const useFloorForm = (expandedArea, onSuccess) => {
     };
 
     const closeModal = () => {
-        setModalVisible(false);
-        setEditingFloor(null);
-        setFormData({ name: '', level: 1, description: '' });
+        resetFormState();
     };
 
     return {
