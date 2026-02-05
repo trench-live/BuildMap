@@ -267,6 +267,13 @@ const NavigationMap = ({
                         height={coordinateHeight}
                         preserveAspectRatio="xMidYMid meet"
                     >
+                        <rect
+                            className="navigation-hit-area"
+                            x={svgMeta.originX}
+                            y={svgMeta.originY}
+                            width={coordinateWidth}
+                            height={coordinateHeight}
+                        />
                         <g dangerouslySetInnerHTML={{ __html: svgBody }} />
                         {segments.map(([from, to]) => {
                             const fromX = mapCoordinate(from.x, coordinateWidth, svgMeta.originX);

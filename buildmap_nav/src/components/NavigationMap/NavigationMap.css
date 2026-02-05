@@ -21,6 +21,11 @@
     height: auto;
 }
 
+.navigation-hit-area {
+    fill: rgba(0, 0, 0, 0.001);
+    pointer-events: all;
+}
+
 .route-line {
     stroke: #2563eb;
     stroke-width: 4px;
