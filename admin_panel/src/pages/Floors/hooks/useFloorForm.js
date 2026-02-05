@@ -3,6 +3,10 @@ import { floorAPI } from '../../../services/api';
 
 const FLOOR_SUFFIX = '\u044d\u0442\u0430\u0436';
 const getDefaultFloorName = (level) => `${level} ${FLOOR_SUFFIX}`;
+const normalizeLevel = (value, fallback = 1) => {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? fallback : parsed;
+};
 
 export const useFloorForm = (expandedArea, onSuccess) => {
     const [modalVisible, setModalVisible] = useState(false);
@@ -21,20 +25,22 @@ export const useFloorForm = (expandedArea, onSuccess) => {
 
     const handleSaveFloor = async (event) => {
         event.preventDefault();
-        const fallbackName = getDefaultFloorName(formData.level || 1);
+        const normalizedLevel = normalizeLevel(formData.level, 1);
+        const fallbackName = getDefaultFloorName(normalizedLevel);
         const resolvedName = formData.name.trim() || fallbackName;
 
         try {
             if (editingFloor) {
                 await floorAPI.update(editingFloor.id, {
                     name: resolvedName,
-                    level: formData.level,
+                    level: normalizedLevel,
                     description: formData.description
                 });
             } else {
                 await floorAPI.create({
                     ...formData,
                     name: resolvedName,
+                    level: normalizedLevel,
                     mappingAreaId: expandedArea
                 });
             }
@@ -61,7 +67,7 @@ export const useFloorForm = (expandedArea, onSuccess) => {
         setEditingFloor(floor);
         setFormData({
             name: floor.name,
-            level: floor.level || 1,
+            level: floor.level ?? 1,
             description: floor.description || ''
         });
         setModalVisible(true);
