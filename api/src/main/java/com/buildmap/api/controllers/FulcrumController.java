@@ -59,6 +59,15 @@ public class FulcrumController {
         return ResponseEntity.ok(fulcrumMapper.toDtoList(fulcrums));
     }
 
+    @GetMapping("/qr-availability")
+    public ResponseEntity<List<Long>> getQrAvailability(@RequestParam List<Long> areaIds) {
+        User currentUser = authorizationService.getCurrentUser();
+        if (!authorizationService.isAdmin(currentUser)) {
+            areaIds.forEach(areaId -> authorizationService.requireAreaOwnerOrAdmin(currentUser, areaId));
+        }
+        return ResponseEntity.ok(fulcrumService.getAreaIdsWithQr(areaIds));
+    }
+
     @GetMapping("/area/{areaId}/qr.pdf")
     public ResponseEntity<byte[]> getAreaQrPdf(
             @PathVariable Long areaId,

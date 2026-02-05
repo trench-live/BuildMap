@@ -41,4 +41,17 @@ public interface FulcrumRepository extends JpaRepository<Fulcrum, Long> {
             AND f.deleted = false
             """)
     long countActiveByUserIdInActiveAreas(@Param("userId") Long userId);
+
+    @Query("""
+            SELECT DISTINCT ma.id
+            FROM Fulcrum f
+            JOIN f.floor fl
+            JOIN fl.mappingArea ma
+            WHERE ma.id IN :areaIds
+              AND ma.deleted = false
+              AND fl.deleted = false
+              AND f.deleted = false
+              AND f.hasQr = true
+            """)
+    List<Long> findAreaIdsWithActiveQrFulcrums(@Param("areaIds") List<Long> areaIds);
 }

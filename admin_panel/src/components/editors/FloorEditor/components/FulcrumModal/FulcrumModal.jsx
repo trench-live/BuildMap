@@ -12,17 +12,47 @@ import InterfloorConnections from './components/InterfloorConnections';
 import { formatCoord } from './utils/formatters';
 import './FulcrumModal.css';
 
+const labels = {
+    createTitle: '\u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 \u0442\u043e\u0447\u043a\u0438',
+    editTitle: '\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435 \u0442\u043e\u0447\u043a\u0438',
+    coordinates: '\u041a\u043e\u043e\u0440\u0434\u0438\u043d\u0430\u0442\u044b: ',
+    delete: '\u0423\u0434\u0430\u043b\u0438\u0442\u044c',
+    cancel: '\u041e\u0442\u043c\u0435\u043d\u0430',
+    save: '\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c',
+    create: '\u0421\u043e\u0437\u0434\u0430\u0442\u044c',
+    saving: '\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435...',
+    openNavigation: '\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0432 \u043d\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u0438'
+};
+
+const getNavigationBaseUrl = () => {
+    if (typeof window === 'undefined') {
+        return '';
+    }
+
+    const { protocol, hostname } = window.location;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://localhost:3001';
+    }
+
+    const rootHost = hostname
+        .replace(/^admin\./, '')
+        .replace(/^api\./, '')
+        .replace(/^www\./, '');
+
+    return `${protocol}//${rootHost}`;
+};
+
 const FulcrumModal = ({
-                          visible,
-                          mode,
-                          fulcrum,
-                          position,
-                          floorId,
-                          mappingAreaId,
-                          onSave,
-                          onDelete,
-                          onClose
-                      }) => {
+    visible,
+    mode,
+    fulcrum,
+    position,
+    floorId,
+    mappingAreaId,
+    onSave,
+    onDelete,
+    onClose
+}) => {
     const {
         formData,
         errors,
@@ -51,6 +81,10 @@ const FulcrumModal = ({
         floorId
     });
 
+    const navigationUrl = mode === 'edit' && fulcrum?.id
+        ? `${getNavigationBaseUrl()}/navigation?fulcrum=${fulcrum.id}`
+        : '';
+
     useEffect(() => {
         if (visible) {
             if (mode === 'edit' && fulcrum) {
@@ -68,25 +102,25 @@ const FulcrumModal = ({
                 resetForm({
                     x: position.x,
                     y: position.y,
-                    floorId: floorId
+                    floorId
                 });
             } else {
                 resetForm({
-                    floorId: floorId
+                    floorId
                 });
             }
         }
     }, [visible, mode, fulcrum, position, floorId, resetForm]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleSubmit = async (event) => {
+        event.preventDefault();
 
         if (!validateForm()) {
             return;
         }
 
         const nextConnectionErrors = {};
-        connectionRows.forEach(row => {
+        connectionRows.forEach((row) => {
             if (row.forwardEnabled && !isValidWeight(row.forwardWeight)) {
                 nextConnectionErrors[row.id] = {
                     ...(nextConnectionErrors[row.id] || {}),
@@ -108,7 +142,7 @@ const FulcrumModal = ({
 
         setIsSubmitting(true);
         try {
-            const preparedRows = connectionRows.map(row => ({
+            const preparedRows = connectionRows.map((row) => ({
                 ...row,
                 forwardWeight: normalizeWeight(row.forwardWeight),
                 backwardWeight: normalizeWeight(row.backwardWeight)
@@ -122,26 +156,45 @@ const FulcrumModal = ({
         }
     };
 
+    const handleOpenNavigation = () => {
+        if (!navigationUrl) {
+            return;
+        }
+        window.open(navigationUrl, '_blank', 'noopener,noreferrer');
+    };
+
     if (!visible) return null;
 
     return (
         <div className="modal-overlay">
             <Modal size="small" className="fulcrum-modal">
                 <ModalHeader
-                    title={mode === 'create' ? 'Создание точки' : 'Редактирование точки'}
+                    title={mode === 'create' ? labels.createTitle : labels.editTitle}
                     onClose={onClose}
                 />
 
                 <form onSubmit={handleSubmit}>
                     <ModalContent>
-                        {(mode === 'create' && position) || (mode === 'edit' && fulcrum) ? (
+                        {((mode === 'create' && position) || (mode === 'edit' && fulcrum)) && (
                             <div className="position-info">
-                                <span>Координаты: </span>
-                                <strong>
-                                    X: {formatCoord(formData.x)}, Y: {formatCoord(formData.y)}
-                                </strong>
+                                <div className="position-info-main">
+                                    <span>{labels.coordinates}</span>
+                                    <strong>
+                                        X: {formatCoord(formData.x)}, Y: {formatCoord(formData.y)}
+                                    </strong>
+                                </div>
+                                {navigationUrl && (
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="small"
+                                        onClick={handleOpenNavigation}
+                                    >
+                                        {labels.openNavigation}
+                                    </Button>
+                                )}
                             </div>
-                        ) : null}
+                        )}
 
                         <FulcrumFormFields
                             formData={formData}
@@ -157,7 +210,6 @@ const FulcrumModal = ({
                             updateConnectionRow={updateConnectionRow}
                             clearConnectionError={clearConnectionError}
                         />
-
                     </ModalContent>
 
                     <ModalActions align="right">
@@ -168,7 +220,7 @@ const FulcrumModal = ({
                                 onClick={onDelete}
                                 disabled={isSubmitting}
                             >
-                                Удалить
+                                {labels.delete}
                             </Button>
                         )}
                         <Button
@@ -177,14 +229,14 @@ const FulcrumModal = ({
                             onClick={onClose}
                             disabled={isSubmitting}
                         >
-                            Отмена
+                            {labels.cancel}
                         </Button>
                         <Button
                             type="submit"
                             variant="primary"
                             disabled={isSubmitting}
                         >
-                            {isSubmitting ? 'Сохранение...' : (mode === 'create' ? 'Создать' : 'Сохранить')}
+                            {isSubmitting ? labels.saving : (mode === 'create' ? labels.create : labels.save)}
                         </Button>
                     </ModalActions>
                 </form>

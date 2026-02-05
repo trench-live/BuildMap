@@ -9,6 +9,8 @@ services:
       - "8080:8080"
     environment:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:sqlite:/app/data/buildmap.db}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+      SPRING_JPA_DATABASE_PLATFORM: ${SPRING_JPA_DATABASE_PLATFORM:-org.hibernate.community.dialect.SQLiteDialect}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       AUTH_DEV_ENABLED: ${AUTH_DEV_ENABLED:-false}
       AUTH_DEV_SECRET: ${AUTH_DEV_SECRET:-dev}

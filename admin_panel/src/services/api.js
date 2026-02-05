@@ -108,6 +108,10 @@ export const fulcrumAPI = {
     getByFloor: (floorId) => api.get(`/api/fulcrum/floor/${floorId}`),
     getByArea: (areaId, deleted = false) =>
         api.get(`/api/fulcrum/area/${areaId}?deleted=${deleted}`),
+    getQrAvailability: (areaIds = []) =>
+        api.get('/api/fulcrum/qr-availability', {
+            params: { areaIds: areaIds.join(',') }
+        }),
     getById: (id) => api.get(`/api/fulcrum/${id}`),
     create: (fulcrumData) => api.post('/api/fulcrum', fulcrumData),
     update: (id, fulcrumData) => api.put(`/api/fulcrum/${id}`, fulcrumData),

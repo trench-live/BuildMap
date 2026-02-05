@@ -8,7 +8,10 @@ const AreaCard = ({
                       onEdit,
                       onDelete,
                       onNavigate,
-                      onPrintQr
+                      onPrintQr,
+                      canPrintQr,
+                      isQrChecking,
+                      qrTooltip
                   }) => {
     return (
         <div className="area-card">
@@ -36,12 +39,15 @@ const AreaCard = ({
                     >
                         🗑️ Удалить
                     </button>
-                    <button
-                        className="btn btn-secondary"
-                        onClick={() => onPrintQr(area)}
-                    >
-                        QR PDF
-                    </button>
+                    <span className="area-action-tooltip" title={qrTooltip}>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={() => onPrintQr(area)}
+                            disabled={!canPrintQr || isQrChecking}
+                        >
+                            QR PDF
+                        </button>
+                    </span>
                     <button
                         className="btn btn-primary"
                         onClick={onNavigate}
