@@ -1,0 +1,11 @@
+.areas-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.areas-empty {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+    font-size: 16px;
+}

@@ -1,0 +1,11 @@
+.areas-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.areas-header h2 {
+    margin: 0;
+    color: #333;
+}

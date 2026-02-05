@@ -1,0 +1,90 @@
+import { useState } from 'react';
+import { floorAPI } from '../../../services/api';
+
+const FLOOR_SUFFIX = '\u044d\u0442\u0430\u0436';
+const getDefaultFloorName = (level) => `${level} ${FLOOR_SUFFIX}`;
+const normalizeLevel = (value, fallback = 1) => {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+export const useFloorForm = (expandedArea, onSuccess) => {
+    const [modalVisible, setModalVisible] = useState(false);
+    const [editingFloor, setEditingFloor] = useState(null);
+    const [formData, setFormData] = useState({
+        name: '',
+        level: 1,
+        description: ''
+    });
+
+    const resetFormState = () => {
+        setModalVisible(false);
+        setEditingFloor(null);
+        setFormData({ name: '', level: 1, description: '' });
+    };
+
+    const handleSaveFloor = async (event) => {
+        event.preventDefault();
+        const normalizedLevel = normalizeLevel(formData.level, 1);
+        const fallbackName = getDefaultFloorName(normalizedLevel);
+        const resolvedName = formData.name.trim() || fallbackName;
+
+        try {
+            if (editingFloor) {
+                await floorAPI.update(editingFloor.id, {
+                    name: resolvedName,
+                    level: normalizedLevel,
+                    description: formData.description
+                });
+            } else {
+                await floorAPI.create({
+                    ...formData,
+                    name: resolvedName,
+                    level: normalizedLevel,
+                    mappingAreaId: expandedArea
+                });
+            }
+
+            resetFormState();
+            onSuccess?.();
+        } catch (error) {
+            alert('Error: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
+    const openCreateModal = (_areaId, currentFloorsCount = 0) => {
+        const nextLevel = currentFloorsCount + 1;
+        setEditingFloor(null);
+        setFormData({
+            name: '',
+            level: nextLevel,
+            description: ''
+        });
+        setModalVisible(true);
+    };
+
+    const openEditModal = (floor) => {
+        setEditingFloor(floor);
+        setFormData({
+            name: floor.name,
+            level: floor.level ?? 1,
+            description: floor.description || ''
+        });
+        setModalVisible(true);
+    };
+
+    const closeModal = () => {
+        resetFormState();
+    };
+
+    return {
+        modalVisible,
+        editingFloor,
+        formData,
+        setFormData,
+        handleSaveFloor,
+        openCreateModal,
+        openEditModal,
+        closeModal
+    };
+};

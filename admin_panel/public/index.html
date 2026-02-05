@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <meta
+          name="description"
+          content="BuildMap Admin - система управления indoor навигацией"
+  />
+  <title>BuildMap Admin</title>
+
+  <!-- Telegram Widget Script -->
+  <script>
+    // Глобальная функция для обработки авторизации
+    function onTelegramAuth(user) {
+      console.log('Telegram auth data:', user);
+      // Сохраняем данные в localStorage и перенаправляем
+      localStorage.setItem('telegramAuthData', JSON.stringify(user));
+      window.location.href = '/login-success';
+    }
+  </script>
+</head>
+<body>
+<noscript>You need to enable JavaScript to run this app.</noscript>
+<div id="root"></div>
+</body>
+</html>

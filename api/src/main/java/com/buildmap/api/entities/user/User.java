@@ -1,6 +1,6 @@
 package com.buildmap.api.entities.user;
 
-import com.buildmap.api.entities.MappingArea;
+import com.buildmap.api.entities.mapping_area.MappingArea;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -30,9 +30,12 @@ public class User {
     @Column(nullable = false)
     private Role role = Role.USER;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
     private List<MappingArea> mappingAreas;
 
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
+
+    @Column(name = "is_blocked", nullable = false)
+    private boolean blocked = false;
 }

@@ -4,6 +4,7 @@ import com.buildmap.api.exceptions.*;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.validation.FieldError;
@@ -26,10 +27,16 @@ public class GlobalExceptionHandler {
     private static final String VALIDATION_ERROR = "Validation error";
     private static final String INVALID_ROLE = "Invalid role";
     private static final String USER_NOT_FOUND = "User not found";
+    private static final String MAPPING_AREA_NOT_FOUND = "Mapping area not found";
+    private static final String FLOOR_NOT_FOUND = "Floor not found";
+    private static final String FULCRUM_NOT_FOUND = "Fulcrum not found";
     private static final String CONFLICT = "Conflict";
     private static final String DATABASE_ERROR = "Database error";
     private static final String INTERNAL_ERROR = "Internal error";
     private static final String UNEXPECTED_ERROR = "An unexpected error occurred";
+    private static final String BUSINESS_RULE_VIOLATION = "Business rule violation";
+    private static final String INVALID_TELEGRAM_DATA = "Invalid Telegram data";
+    private static final String ACCESS_DENIED = "Access denied";
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> handleHttpMessageNotReadableException(
@@ -75,9 +82,16 @@ public class GlobalExceptionHandler {
         return error.toString();
     }
 
-    @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<ApiError> handleValidationException(ValidationException ex) {
-        return buildResponse(HttpStatus.BAD_REQUEST, VALIDATION_ERROR, ex.getMessage());
+    // Business rule violations - 400 Bad Request
+    @ExceptionHandler({
+            ValidationException.class,
+            FloorAlreadyExistsException.class,
+            FulcrumAlreadyExistsException.class,
+            ConnectionAlreadyExistsException.class,
+            IllegalArgumentException.class
+    })
+    public ResponseEntity<ApiError> handleBusinessRuleViolations(RuntimeException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, BUSINESS_RULE_VIOLATION, ex.getMessage());
     }
 
     @ExceptionHandler(InvalidRoleException.class)
@@ -85,11 +99,32 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, INVALID_ROLE, ex.getMessage());
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ApiError> handleUserNotFoundException(UserNotFoundException ex) {
-        return buildResponse(HttpStatus.NOT_FOUND, USER_NOT_FOUND, ex.getMessage());
+    @ExceptionHandler(InvalidTelegramDataException.class)
+    public ResponseEntity<ApiError> handleInvalidTelegramDataException(InvalidTelegramDataException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, INVALID_TELEGRAM_DATA, ex.getMessage());
     }
 
+    // Not Found exceptions - 404 Not Found
+    @ExceptionHandler({
+            UserNotFoundException.class,
+            MappingAreaNotFoundException.class,
+            FloorNotFoundException.class,
+            FulcrumNotFoundException.class
+    })
+    public ResponseEntity<ApiError> handleNotFoundException(RuntimeException ex) {
+        String errorType = getNotFoundErrorType(ex);
+        return buildResponse(HttpStatus.NOT_FOUND, errorType, ex.getMessage());
+    }
+
+    private String getNotFoundErrorType(RuntimeException ex) {
+        if (ex instanceof UserNotFoundException) return USER_NOT_FOUND;
+        if (ex instanceof MappingAreaNotFoundException) return MAPPING_AREA_NOT_FOUND;
+        if (ex instanceof FloorNotFoundException) return FLOOR_NOT_FOUND;
+        if (ex instanceof FulcrumNotFoundException) return FULCRUM_NOT_FOUND;
+        return "Not Found";
+    }
+
+    // Conflict exceptions - 409 Conflict
     @ExceptionHandler(TelegramIdExistsException.class)
     public ResponseEntity<ApiError> handleTelegramIdExistsException(TelegramIdExistsException ex) {
         return buildResponse(HttpStatus.CONFLICT, CONFLICT, ex.getMessage());
@@ -109,10 +144,15 @@ public class GlobalExceptionHandler {
                 ex.getMessage().contains(TELEGRAM_ID_CONSTRAINT);
     }
 
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDeniedException(AccessDeniedException ex) {
+        return buildResponse(HttpStatus.FORBIDDEN, ACCESS_DENIED, ex.getMessage());
+    }
+
+    // Generic exception handler
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneralException(Exception ex) {
         ex.printStackTrace();
-
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, INTERNAL_ERROR, UNEXPECTED_ERROR);
     }
 
