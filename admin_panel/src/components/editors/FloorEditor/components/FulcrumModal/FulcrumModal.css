@@ -9,6 +9,17 @@
     padding: 8px 12px;
     margin-bottom: 16px;
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.position-info-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .position-info span {

@@ -24,22 +24,15 @@ const useNavigationData = (fulcrumId, onReset) => {
                 onReset();
             }
             setFloors([]);
+            setStartFulcrum(null);
             setAreaId(null);
             setAreaFulcrums([]);
 
             try {
-                const fulcrumResponse = await fulcrumAPI.getById(fulcrumId);
-
+                const floorResponse = await floorAPI.getByFulcrumId(fulcrumId);
                 if (!isActive) return;
 
-                const startData = fulcrumResponse.data;
-                setStartFulcrum(startData);
-
-                let areaIdValue = startData?.mappingAreaId;
-                if (!areaIdValue) {
-                    const floorResponse = await floorAPI.getByFulcrumId(fulcrumId);
-                    areaIdValue = floorResponse.data?.mappingAreaId;
-                }
+                const areaIdValue = floorResponse.data?.mappingAreaId;
 
                 if (!areaIdValue) {
                     throw new Error('Mapping area not found for this fulcrum.');
@@ -52,14 +45,21 @@ const useNavigationData = (fulcrumId, onReset) => {
 
                 if (!isActive) return;
 
+                const allFulcrums = fulcrumsResponse.data || [];
+                const startData = allFulcrums.find((item) => item.id === fulcrumId) || null;
+                if (!startData) {
+                    throw new Error('Start point not found in this area.');
+                }
+
                 const sortedFloors = (floorsResponse.data || []).slice().sort((a, b) => {
                     const aLevel = Number.isFinite(a.level) ? a.level : Number.MAX_SAFE_INTEGER;
                     const bLevel = Number.isFinite(b.level) ? b.level : Number.MAX_SAFE_INTEGER;
                     return aLevel - bLevel;
                 });
+                setStartFulcrum(startData);
                 setFloors(sortedFloors);
                 setAreaId(areaIdValue);
-                setAreaFulcrums((fulcrumsResponse.data || []).filter((item) => !item.deleted));
+                setAreaFulcrums(allFulcrums.filter((item) => !item.deleted));
             } catch (err) {
                 if (!isActive) return;
                 const message = err.response?.data?.message || err.message || 'Failed to load navigation data.';

@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -46,6 +47,13 @@ public class FulcrumService {
         return deleted ?
                 fulcrumRepository.findByFloorIdAndDeletedTrue(floorId) :
                 fulcrumRepository.findByFloorIdAndDeletedFalse(floorId);
+    }
+
+    public List<Long> getAreaIdsWithQr(List<Long> areaIds) {
+        if (areaIds == null || areaIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return fulcrumRepository.findAreaIdsWithActiveQrFulcrums(areaIds);
     }
 
     public Fulcrum getById(Long id) {
