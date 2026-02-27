@@ -20,7 +20,10 @@ const useInterfloorConnections = ({
 
         if (currentFulcrum?.connections) {
             currentFulcrum.connections.forEach(connection => {
-                outgoingConnections.set(connection.connectedFulcrumId, connection.weight);
+                outgoingConnections.set(connection.connectedFulcrumId, {
+                    distanceMeters: connection.distanceMeters,
+                    difficultyFactor: connection.difficultyFactor
+                });
             });
         }
 
@@ -28,7 +31,10 @@ const useInterfloorConnections = ({
             if (!item?.connections) return;
             const incoming = item.connections.find(connection => connection.connectedFulcrumId === currentFulcrumId);
             if (incoming) {
-                incomingConnections.set(item.id, incoming.weight);
+                incomingConnections.set(item.id, {
+                    distanceMeters: incoming.distanceMeters,
+                    difficultyFactor: incoming.difficultyFactor
+                });
             }
         });
 
@@ -37,16 +43,22 @@ const useInterfloorConnections = ({
             .filter(item => item.id !== currentFulcrumId)
             .filter(item => item.floorId !== currentFloorId)
             .filter(item => item.type !== FULCRUM_TYPES.CORRIDOR)
-            .map(item => ({
-                id: item.id,
-                name: item.name,
-                floorId: item.floorId,
-                floorName: floorNameById.get(item.floorId) || `Floor ${item.floorId}`,
-                forwardEnabled: outgoingConnections.has(item.id),
-                forwardWeight: outgoingConnections.get(item.id) ?? 1,
-                backwardEnabled: incomingConnections.has(item.id),
-                backwardWeight: incomingConnections.get(item.id) ?? 1
-            }))
+            .map(item => {
+                const outgoing = outgoingConnections.get(item.id);
+                const incoming = incomingConnections.get(item.id);
+                return {
+                    id: item.id,
+                    name: item.name,
+                    floorId: item.floorId,
+                    floorName: floorNameById.get(item.floorId) || `Floor ${item.floorId}`,
+                    forwardEnabled: outgoingConnections.has(item.id),
+                    forwardDistanceMeters: outgoing?.distanceMeters ?? 1,
+                    forwardDifficultyFactor: outgoing?.difficultyFactor ?? 1,
+                    backwardEnabled: incomingConnections.has(item.id),
+                    backwardDistanceMeters: incoming?.distanceMeters ?? 1,
+                    backwardDifficultyFactor: incoming?.difficultyFactor ?? 1
+                };
+            })
             .sort((a, b) => {
                 if (a.floorName === b.floorName) {
                     return a.name.localeCompare(b.name);
@@ -132,12 +144,23 @@ const useInterfloorConnections = ({
         });
     };
 
-    const isValidWeight = (value) => {
+    const isValidDistanceMeters = (value) => {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) && parsed > 0;
+    };
+
+    const normalizeDistanceMeters = (value) => {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed <= 0) return 1;
+        return parsed;
+    };
+
+    const isValidDifficultyFactor = (value) => {
         const parsed = Number(value);
         return Number.isFinite(parsed) && parsed >= 1;
     };
 
-    const normalizeWeight = (value) => {
+    const normalizeDifficultyFactor = (value) => {
         const parsed = Number(value);
         if (!Number.isFinite(parsed) || parsed < 1) return 1;
         return parsed;
@@ -151,8 +174,10 @@ const useInterfloorConnections = ({
         updateConnectionRow,
         clearConnectionError,
         setConnectionErrors,
-        isValidWeight,
-        normalizeWeight
+        isValidDistanceMeters,
+        normalizeDistanceMeters,
+        isValidDifficultyFactor,
+        normalizeDifficultyFactor
     };
 };
 

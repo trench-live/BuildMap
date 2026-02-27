@@ -87,7 +87,8 @@ export const useFulcrums = (floorId) => {
         setConnections(prev => [...prev, {
             from: fromFulcrumId,
             to: connectionData.connectedFulcrumId,
-            weight: connectionData.weight
+            distanceMeters: connectionData.distanceMeters,
+            difficultyFactor: connectionData.difficultyFactor
         }]);
     }, [addConnectionAction]);
 

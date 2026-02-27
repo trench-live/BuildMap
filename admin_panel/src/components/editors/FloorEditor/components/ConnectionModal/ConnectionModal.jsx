@@ -35,11 +35,14 @@ const ConnectionModal = ({
         if (visible) {
             if (mode === 'edit' && connection) {
                 resetForm({
-                    weight: connection.weight || 1.0,
+                    distanceMeters: connection.distanceMeters || 1.0,
+                    difficultyFactor: connection.difficultyFactor || 1.0,
                     bidirectional: Boolean(isBidirectional)
                 });
             } else {
                 resetForm({
+                    distanceMeters: 1.0,
+                    difficultyFactor: 1.0,
                     bidirectional: true
                 });
             }
@@ -67,7 +70,7 @@ const ConnectionModal = ({
         <div className="modal-overlay">
             <Modal size="small" className="connection-modal">
                 <ModalHeader
-                    title={mode === 'create' ? '\u0421\u043e\u0437\u0434\u0430\u043d\u0438\u0435 \u0441\u0432\u044f\u0437\u0438' : '\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435 \u0441\u0432\u044f\u0437\u0438'}
+                    title={mode === 'create' ? 'Создание связи' : 'Редактирование связи'}
                     onClose={onClose}
                 />
 
@@ -93,7 +96,7 @@ const ConnectionModal = ({
                                 onClick={onDelete}
                                 disabled={isSubmitting}
                             >
-                                {'\u0423\u0434\u0430\u043b\u0438\u0442\u044c'}
+                                Удалить
                             </Button>
                         )}
                         <Button
@@ -102,14 +105,14 @@ const ConnectionModal = ({
                             onClick={onClose}
                             disabled={isSubmitting}
                         >
-                            {'\u041e\u0442\u043c\u0435\u043d\u0430'}
+                            Отмена
                         </Button>
                         <Button
                             type="submit"
                             variant="primary"
                             disabled={isSubmitting}
                         >
-                            {isSubmitting ? '\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435...' : (mode === 'create' ? '\u0421\u043e\u0437\u0434\u0430\u0442\u044c' : '\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c')}
+                            {isSubmitting ? 'Сохранение...' : (mode === 'create' ? 'Создать' : 'Сохранить')}
                         </Button>
                     </ModalActions>
                 </form>

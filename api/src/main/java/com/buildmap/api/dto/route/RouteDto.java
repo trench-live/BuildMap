@@ -12,7 +12,8 @@ import java.util.List;
 @AllArgsConstructor
 public class RouteDto {
     private List<FulcrumDto> path;
-    private Double totalDistance;
+    private Double totalDistanceMeters;
+    private Double totalCost;
     private Long startFulcrumId;
     private Long endFulcrumId;
     private List<RouteStepDto> steps;

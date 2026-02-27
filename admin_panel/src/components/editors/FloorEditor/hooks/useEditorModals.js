@@ -28,7 +28,13 @@ const useEditorModals = ({
     const [fulcrumModal, setFulcrumModal] = useState(createFulcrumModalState);
     const [connectionModal, setConnectionModal] = useState(createConnectionModalState);
 
-    const normalizeConnectionWeight = (value) => {
+    const normalizeDistanceMeters = (value) => {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed <= 0) return 1;
+        return parsed;
+    };
+
+    const normalizeDifficultyFactor = (value) => {
         const parsed = Number(value);
         if (!Number.isFinite(parsed) || parsed < 1) return 1;
         return parsed;
@@ -40,7 +46,8 @@ const useEditorModals = ({
                 await removeConnection(fulcrumId, row.id);
                 await addConnection(fulcrumId, {
                     connectedFulcrumId: row.id,
-                    weight: normalizeConnectionWeight(row.forwardWeight)
+                    distanceMeters: normalizeDistanceMeters(row.forwardDistanceMeters),
+                    difficultyFactor: normalizeDifficultyFactor(row.forwardDifficultyFactor)
                 });
             } else {
                 await removeConnection(fulcrumId, row.id);
@@ -50,7 +57,8 @@ const useEditorModals = ({
                 await removeConnection(row.id, fulcrumId);
                 await addConnection(row.id, {
                     connectedFulcrumId: fulcrumId,
-                    weight: normalizeConnectionWeight(row.backwardWeight)
+                    distanceMeters: normalizeDistanceMeters(row.backwardDistanceMeters),
+                    difficultyFactor: normalizeDifficultyFactor(row.backwardDifficultyFactor)
                 });
             } else {
                 await removeConnection(row.id, fulcrumId);
@@ -143,7 +151,8 @@ const useEditorModals = ({
         try {
             const fromId = connectionModal.fromFulcrum.id;
             const toId = connectionModal.toFulcrum.id;
-            const weight = connectionData.weight;
+            const distanceMeters = normalizeDistanceMeters(connectionData.distanceMeters);
+            const difficultyFactor = normalizeDifficultyFactor(connectionData.difficultyFactor);
             const bidirectional = connectionData.bidirectional;
             const reverseExists = connections.some(conn =>
                 conn.from === toId && conn.to === fromId
@@ -152,7 +161,8 @@ const useEditorModals = ({
             if (connectionModal.mode === 'create') {
                 await addConnection(fromId, {
                     connectedFulcrumId: toId,
-                    weight
+                    distanceMeters,
+                    difficultyFactor
                 });
 
                 if (bidirectional) {
@@ -161,7 +171,8 @@ const useEditorModals = ({
                     }
                     await addConnection(toId, {
                         connectedFulcrumId: fromId,
-                        weight
+                        distanceMeters,
+                        difficultyFactor
                     });
                 }
 
@@ -170,7 +181,8 @@ const useEditorModals = ({
                 await removeConnection(connectionModal.connection.from, connectionModal.connection.to);
                 await addConnection(fromId, {
                     connectedFulcrumId: toId,
-                    weight
+                    distanceMeters,
+                    difficultyFactor
                 });
 
                 if (bidirectional) {
@@ -179,7 +191,8 @@ const useEditorModals = ({
                     }
                     await addConnection(toId, {
                         connectedFulcrumId: fromId,
-                        weight
+                        distanceMeters,
+                        difficultyFactor
                     });
                 } else if (reverseExists) {
                     await removeConnection(toId, fromId);

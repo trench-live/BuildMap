@@ -49,7 +49,8 @@ import FloorEditor from './components/editors/FloorEditor';
 {
   from: Long,         // ID исходной точки
   to: Long,           // ID целевой точки
-  weight: Double      // Вес связи
+  distanceMeters: Double,   // Длина в метрах
+  difficultyFactor: Double  // Коэффициент сложности (>= 1)
 }
 ```
 

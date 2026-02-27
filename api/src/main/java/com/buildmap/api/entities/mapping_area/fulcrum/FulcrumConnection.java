@@ -16,6 +16,16 @@ public class FulcrumConnection {
     )
     private Fulcrum connectedFulcrum;
 
-    @Column(name = "connection_weight")
-    private Double weight = 1.0;
+    @Column(name = "distance_meters", nullable = false)
+    private Double distanceMeters = 1.0;
+
+    @Column(name = "difficulty_factor", nullable = false)
+    private Double difficultyFactor = 1.0;
+
+    public Double getCost() {
+        if (distanceMeters == null || difficultyFactor == null) {
+            return null;
+        }
+        return distanceMeters * difficultyFactor;
+    }
 }

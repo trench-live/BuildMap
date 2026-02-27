@@ -72,8 +72,10 @@ const FulcrumModal = ({
         updateConnectionRow,
         clearConnectionError,
         setConnectionErrors,
-        isValidWeight,
-        normalizeWeight
+        isValidDistanceMeters,
+        normalizeDistanceMeters,
+        isValidDifficultyFactor,
+        normalizeDifficultyFactor
     } = useInterfloorConnections({
         visible,
         mappingAreaId,
@@ -121,16 +123,28 @@ const FulcrumModal = ({
 
         const nextConnectionErrors = {};
         connectionRows.forEach((row) => {
-            if (row.forwardEnabled && !isValidWeight(row.forwardWeight)) {
+            if (row.forwardEnabled && !isValidDistanceMeters(row.forwardDistanceMeters)) {
                 nextConnectionErrors[row.id] = {
                     ...(nextConnectionErrors[row.id] || {}),
-                    forwardWeight: 'Weight must be at least 1.'
+                    forwardDistanceMeters: 'Distance must be greater than 0.'
                 };
             }
-            if (row.backwardEnabled && !isValidWeight(row.backwardWeight)) {
+            if (row.forwardEnabled && !isValidDifficultyFactor(row.forwardDifficultyFactor)) {
                 nextConnectionErrors[row.id] = {
                     ...(nextConnectionErrors[row.id] || {}),
-                    backwardWeight: 'Weight must be at least 1.'
+                    forwardDifficultyFactor: 'Factor must be greater than or equal to 1.'
+                };
+            }
+            if (row.backwardEnabled && !isValidDistanceMeters(row.backwardDistanceMeters)) {
+                nextConnectionErrors[row.id] = {
+                    ...(nextConnectionErrors[row.id] || {}),
+                    backwardDistanceMeters: 'Distance must be greater than 0.'
+                };
+            }
+            if (row.backwardEnabled && !isValidDifficultyFactor(row.backwardDifficultyFactor)) {
+                nextConnectionErrors[row.id] = {
+                    ...(nextConnectionErrors[row.id] || {}),
+                    backwardDifficultyFactor: 'Factor must be greater than or equal to 1.'
                 };
             }
         });
@@ -144,8 +158,10 @@ const FulcrumModal = ({
         try {
             const preparedRows = connectionRows.map((row) => ({
                 ...row,
-                forwardWeight: normalizeWeight(row.forwardWeight),
-                backwardWeight: normalizeWeight(row.backwardWeight)
+                forwardDistanceMeters: normalizeDistanceMeters(row.forwardDistanceMeters),
+                forwardDifficultyFactor: normalizeDifficultyFactor(row.forwardDifficultyFactor),
+                backwardDistanceMeters: normalizeDistanceMeters(row.backwardDistanceMeters),
+                backwardDifficultyFactor: normalizeDifficultyFactor(row.backwardDifficultyFactor)
             }));
             await onSave({
                 fulcrumData: getSubmitData(),

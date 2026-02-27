@@ -95,7 +95,12 @@ public class FulcrumService {
             throw new ConnectionAlreadyExistsException(fulcrumId, connectedFulcrum.getId());
         }
 
-        fulcrum.addConnection(connectedFulcrum, connectionDto.getWeight());
+        validateConnectionMetrics(connectionDto);
+        fulcrum.addConnection(
+                connectedFulcrum,
+                connectionDto.getDistanceMeters(),
+                connectionDto.getDifficultyFactor()
+        );
         fulcrumRepository.save(fulcrum);
     }
 
@@ -127,6 +132,17 @@ public class FulcrumService {
         MappingArea rightArea = right != null ? right.getMappingArea() : null;
         if (leftArea == null || rightArea == null || !leftArea.getId().equals(rightArea.getId())) {
             throw new ValidationException("Fulcrums must belong to the same mapping area");
+        }
+    }
+
+    private void validateConnectionMetrics(FulcrumConnectionSaveDto connectionDto) {
+        Double distanceMeters = connectionDto.getDistanceMeters();
+        Double difficultyFactor = connectionDto.getDifficultyFactor();
+        if (distanceMeters == null || distanceMeters <= 0) {
+            throw new ValidationException("distanceMeters must be greater than 0");
+        }
+        if (difficultyFactor == null || difficultyFactor < 1) {
+            throw new ValidationException("difficultyFactor must be greater than or equal to 1");
         }
     }
 

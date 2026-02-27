@@ -48,7 +48,7 @@ public class DijkstraAlgorithm {
                                   Map<Long, Long> previous,
                                   PriorityQueue<NodeDistance> queue) {
         for (Graph.Edge edge : graph.getEdges(current.nodeId())) {
-            double newDistance = distances.get(current.nodeId()) + edge.weight();
+            double newDistance = distances.get(current.nodeId()) + edge.cost();
 
             if (newDistance < distances.get(edge.targetId())) {
                 distances.put(edge.targetId(), newDistance);

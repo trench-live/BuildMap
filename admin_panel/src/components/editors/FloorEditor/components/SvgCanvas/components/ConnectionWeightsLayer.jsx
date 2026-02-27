@@ -1,6 +1,22 @@
 import React from 'react';
 import { getFulcrumDisplayPosition } from '../../../hooks';
 
+const formatMetric = (value) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return null;
+    if (Math.abs(numeric - Math.round(numeric)) < 1e-9) {
+        return `${Math.round(numeric)}`;
+    }
+    return numeric.toFixed(1);
+};
+
+const formatConnectionLabel = (connection) => {
+    if (!connection) return '';
+    const meters = formatMetric(connection.distanceMeters);
+    if (!meters) return '';
+    return `${meters} м`;
+};
+
 const ConnectionWeightsLayer = ({
     groupedConnections,
     fulcrums,
@@ -23,8 +39,8 @@ const ConnectionWeightsLayer = ({
             const dy = toPos.y - fromPos.y;
             const length = Math.sqrt(dx * dx + dy * dy);
             if (!Number.isFinite(length) || length === 0) return null;
-            const weightT = 0.78;
-            const weightTReturn = 1 - weightT;
+            const labelForwardRatio = 0.78;
+            const labelBackwardRatio = 1 - labelForwardRatio;
             const isGroupHovered = hoveredConnection
                 && ((hoveredConnection.from === group.from && hoveredConnection.to === group.to)
                     || (hoveredConnection.from === group.to && hoveredConnection.to === group.from));
@@ -32,66 +48,66 @@ const ConnectionWeightsLayer = ({
             if (group.type === 'bidirectional') {
                 const connectionAtoB = group.connections.find(conn => conn.from === group.from && conn.to === group.to);
                 const connectionBtoA = group.connections.find(conn => conn.from === group.to && conn.to === group.from);
-                const showWeightA = isGroupHovered;
-                const showWeightB = isGroupHovered;
+                const showLabelA = isGroupHovered;
+                const showLabelB = isGroupHovered;
 
                 return (
-                    <React.Fragment key={`weights-${group.from}-${group.to}-${index}`}>
+                    <React.Fragment key={`labels-${group.from}-${group.to}-${index}`}>
                         <div
-                            className={`connection-weight-standalone${showWeightA ? ' is-visible' : ''}`}
+                            className={`connection-distance-label${showLabelA ? ' is-visible' : ''}`}
                             style={{
-                                left: `${fromPos.x + dx * weightT}px`,
-                                top: `${fromPos.y + dy * weightT}px`,
+                                left: `${fromPos.x + dx * labelForwardRatio}px`,
+                                top: `${fromPos.y + dy * labelForwardRatio}px`,
                                 position: 'absolute',
-                                transform: 'translate(-50%, -50%) scale(var(--weight-scale, 1))',
-                                '--weight-scale': uiScale,
+                                transform: 'translate(-50%, -50%) scale(var(--label-scale, 1))',
+                                '--label-scale': uiScale,
                                 zIndex: 25
                             }}
                             onMouseEnter={() => setHoveredConnection(connectionAtoB)}
                             onMouseLeave={() => setHoveredConnection(null)}
                             onContextMenu={(e) => onConnectionContextMenu(connectionAtoB, e)}
                         >
-                            {connectionAtoB?.weight}
+                            {formatConnectionLabel(connectionAtoB)}
                         </div>
                         <div
-                            className={`connection-weight-standalone${showWeightB ? ' is-visible' : ''}`}
+                            className={`connection-distance-label${showLabelB ? ' is-visible' : ''}`}
                             style={{
-                                left: `${fromPos.x + dx * weightTReturn}px`,
-                                top: `${fromPos.y + dy * weightTReturn}px`,
+                                left: `${fromPos.x + dx * labelBackwardRatio}px`,
+                                top: `${fromPos.y + dy * labelBackwardRatio}px`,
                                 position: 'absolute',
-                                transform: 'translate(-50%, -50%) scale(var(--weight-scale, 1))',
-                                '--weight-scale': uiScale,
+                                transform: 'translate(-50%, -50%) scale(var(--label-scale, 1))',
+                                '--label-scale': uiScale,
                                 zIndex: 25
                             }}
                             onMouseEnter={() => setHoveredConnection(connectionBtoA)}
                             onMouseLeave={() => setHoveredConnection(null)}
                             onContextMenu={(e) => onConnectionContextMenu(connectionBtoA, e)}
                         >
-                            {connectionBtoA?.weight}
+                            {formatConnectionLabel(connectionBtoA)}
                         </div>
                     </React.Fragment>
                 );
             }
 
-            const showWeight = isSameConnection(hoveredConnection, group.connections[0]);
+            const showLabel = isSameConnection(hoveredConnection, group.connections[0]);
 
             return (
                 <div
-                    key={`weight-${group.from}-${group.to}`}
-                    className={`connection-weight-standalone${showWeight ? ' is-visible' : ''}`}
+                    key={`label-${group.from}-${group.to}`}
+                    className={`connection-distance-label${showLabel ? ' is-visible' : ''}`}
                     style={{
-                        left: `${fromPos.x + dx * weightT}px`,
-                        top: `${fromPos.y + dy * weightT}px`,
+                        left: `${fromPos.x + dx * labelForwardRatio}px`,
+                        top: `${fromPos.y + dy * labelForwardRatio}px`,
                         position: 'absolute',
-                        transform: 'translate(-50%, -50%) scale(var(--weight-scale, 1))',
-                        '--weight-scale': uiScale,
+                        transform: 'translate(-50%, -50%) scale(var(--label-scale, 1))',
+                        '--label-scale': uiScale,
                         zIndex: 25
                     }}
                     onMouseEnter={() => setHoveredConnection(group.connections[0])}
                     onMouseLeave={() => setHoveredConnection(null)}
                     onContextMenu={(e) => onConnectionContextMenu(group.connections[0], e)}
                 >
-                    {group.weights[0]}
+                    {formatConnectionLabel(group.connections[0])}
                 </div>
             );
         })}

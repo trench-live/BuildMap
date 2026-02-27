@@ -14,7 +14,8 @@ const buildConnectionsFromFulcrums = (fulcrums = []) => {
             allConnections.push({
                 from: fulcrum.id,
                 to: connection.connectedFulcrumId,
-                weight: connection.weight
+                distanceMeters: connection.distanceMeters,
+                difficultyFactor: connection.difficultyFactor
             });
         });
     });
