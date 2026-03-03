@@ -67,10 +67,11 @@ public class Fulcrum {
         return floor != null ? floor.getLevel() : null;
     }
 
-    public void addConnection(Fulcrum connectedFulcrum, Double weight) {
+    public void addConnection(Fulcrum connectedFulcrum, Double distanceMeters, Double difficultyFactor) {
         FulcrumConnection connection = new FulcrumConnection();
         connection.setConnectedFulcrum(connectedFulcrum);
-        connection.setWeight(weight != null ? weight : 1.0);
+        connection.setDistanceMeters(distanceMeters != null ? distanceMeters : 1.0);
+        connection.setDifficultyFactor(difficultyFactor != null ? difficultyFactor : 1.0);
         this.connections.add(connection);
     }
 
@@ -79,11 +80,11 @@ public class Fulcrum {
                 conn.getConnectedFulcrum().getId().equals(connectedFulcrum.getId()));
     }
 
-    public Double getConnectionWeight(Fulcrum connectedFulcrum) {
+    public Double getConnectionDistanceMeters(Fulcrum connectedFulcrum) {
         return connections.stream()
                 .filter(conn -> conn.getConnectedFulcrum().getId().equals(connectedFulcrum.getId()))
                 .findFirst()
-                .map(FulcrumConnection::getWeight)
+                .map(FulcrumConnection::getDistanceMeters)
                 .orElse(null);
     }
 }

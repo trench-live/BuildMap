@@ -190,7 +190,7 @@
     justify-content: center;
 }
 
-.connections-weight input {
+.connections-metric input {
     width: 100%;
     padding: 4px 6px;
     border: 1px solid #d1d5db;
@@ -198,7 +198,7 @@
     font-size: 13px;
 }
 
-.connections-weight input:disabled {
+.connections-metric input:disabled {
     background: #f3f4f6;
     color: #9ca3af;
 }

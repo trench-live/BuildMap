@@ -47,7 +47,8 @@ export const useFulcrumActions = (floorId, onSuccess, onError) => {
             onSuccess?.('connection_created', {
                 from: fromFulcrumId,
                 to: connectionData.connectedFulcrumId,
-                weight: connectionData.weight
+                distanceMeters: connectionData.distanceMeters,
+                difficultyFactor: connectionData.difficultyFactor
             });
         } catch (error) {
             onError?.('connection_create_error', error);

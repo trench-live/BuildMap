@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 public class RouteStepDto {
     private RouteStepType type;
     private String text;
+    private Double distanceMeters;
     private Long fromFulcrumId;
     private Long toFulcrumId;
     private Long floorId;

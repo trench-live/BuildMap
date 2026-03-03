@@ -188,7 +188,7 @@ const SvgCanvas = ({
                         connections: [connection, reverseConnection],
                         from: connection.from,
                         to: connection.to,
-                        weights: [connection.weight, reverseConnection.weight]
+                        distances: [connection.distanceMeters, reverseConnection.distanceMeters]
                     });
                 } else {
                     grouped.push({
@@ -196,7 +196,7 @@ const SvgCanvas = ({
                         connections: [connection],
                         from: connection.from,
                         to: connection.to,
-                        weights: [connection.weight]
+                        distances: [connection.distanceMeters]
                     });
                 }
                 processedPairs.add(pairKey);

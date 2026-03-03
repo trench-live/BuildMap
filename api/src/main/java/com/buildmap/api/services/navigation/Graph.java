@@ -1,6 +1,7 @@
 package com.buildmap.api.services.navigation;
 
 import com.buildmap.api.entities.mapping_area.fulcrum.Fulcrum;
+import com.buildmap.api.entities.mapping_area.fulcrum.FulcrumConnection;
 import lombok.Getter;
 
 import java.util.*;
@@ -33,7 +34,7 @@ public class Graph {
                                 !connected.isDeleted() &&
                                 nodes.containsKey(connected.getId());
                     })
-                    .map(conn -> new Edge(conn.getConnectedFulcrum().getId(), conn.getWeight()))
+                    .map(conn -> toEdge(fulcrum.getId(), conn))
                     .collect(Collectors.toList());
 
             list.put(fulcrum.getId(), edges);
@@ -54,5 +55,28 @@ public class Graph {
         return adjacencyList.getOrDefault(nodeId, Collections.emptyList());
     }
 
-    public record Edge(Long targetId, Double weight) {}
+    private Edge toEdge(Long sourceId, FulcrumConnection connection) {
+        Double distanceMeters = connection.getDistanceMeters();
+        Double difficultyFactor = connection.getDifficultyFactor();
+        if (distanceMeters == null || distanceMeters <= 0) {
+            throw new IllegalStateException(
+                    "Invalid connection distanceMeters for fulcrum " + sourceId + " -> "
+                            + connection.getConnectedFulcrum().getId()
+            );
+        }
+        if (difficultyFactor == null || difficultyFactor < 1) {
+            throw new IllegalStateException(
+                    "Invalid connection difficultyFactor for fulcrum " + sourceId + " -> "
+                            + connection.getConnectedFulcrum().getId()
+            );
+        }
+        return new Edge(
+                connection.getConnectedFulcrum().getId(),
+                distanceMeters * difficultyFactor,
+                distanceMeters,
+                difficultyFactor
+        );
+    }
+
+    public record Edge(Long targetId, Double cost, Double distanceMeters, Double difficultyFactor) {}
 }

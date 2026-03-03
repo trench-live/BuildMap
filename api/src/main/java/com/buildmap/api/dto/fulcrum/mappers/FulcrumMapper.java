@@ -54,7 +54,8 @@ public interface FulcrumMapper {
                 .map(conn -> {
                     FulcrumConnectionDto dto = new FulcrumConnectionDto();
                     dto.setConnectedFulcrumId(conn.getConnectedFulcrum().getId());
-                    dto.setWeight(conn.getWeight());
+                    dto.setDistanceMeters(conn.getDistanceMeters());
+                    dto.setDifficultyFactor(conn.getDifficultyFactor());
                     return dto;
                 })
                 .collect(Collectors.toList());
