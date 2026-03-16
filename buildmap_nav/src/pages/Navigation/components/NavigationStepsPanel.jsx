@@ -5,7 +5,7 @@ const NavigationStepsPanel = ({
     stepsOpen,
     stepsRef,
     route,
-    selectedStepKey,
+    selectedStepIndex,
     onToggleSteps,
     onStepClick
 }) => {
@@ -32,15 +32,14 @@ const NavigationStepsPanel = ({
                     {route?.steps?.length ? (
                         <ol className="navigation-steps-list">
                             {route.steps.map((step, index) => {
-                                const baseKey = `${step.type}-${step.fromFulcrumId || 'x'}-${step.toFulcrumId || 'y'}`;
-                                const stepKey = `${baseKey}-${index}`;
-                                const isSelected = selectedStepKey === baseKey;
+                                const stepKey = `${step.type}-${step.fromFulcrumId || 'x'}-${step.toFulcrumId || 'y'}-${index}`;
+                                const isSelected = selectedStepIndex === index;
                                 return (
                                     <li key={stepKey} className="navigation-step">
                                         <button
                                             type="button"
                                             className={`navigation-step-button${isSelected ? ' is-selected' : ''}`}
-                                            onClick={() => onStepClick(step)}
+                                            onClick={() => onStepClick(step, index)}
                                         >
                                             {step.text}
                                         </button>

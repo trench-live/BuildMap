@@ -10,6 +10,7 @@ const NavigationLayers = ({
     route,
     focusTargets,
     focusSegments,
+    visitedSegments,
     focusAnimate,
     stepsOpen,
     stepsPanelHeight
@@ -31,6 +32,7 @@ const NavigationLayers = ({
                             endFulcrumId={isActive ? route?.endFulcrumId : null}
                             focusTargets={isActive ? focusTargets : []}
                             focusSegments={isActive ? focusSegments : []}
+                            visitedSegments={isActive ? visitedSegments : []}
                             focusAnimate={isActive ? focusAnimate : true}
                             focusYOffset={stepsOpen ? stepsPanelHeight : 0}
                         />

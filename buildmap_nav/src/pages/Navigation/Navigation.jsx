@@ -26,7 +26,7 @@ const Navigation = () => {
     const [searchValue, setSearchValue] = useState('');
     const [searchOpen, setSearchOpen] = useState(false);
     const [stepsOpen, setStepsOpen] = useState(true);
-    const [selectedStepKey, setSelectedStepKey] = useState(null);
+    const [selectedStepIndex, setSelectedStepIndex] = useState(null);
     const searchRef = useRef(null);
     const searchInputRef = useRef(null);
     const stepsRef = useRef(null);
@@ -37,8 +37,8 @@ const Navigation = () => {
     }, [setRoute, setActiveFloorId]);
 
     const handleRouteLoaded = useCallback(() => {
-        setSelectedStepKey(null);
-    }, [setSelectedStepKey]);
+        setSelectedStepIndex(null);
+    }, [setSelectedStepIndex]);
 
     const {
         loading,
@@ -60,6 +60,7 @@ const Navigation = () => {
     const {
         focusTargets,
         focusSegments,
+        visitedSegments,
         focusAnimate,
         stepsPanelHeight,
         onStepClick,
@@ -70,12 +71,12 @@ const Navigation = () => {
         setActiveFloorId,
         stepsOpen,
         stepsRef,
-        setSelectedStepKey
+        setSelectedStepIndex
     });
 
     useEffect(() => {
         setSelectedEndId(toId ?? null);
-    }, [fulcrumId]);
+    }, [toId]);
 
     useEffect(() => {
         if (selectedEndId) {
@@ -134,15 +135,32 @@ const Navigation = () => {
         };
     }, [selectedEndId]);
 
-    const activeFloor = useMemo(
-        () => floors.find((item) => item.id === activeFloorId) ?? null,
-        [floors, activeFloorId]
-    );
-
     const activeMarkers = useMemo(() => {
         if (!activeFloorId) return [];
         if (route?.path?.length) {
-            return route.path.filter((item) => item.floorId === activeFloorId);
+            const markerIds = new Set();
+            const startPoint = route.path[0];
+            const endPoint = route.path[route.path.length - 1];
+
+            if (startPoint?.floorId === activeFloorId) {
+                markerIds.add(startPoint.id);
+            }
+            if (endPoint?.floorId === activeFloorId) {
+                markerIds.add(endPoint.id);
+            }
+
+            (route.steps || []).forEach((step) => {
+                if (!['TURN_LEFT', 'TURN_RIGHT', 'U_TURN'].includes(step.type)) {
+                    return;
+                }
+                if (step.fromFulcrumId) {
+                    markerIds.add(step.fromFulcrumId);
+                }
+            });
+
+            return route.path.filter(
+                (item) => item.floorId === activeFloorId && markerIds.has(item.id)
+            );
         }
         if (startFulcrum?.floorId === activeFloorId) {
             return [startFulcrum];
@@ -320,6 +338,7 @@ const Navigation = () => {
                 route={route}
                 focusTargets={focusTargets}
                 focusSegments={focusSegments}
+                visitedSegments={visitedSegments}
                 focusAnimate={focusAnimate}
                 stepsOpen={stepsOpen}
                 stepsPanelHeight={stepsPanelHeight}
@@ -329,7 +348,7 @@ const Navigation = () => {
                 stepsOpen={stepsOpen}
                 stepsRef={stepsRef}
                 route={route}
-                selectedStepKey={selectedStepKey}
+                selectedStepIndex={selectedStepIndex}
                 onToggleSteps={() => setStepsOpen((prev) => !prev)}
                 onStepClick={onStepClick}
             />
