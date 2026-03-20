@@ -1,7 +1,14 @@
 import { useEffect } from 'react';
 import { navigationAPI } from '../../../services/api';
 
-const useRoute = ({ fulcrumId, selectedEndId, setRoute, setError, onRouteLoaded }) => {
+const useRoute = ({
+    fulcrumId,
+    selectedEndId,
+    setRoute,
+    setRouteError,
+    onRouteLoaded,
+    onRouteError
+}) => {
     useEffect(() => {
         let isActive = true;
 
@@ -18,13 +25,16 @@ const useRoute = ({ fulcrumId, selectedEndId, setRoute, setError, onRouteLoaded 
                 });
                 if (!isActive) return;
                 setRoute(routeResponse.data);
+                setRouteError?.(null);
                 if (onRouteLoaded) {
                     onRouteLoaded();
                 }
             } catch (err) {
                 if (!isActive) return;
                 const message = err.response?.data?.message || err.message || 'Failed to build route.';
-                setError(message);
+                setRoute(null);
+                setRouteError?.(message);
+                onRouteError?.(message);
             }
         };
 
@@ -33,7 +43,7 @@ const useRoute = ({ fulcrumId, selectedEndId, setRoute, setError, onRouteLoaded 
         return () => {
             isActive = false;
         };
-    }, [fulcrumId, selectedEndId, setRoute, setError, onRouteLoaded]);
+    }, [fulcrumId, selectedEndId, setRoute, setRouteError, onRouteLoaded, onRouteError]);
 };
 
 export default useRoute;

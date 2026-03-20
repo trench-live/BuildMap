@@ -22,6 +22,8 @@ const Navigation = () => {
 
     const [activeFloorId, setActiveFloorId] = useState(null);
     const [route, setRoute] = useState(null);
+    const [routeError, setRouteError] = useState(null);
+    const [routeErrorClosing, setRouteErrorClosing] = useState(false);
     const [selectedEndId, setSelectedEndId] = useState(null);
     const [searchValue, setSearchValue] = useState('');
     const [searchOpen, setSearchOpen] = useState(false);
@@ -33,17 +35,32 @@ const Navigation = () => {
 
     const handleDataReset = useCallback(() => {
         setRoute(null);
+        setRouteError(null);
+        setRouteErrorClosing(false);
         setActiveFloorId(null);
-    }, [setRoute, setActiveFloorId]);
+    }, [setRoute, setRouteError, setRouteErrorClosing, setActiveFloorId]);
 
     const handleRouteLoaded = useCallback(() => {
+        setRouteError(null);
+        setRouteErrorClosing(false);
         setSelectedStepIndex(null);
-    }, [setSelectedStepIndex]);
+    }, [setRouteError, setRouteErrorClosing, setSelectedStepIndex]);
+
+    const handleRouteError = useCallback(() => {
+        setSelectedEndId(null);
+        setSelectedStepIndex(null);
+        setSearchValue('');
+        setSearchOpen(false);
+        setSearchParams((params) => {
+            const next = new URLSearchParams(params);
+            next.delete('to');
+            return next;
+        }, { replace: true });
+    }, [setSearchParams]);
 
     const {
         loading,
         error,
-        setError,
         floors,
         areaFulcrums,
         startFulcrum
@@ -53,8 +70,9 @@ const Navigation = () => {
         fulcrumId,
         selectedEndId,
         setRoute,
-        setError,
-        onRouteLoaded: handleRouteLoaded
+        setRouteError,
+        onRouteLoaded: handleRouteLoaded,
+        onRouteError: handleRouteError
     });
 
     const {
@@ -83,6 +101,23 @@ const Navigation = () => {
             setStepsOpen(true);
         }
     }, [selectedEndId]);
+
+    useEffect(() => {
+        if (!routeError) return undefined;
+        setRouteErrorClosing(false);
+        const hideTimeoutId = window.setTimeout(() => {
+            setRouteErrorClosing(true);
+        }, 4700);
+        const clearTimeoutId = window.setTimeout(() => {
+            setRouteError(null);
+            setRouteErrorClosing(false);
+        }, 5000);
+
+        return () => {
+            window.clearTimeout(hideTimeoutId);
+            window.clearTimeout(clearTimeoutId);
+        };
+    }, [routeError]);
 
     useEffect(() => {
         if (!floors.length) return;
@@ -122,7 +157,7 @@ const Navigation = () => {
     }, []);
 
     useEffect(() => {
-        if (!selectedEndId) return;
+        if (!route) return;
         const handlePointerDown = (event) => {
             if (!stepsRef.current) return;
             if (stepsRef.current.contains(event.target)) return;
@@ -133,7 +168,7 @@ const Navigation = () => {
         return () => {
             window.removeEventListener('pointerdown', handlePointerDown);
         };
-    }, [selectedEndId]);
+    }, [route]);
 
     const activeMarkers = useMemo(() => {
         if (!activeFloorId) return [];
@@ -263,7 +298,10 @@ const Navigation = () => {
     const handleSearchChange = (event) => {
         const value = event.target.value;
         setSearchValue(value);
+        setRouteError(null);
+        setRouteErrorClosing(false);
         setSelectedEndId(null);
+        setSelectedStepIndex(null);
         if (!value.trim()) {
             setSearchParams((params) => {
                 const next = new URLSearchParams(params);
@@ -275,6 +313,8 @@ const Navigation = () => {
     };
 
     const handleSelectDestination = (fulcrum) => {
+        setRouteError(null);
+        setRouteErrorClosing(false);
         setSelectedEndId(fulcrum.id);
         setSearchValue(fulcrum.name || '');
         setSearchOpen(false);
@@ -288,6 +328,14 @@ const Navigation = () => {
     const handleSearchFocus = () => {
         setSearchOpen(true);
     };
+
+    const handleDismissRouteError = useCallback(() => {
+        setRouteErrorClosing(true);
+        window.setTimeout(() => {
+            setRouteError(null);
+            setRouteErrorClosing(false);
+        }, 300);
+    }, []);
 
     if (loading) {
         return (
@@ -329,6 +377,26 @@ const Navigation = () => {
                 onSearchFocus={handleSearchFocus}
                 onSelectDestination={handleSelectDestination}
             />
+            {routeError && (
+                <div
+                    className={`navigation-route-error${routeErrorClosing ? ' is-closing' : ''}`}
+                    role="status"
+                    aria-live="polite"
+                >
+                    <div className="navigation-route-error-body">
+                        <strong>Route unavailable.</strong>
+                        <span>This destination is not reachable from your current point.</span>
+                    </div>
+                    <button
+                        type="button"
+                        className="navigation-route-error-dismiss"
+                        onClick={handleDismissRouteError}
+                        aria-label="Dismiss route error"
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
             <NavigationLayers
                 floors={floors}
                 activeFloorId={activeFloorId}
@@ -344,7 +412,7 @@ const Navigation = () => {
                 stepsPanelHeight={stepsPanelHeight}
             />
             <NavigationStepsPanel
-                selectedEndId={selectedEndId}
+                selectedEndId={route ? selectedEndId : null}
                 stepsOpen={stepsOpen}
                 stepsRef={stepsRef}
                 route={route}
