@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -111,10 +112,19 @@ public class UserService {
         }
     }
 
+    @Transactional
     public void delete(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
         ensureNotLastActiveAdmin(user);
+
+        if (user.getMappingAreas() != null) {
+            List<Long> areaIds = new ArrayList<>(user.getMappingAreas())
+                    .stream()
+                    .map(area -> area.getId())
+                    .toList();
+            areaIds.forEach(mappingAreaService::delete);
+        }
 
         userRepository.deleteById(id);
     }
