@@ -99,6 +99,7 @@ const NavigationMap = ({
     endFulcrumId,
     focusTargets,
     focusSegments,
+    visitedSegments,
     focusAnimate,
     focusYOffset
 }) => {
@@ -232,7 +233,7 @@ const NavigationMap = ({
 
         const animationTime = focusAnimate === false ? 0 : 300;
         transformRef.current.setTransform(positionX, positionY, targetScale, animationTime, 'easeOut');
-    }, [focusTargets, focusYOffset, containerSize.width, containerSize.height, coordinateWidth, coordinateHeight, svgMeta.originX, svgMeta.originY]);
+    }, [focusTargets, focusYOffset, focusAnimate, containerSize.width, containerSize.height, coordinateWidth, coordinateHeight, svgMeta.originX, svgMeta.originY]);
 
     const segments = useMemo(() => {
         if (routeSegments?.length) {
@@ -280,6 +281,11 @@ const NavigationMap = ({
                             const fromY = mapCoordinate(from.y, coordinateHeight, svgMeta.originY);
                             const toX = mapCoordinate(to.x, coordinateWidth, svgMeta.originX);
                             const toY = mapCoordinate(to.y, coordinateHeight, svgMeta.originY);
+                            const isVisited = (visitedSegments || []).some(
+                                ([visitedFrom, visitedTo]) =>
+                                    (visitedFrom.id === from.id && visitedTo.id === to.id)
+                                    || (visitedFrom.id === to.id && visitedTo.id === from.id)
+                            );
                             const isFocus = (focusSegments || []).some(
                                 ([focusFrom, focusTo]) =>
                                     (focusFrom.id === from.id && focusTo.id === to.id)
@@ -289,7 +295,7 @@ const NavigationMap = ({
                             return (
                                 <line
                                     key={`${from.id}-${to.id}`}
-                                    className={`route-line${isFocus ? ' is-focus' : ''}`}
+                                    className={`route-line${isVisited ? ' is-visited' : ''}${isFocus ? ' is-focus' : ''}`}
                                     x1={fromX}
                                     y1={fromY}
                                     x2={toX}

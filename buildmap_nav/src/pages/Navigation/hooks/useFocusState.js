@@ -6,11 +6,12 @@ const useFocusState = ({
     setActiveFloorId,
     stepsOpen,
     stepsRef,
-    setSelectedStepKey
+    setSelectedStepIndex
 }) => {
     const [focusTargets, setFocusTargets] = useState([]);
     const [pendingFocus, setPendingFocus] = useState(null);
     const [focusSegments, setFocusSegments] = useState([]);
+    const [visitedSegments, setVisitedSegments] = useState([]);
     const [focusAnimate, setFocusAnimate] = useState(true);
     const [stepsPanelHeight, setStepsPanelHeight] = useState(0);
     const [lastFocus, setLastFocus] = useState(null);
@@ -21,8 +22,25 @@ const useFocusState = ({
         const ids = Array.isArray(focus.targetIds) ? focus.targetIds.join(',') : '';
         const floor = focus.floorId ?? 'x';
         const segCount = Array.isArray(focus.segments) ? focus.segments.length : 0;
+        const visitedCount = Array.isArray(focus.visitedSegments) ? focus.visitedSegments.length : 0;
         const animate = focus.animate === false ? '0' : '1';
-        return `${floor}|${ids}|${segCount}|${animate}`;
+        return `${floor}|${ids}|${segCount}|${visitedCount}|${animate}`;
+    };
+
+    const buildSegmentsRange = (path, startIndex, endIndex) => {
+        if (!Array.isArray(path) || startIndex < 0 || endIndex < startIndex) {
+            return [];
+        }
+
+        const segments = [];
+        for (let index = startIndex; index < endIndex; index += 1) {
+            const from = path[index];
+            const to = path[index + 1];
+            if (from && to) {
+                segments.push([from, to]);
+            }
+        }
+        return segments;
     };
 
     useEffect(() => {
@@ -30,6 +48,7 @@ const useFocusState = ({
         if (pendingFocus.floorId && pendingFocus.floorId !== activeFloorId) {
             setFocusTargets([]);
             setFocusSegments([]);
+            setVisitedSegments([]);
             return;
         }
         const targetFloorId = pendingFocus.floorId || activeFloorId;
@@ -40,7 +59,11 @@ const useFocusState = ({
         const segments = (pendingFocus.segments || []).filter(
             ([from, to]) => !targetFloorId || (from.floorId === targetFloorId && to.floorId === targetFloorId)
         );
+        const visited = (pendingFocus.visitedSegments || []).filter(
+            ([from, to]) => !targetFloorId || (from.floorId === targetFloorId && to.floorId === targetFloorId)
+        );
         setFocusSegments(segments);
+        setVisitedSegments(visited);
         setFocusAnimate(pendingFocus.animate !== false);
         lastAppliedFocusKeyRef.current = buildFocusKey(pendingFocus);
         setPendingFocus(null);
@@ -63,6 +86,7 @@ const useFocusState = ({
         if (mismatch) {
             setFocusTargets([]);
             setFocusSegments([]);
+            setVisitedSegments([]);
         }
     }, [activeFloorId, focusTargets]);
 
@@ -93,14 +117,13 @@ const useFocusState = ({
         setPendingFocus(lastFocus);
     }, [stepsOpen, stepsPanelHeight, lastFocus]);
 
-    const onStepClick = useCallback((step) => {
+    const onStepClick = useCallback((step, stepIndex) => {
         if (!step) return;
         if (stepsOpen && stepsRef.current) {
             const rect = stepsRef.current.getBoundingClientRect();
             setStepsPanelHeight(rect.height);
         }
-        const stepKey = `${step.type}-${step.fromFulcrumId || 'x'}-${step.toFulcrumId || 'y'}`;
-        setSelectedStepKey(stepKey);
+        setSelectedStepIndex(stepIndex);
         const targetIds = [];
         const isTurnStep = ['TURN_LEFT', 'TURN_RIGHT', 'U_TURN'].includes(step.type);
         if (isTurnStep) {
@@ -114,14 +137,12 @@ const useFocusState = ({
         const path = route?.path || [];
         const fromIndex = path.findIndex((item) => item.id === step.fromFulcrumId);
         const toIndex = path.findIndex((item) => item.id === step.toFulcrumId);
+        const normalizedStartIndex = fromIndex >= 0 && toIndex >= 0 ? Math.min(fromIndex, toIndex) : -1;
+        const normalizedEndIndex = fromIndex >= 0 && toIndex >= 0 ? Math.max(fromIndex, toIndex) : -1;
         let segments = [];
         if (!isTurnStep) {
-            if (fromIndex >= 0 && toIndex >= 0) {
-                const start = Math.min(fromIndex, toIndex);
-                const end = Math.max(fromIndex, toIndex);
-                for (let i = start; i < end; i += 1) {
-                    segments.push([path[i], path[i + 1]]);
-                }
+            if (normalizedStartIndex >= 0 && normalizedEndIndex >= 0) {
+                segments = buildSegmentsRange(path, normalizedStartIndex, normalizedEndIndex);
             } else {
                 const fromItem = path.find((item) => item.id === step.fromFulcrumId);
                 const toItem = path.find((item) => item.id === step.toFulcrumId);
@@ -130,22 +151,33 @@ const useFocusState = ({
                 }
             }
         }
+        const visitedEndIndex = isTurnStep ? fromIndex : normalizedEndIndex;
+        const prefixSegments = visitedEndIndex >= 0
+            ? buildSegmentsRange(path, 0, visitedEndIndex)
+            : [];
         const floorId = step.floorId || route?.path?.find((item) => item.id === step.toFulcrumId)?.floorId
             || route?.path?.find((item) => item.id === step.fromFulcrumId)?.floorId;
 
         if (!targetIds.length) return;
         const animate = floorId ? floorId === activeFloorId : true;
-        const focusPayload = { targetIds, floorId, segments, animate };
+        const focusPayload = {
+            targetIds,
+            floorId,
+            segments,
+            visitedSegments: prefixSegments,
+            animate
+        };
         setLastFocus(focusPayload);
         if (floorId && floorId !== activeFloorId) {
             setFocusTargets([]);
             setFocusSegments([]);
+            setVisitedSegments([]);
             setPendingFocus(focusPayload);
             setActiveFloorId(floorId);
         } else {
             setPendingFocus(focusPayload);
         }
-    }, [stepsOpen, stepsRef, setSelectedStepKey, route, activeFloorId, setActiveFloorId]);
+    }, [stepsOpen, stepsRef, setSelectedStepIndex, route, activeFloorId, setActiveFloorId]);
 
     const onFloorSelect = useCallback((floorId) => {
         setActiveFloorId(floorId);
@@ -153,12 +185,14 @@ const useFocusState = ({
         if (lastFocus && lastFocus.floorId !== floorId) {
             setFocusTargets([]);
             setFocusSegments([]);
+            setVisitedSegments([]);
         }
     }, [lastFocus, setActiveFloorId]);
 
     return {
         focusTargets,
         focusSegments,
+        visitedSegments,
         focusAnimate,
         stepsPanelHeight,
         onStepClick,
