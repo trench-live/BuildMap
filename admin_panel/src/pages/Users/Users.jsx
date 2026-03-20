@@ -63,6 +63,7 @@ const Users = () => {
         setFormData,
         deleteUser,
         deleteVisible,
+        deleteMode,
         openEdit,
         closeEdit,
         saveUser,
@@ -228,8 +229,21 @@ const Users = () => {
                                             )}
                                             <button
                                                 type="button"
+                                                className="btn btn-warning"
+                                                onClick={() => openDelete(user, 'safe')}
+                                                disabled={pendingUserId === user.id || isSelf || lastActiveAdmin}
+                                                title={
+                                                    isSelf
+                                                        ? 'You cannot delete yourself'
+                                                        : (lastActiveAdmin ? 'Cannot clear the last active admin' : '')
+                                                }
+                                            >
+                                                Clear account
+                                            </button>
+                                            <button
+                                                type="button"
                                                 className="btn btn-danger"
-                                                onClick={() => openDelete(user)}
+                                                onClick={() => openDelete(user, 'force')}
                                                 disabled={pendingUserId === user.id || isSelf || lastActiveAdmin}
                                                 title={
                                                     isSelf
@@ -306,9 +320,15 @@ const Users = () => {
 
             <DeleteModal
                 visible={deleteVisible}
+                title={deleteMode === 'force' ? 'Delete account' : 'Clear account'}
                 itemName={deleteUser?.name}
                 itemType="user"
-                warningText="All related areas, floors and fulcrums will be marked deleted."
+                warningText={
+                    deleteMode === 'force'
+                        ? 'This permanently deletes the account and cascades removal of related areas, floors and fulcrums.'
+                        : 'This clears the account and marks related areas, floors and fulcrums as deleted. The user can sign in again later.'
+                }
+                confirmText={deleteMode === 'force' ? 'Delete' : 'Clear account'}
                 isProcessing={deleteVisible && pendingUserId === deleteUser?.id}
                 onConfirm={confirmDelete}
                 onCancel={closeDelete}

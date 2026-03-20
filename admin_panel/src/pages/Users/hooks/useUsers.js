@@ -20,6 +20,7 @@ export const useUsers = () => {
     const [editVisible, setEditVisible] = useState(false);
     const [deleteUser, setDeleteUser] = useState(null);
     const [deleteVisible, setDeleteVisible] = useState(false);
+    const [deleteMode, setDeleteMode] = useState('safe');
     const [formData, setFormData] = useState({
         name: '',
         telegramId: '',
@@ -81,21 +82,27 @@ export const useUsers = () => {
         }
     };
 
-    const openDelete = (user) => {
+    const openDelete = (user, mode = 'safe') => {
         setDeleteUser(user);
+        setDeleteMode(mode);
         setDeleteVisible(true);
     };
 
     const closeDelete = () => {
         setDeleteVisible(false);
         setDeleteUser(null);
+        setDeleteMode('safe');
     };
 
     const confirmDelete = async () => {
         if (!deleteUser) return;
         try {
             setPendingUserId(deleteUser.id);
-            await userAPI.delete(deleteUser.id);
+            if (deleteMode === 'force') {
+                await userAPI.forceDelete(deleteUser.id);
+            } else {
+                await userAPI.delete(deleteUser.id);
+            }
             closeDelete();
             await loadUsers();
         } catch (deleteError) {
@@ -146,6 +153,7 @@ export const useUsers = () => {
         setFormData,
         deleteUser,
         deleteVisible,
+        deleteMode,
         openEdit,
         closeEdit,
         saveUser,
