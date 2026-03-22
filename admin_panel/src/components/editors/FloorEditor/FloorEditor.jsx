@@ -35,7 +35,7 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
         connections,
         createFulcrum,
         updateFulcrum,
-        moveFulcrum,
+        moveFulcrums,
         deleteFulcrum,
         addConnection,
         removeConnection,
@@ -123,6 +123,7 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                         isSaving={isSaving || floorSaving}
                         fulcrumsCount={fulcrums.length}
                         connectionsCount={connections.length}
+                        selectedFulcrumsCount={editorState.selectedFulcrumIds?.length || 0}
                     />
 
                     <SvgCanvas
@@ -134,7 +135,7 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                         updateContainerSize={updateContainerSize}
                         onFulcrumCreate={handleFulcrumCreate}
                         onFulcrumContextMenu={handleFulcrumContextMenu}
-                        onFulcrumMove={moveFulcrum}
+                        onFulcrumsMove={moveFulcrums}
                         onConnectionCreate={handleConnectionCreate}
                         onConnectionContextMenu={handleConnectionContextMenu}
                     />

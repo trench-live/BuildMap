@@ -8,9 +8,11 @@ const FulcrumsLayer = ({
     hoveredFulcrum,
     setHoveredFulcrum,
     uiScale,
+    selectedFulcrumIds,
     moveFulcrumsEnabled,
-    movingFulcrumId,
+    movingFulcrumIds,
     onFulcrumContextMenu,
+    onFulcrumClick,
     onFulcrumDragStart
 }) => (
     <>
@@ -22,13 +24,15 @@ const FulcrumsLayer = ({
                     key={fulcrum.id}
                     fulcrum={fulcrum}
                     position={displayPos}
+                    isSelected={selectedFulcrumIds?.includes(fulcrum.id)}
                     isHovered={hoveredFulcrum?.id === fulcrum.id}
                     uiScale={uiScale}
                     isMoveMode={moveFulcrumsEnabled}
-                    isDragging={movingFulcrumId === fulcrum.id}
+                    isDragging={movingFulcrumIds?.includes(fulcrum.id)}
                     onMouseEnter={() => setHoveredFulcrum(fulcrum)}
                     onMouseLeave={() => setHoveredFulcrum(null)}
                     onContextMenu={(f, e) => onFulcrumContextMenu && onFulcrumContextMenu(f, e)}
+                    onClick={onFulcrumClick}
                     onDragStart={onFulcrumDragStart}
                 />
             );

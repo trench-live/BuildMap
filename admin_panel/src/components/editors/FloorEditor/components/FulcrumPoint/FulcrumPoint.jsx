@@ -13,6 +13,7 @@ const FulcrumPoint = ({
                           onMouseEnter,
                           onMouseLeave,
                           onContextMenu,
+                          onClick,
                           onDragStart
                       }) => {
     const handleMouseDown = (e) => {
@@ -25,9 +26,19 @@ const FulcrumPoint = ({
         }
     };
 
+    const handleClick = (e) => {
+        e.stopPropagation();
+        if (onClick) {
+            onClick(fulcrum, e);
+        }
+    };
+
     const handleContextMenu = (e) => {
         e.preventDefault();
         e.stopPropagation();
+        if (isMoveMode && (e.ctrlKey || e.metaKey)) {
+            return;
+        }
         if (onContextMenu) {
             onContextMenu(fulcrum, e);
         }
@@ -51,6 +62,7 @@ const FulcrumPoint = ({
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
             onMouseDown={handleMouseDown}
+            onClick={handleClick}
             onContextMenu={handleContextMenu}
             title={`${fulcrum.name} (${fulcrum.type})`}
         >

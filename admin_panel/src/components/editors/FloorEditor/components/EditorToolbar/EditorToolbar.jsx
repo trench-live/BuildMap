@@ -16,6 +16,7 @@ const labels = {
     statScaleIcon: '\ud83d\udccf',
     statFulcrumIcon: '\ud83d\udccd',
     statConnectionIcon: '\ud83d\udd17',
+    statSelectedLabel: 'Selected',
     clear: '\ud83d\uddd1\ufe0f \u041e\u0447\u0438\u0441\u0442\u0438\u0442\u044c',
     save: '\ud83d\udcbe \u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c',
     saving: '\ud83d\udcbe \u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435...'
@@ -36,7 +37,8 @@ const EditorToolbar = ({
     hasContent,
     isSaving,
     fulcrumsCount = 0,
-    connectionsCount = 0
+    connectionsCount = 0,
+    selectedFulcrumsCount = 0
 }) => {
     const gridLabel = gridEnabled ? labels.gridEnabled : labels.gridDisabled;
 
@@ -56,6 +58,7 @@ const EditorToolbar = ({
                 hasContent={hasContent}
                 fulcrumsCount={fulcrumsCount}
                 connectionsCount={connectionsCount}
+                selectedFulcrumsCount={selectedFulcrumsCount}
                 labels={labels}
             />
 

@@ -15,6 +15,7 @@ const ToolbarLeft = ({
     hasContent,
     fulcrumsCount,
     connectionsCount,
+    selectedFulcrumsCount,
     labels
 }) => {
     const handleImageUploadClick = () => {
@@ -95,6 +96,7 @@ const ToolbarLeft = ({
                 <span className="stat-item">{labels.statScaleIcon} {Math.round(scale * 100)}%</span>
                 <span className="stat-item">{labels.statFulcrumIcon} {fulcrumsCount}</span>
                 <span className="stat-item">{labels.statConnectionIcon} {connectionsCount}</span>
+                <span className="stat-item">{labels.statSelectedLabel} {selectedFulcrumsCount}</span>
             </div>
         </div>
     );

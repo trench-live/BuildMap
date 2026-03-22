@@ -20,12 +20,13 @@ const SvgCanvas = ({
     svgSize,
     onFulcrumCreate,
     onFulcrumContextMenu,
-    onFulcrumMove,
+    onFulcrumsMove,
     onConnectionCreate,
     onConnectionContextMenu,
     updateContainerSize
 }) => {
     const containerRef = useRef(null);
+    const clearSelectionCandidateRef = useRef(null);
     const [hoveredFulcrum, setHoveredFulcrum] = useState(null);
     const [hoveredConnection, setHoveredConnection] = useState(null);
     const uiScale = useMemo(() => {
@@ -135,21 +136,27 @@ const SvgCanvas = ({
 
     const {
         effectiveFulcrums,
+        selectedFulcrumIds,
         isMovingFulcrum,
-        movingFulcrumId,
-        handleFulcrumMoveStart
+        movingFulcrumIds,
+        handleFulcrumMoveStart,
+        handleFulcrumClick
     } = useFulcrumMove({
         containerRef,
         editorState,
+        setEditorState,
         imageRect,
         gridMetrics,
         fulcrums,
-        onFulcrumMove,
+        onFulcrumsMove,
         snapToGrid
     });
 
     const handleContextMenu = (e) => {
         e.preventDefault();
+        if (editorState.moveFulcrumsEnabled && (e.ctrlKey || e.metaKey)) {
+            return;
+        }
         const container = containerRef.current;
         if (!container) return;
 
@@ -175,6 +182,65 @@ const SvgCanvas = ({
 
         onFulcrumCreate?.({ x: nextX, y: nextY }, e);
     };
+
+    const handleCanvasPointerDown = useCallback((event) => {
+        if (
+            editorState.moveFulcrumsEnabled
+            && editorState.selectedFulcrumIds?.length
+            && event.button === 0
+            && !event.ctrlKey
+            && !event.metaKey
+        ) {
+            clearSelectionCandidateRef.current = {
+                x: event.clientX,
+                y: event.clientY,
+                shouldClear: true
+            };
+        } else {
+            clearSelectionCandidateRef.current = null;
+        }
+
+        handleMouseDown(event);
+    }, [
+        editorState.moveFulcrumsEnabled,
+        editorState.selectedFulcrumIds,
+        handleMouseDown
+    ]);
+
+    const handleCanvasClick = useCallback((event) => {
+        const candidate = clearSelectionCandidateRef.current;
+        clearSelectionCandidateRef.current = null;
+        const target = event.target;
+
+        if (target instanceof Element) {
+            const isInteractiveElement = target.closest('.fulcrum-point')
+                || target.closest('.connection-line-element')
+                || target.closest('.connection-distance-label')
+                || target.closest('.grid-handle');
+            if (isInteractiveElement) {
+                return;
+            }
+        }
+
+        if (
+            !candidate?.shouldClear
+            || !editorState.moveFulcrumsEnabled
+            || !editorState.selectedFulcrumIds?.length
+            || event.ctrlKey
+            || event.metaKey
+        ) {
+            return;
+        }
+
+        setEditorState((prev) => ({
+            ...prev,
+            selectedFulcrumIds: []
+        }));
+    }, [
+        editorState.moveFulcrumsEnabled,
+        editorState.selectedFulcrumIds,
+        setEditorState
+    ]);
 
 
     const handleConnectionContextMenu = (connection, event) => {
@@ -262,11 +328,45 @@ const SvgCanvas = ({
         };
     }, [handleWheel, handleMouseMove, handleMouseUp]);
 
+    useEffect(() => {
+        const handlePointerMove = (event) => {
+            const candidate = clearSelectionCandidateRef.current;
+            if (!candidate?.shouldClear) {
+                return;
+            }
+
+            const deltaX = event.clientX - candidate.x;
+            const deltaY = event.clientY - candidate.y;
+            if (Math.hypot(deltaX, deltaY) > 4) {
+                clearSelectionCandidateRef.current = {
+                    ...candidate,
+                    shouldClear: false
+                };
+            }
+        };
+
+        const handlePointerUp = () => {
+            const candidate = clearSelectionCandidateRef.current;
+            if (!candidate?.shouldClear) {
+                clearSelectionCandidateRef.current = null;
+            }
+        };
+
+        document.addEventListener('mousemove', handlePointerMove);
+        document.addEventListener('mouseup', handlePointerUp, true);
+
+        return () => {
+            document.removeEventListener('mousemove', handlePointerMove);
+            document.removeEventListener('mouseup', handlePointerUp, true);
+        };
+    }, []);
+
     return (
         <div
             ref={containerRef}
             className={`svg-canvas ${editorState.isDragging ? 'dragging' : ''} ${isCreatingConnection ? 'creating-connection' : ''} ${isGridDragging ? 'grid-dragging' : ''} ${editorState.moveFulcrumsEnabled ? 'move-fulcrums-mode' : ''} ${isMovingFulcrum ? 'fulcrum-dragging' : ''}`}
-            onMouseDown={handleMouseDown}
+            onMouseDown={handleCanvasPointerDown}
+            onClick={handleCanvasClick}
             onContextMenu={handleContextMenu}
         >
             {!editorState.svgContent ? <CanvasBackground /> : null}
@@ -350,9 +450,11 @@ const SvgCanvas = ({
                         hoveredFulcrum={hoveredFulcrum}
                         setHoveredFulcrum={setHoveredFulcrum}
                         uiScale={uiScale}
+                        selectedFulcrumIds={selectedFulcrumIds}
                         moveFulcrumsEnabled={editorState.moveFulcrumsEnabled}
-                        movingFulcrumId={movingFulcrumId}
+                        movingFulcrumIds={movingFulcrumIds}
                         onFulcrumContextMenu={onFulcrumContextMenu}
+                        onFulcrumClick={handleFulcrumClick}
                         onFulcrumDragStart={editorState.moveFulcrumsEnabled ? handleFulcrumMoveStart : handleFulcrumDragStart}
                     />
                 </div>

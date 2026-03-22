@@ -84,39 +84,65 @@ export const useFulcrums = (floorId) => {
         return updatedFulcrum;
     }, [updateFulcrumAction]);
 
-    const moveFulcrum = useCallback(async (fulcrumId, position) => {
-        const currentFulcrum = fulcrums.find((item) => item.id === fulcrumId);
-        if (!currentFulcrum) {
-            return null;
+    const moveFulcrums = useCallback(async (updates) => {
+        if (!Array.isArray(updates) || updates.length === 0) {
+            return [];
         }
 
-        const optimisticFulcrum = {
-            ...currentFulcrum,
-            x: position.x,
-            y: position.y
-        };
+        const currentById = new Map(fulcrums.map((item) => [item.id, item]));
+        const normalizedUpdates = updates
+            .map((update) => {
+                const currentFulcrum = currentById.get(update.id);
+                if (!currentFulcrum) {
+                    return null;
+                }
 
-        setFulcrums(prev => prev.map((item) =>
-            item.id === fulcrumId ? optimisticFulcrum : item
-        ));
+                return {
+                    id: update.id,
+                    payload: buildFulcrumSaveData({
+                        ...currentFulcrum,
+                        x: update.x,
+                        y: update.y
+                    })
+                };
+            })
+            .filter(Boolean);
 
-        try {
-            const updatedFulcrum = await updateFulcrumAction(
-                fulcrumId,
-                buildFulcrumSaveData(optimisticFulcrum)
-            );
+        const results = await Promise.allSettled(
+            normalizedUpdates.map((update) =>
+                updateFulcrumAction(update.id, update.payload)
+            )
+        );
 
+        const updatedById = new Map();
+        const failedMessages = [];
+
+        results.forEach((result, index) => {
+            const update = normalizedUpdates[index];
+            if (result.status === 'fulfilled') {
+                updatedById.set(update.id, result.value);
+                return;
+            }
+
+            const message = result.reason?.response?.data?.message
+                || result.reason?.message
+                || `Failed to update point ${update.id}`;
+            failedMessages.push(message);
+        });
+
+        if (updatedById.size > 0) {
             setFulcrums(prev => prev.map((item) =>
-                item.id === fulcrumId ? updatedFulcrum : item
+                updatedById.get(item.id) || item
             ));
-
-            return updatedFulcrum;
-        } catch (error) {
-            setFulcrums(prev => prev.map((item) =>
-                item.id === fulcrumId ? currentFulcrum : item
-            ));
-            throw error;
         }
+
+        if (failedMessages.length > 0) {
+            throw new Error(failedMessages[0]);
+        }
+
+        return normalizedUpdates
+            .map((update) => updatedById.get(update.id))
+            .filter(Boolean);
     }, [fulcrums, updateFulcrumAction]);
 
     const deleteFulcrum = useCallback(async (fulcrumId) => {
@@ -159,7 +185,7 @@ export const useFulcrums = (floorId) => {
         error,
         createFulcrum,
         updateFulcrum,
-        moveFulcrum,
+        moveFulcrums,
         deleteFulcrum,
         addConnection,
         removeConnection,
