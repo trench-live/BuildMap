@@ -19,6 +19,7 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
         svgSize,
         updateContainerSize,
         toggleGrid,
+        toggleMoveFulcrums,
         increaseGridStep,
         decreaseGridStep
     } = useFloorEditor(floor, onSave, onClose);
@@ -34,6 +35,7 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
         connections,
         createFulcrum,
         updateFulcrum,
+        moveFulcrum,
         deleteFulcrum,
         addConnection,
         removeConnection,
@@ -108,12 +110,14 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                     <EditorToolbar
                         onImageUpload={handleImageUpload}
                         onResetView={handleResetView}
+                        onToggleMoveFulcrums={toggleMoveFulcrums}
                         onClearCanvas={handleClearCanvas}
                         onSave={handleSaveWithReload}
                         onToggleGrid={toggleGrid}
                         onGridStepIncrease={increaseGridStep}
                         onGridStepDecrease={decreaseGridStep}
                         scale={editorState.scale}
+                        moveFulcrumsEnabled={editorState.moveFulcrumsEnabled}
                         gridEnabled={editorState.gridEnabled}
                         hasContent={!!editorState.svgContent}
                         isSaving={isSaving || floorSaving}
@@ -130,6 +134,7 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                         updateContainerSize={updateContainerSize}
                         onFulcrumCreate={handleFulcrumCreate}
                         onFulcrumContextMenu={handleFulcrumContextMenu}
+                        onFulcrumMove={moveFulcrum}
                         onConnectionCreate={handleConnectionCreate}
                         onConnectionContextMenu={handleConnectionContextMenu}
                     />

@@ -44,3 +44,19 @@
     min-width: 140px;
     text-align: center;
 }
+
+.mode-toggle {
+    min-width: 130px;
+    text-align: center;
+}
+
+.mode-toggle.is-active {
+    background: #dbeafe;
+    color: #1d4ed8;
+    border-color: #93c5fd;
+}
+
+.mode-toggle.is-active:hover:not(:disabled) {
+    background: #bfdbfe;
+    border-color: #60a5fa;
+}

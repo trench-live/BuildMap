@@ -3,6 +3,17 @@ import { fulcrumAPI } from '../../../../services/api';
 import { useFulcrumActions } from './useFulcrumActions';
 import { filterActiveFulcrums, buildConnectionsFromFulcrums } from './utils/fulcrumConnections';
 
+const buildFulcrumSaveData = (fulcrum) => ({
+    name: fulcrum.name,
+    description: fulcrum.description ?? '',
+    x: fulcrum.x,
+    y: fulcrum.y,
+    type: fulcrum.type,
+    facingDirection: fulcrum.facingDirection,
+    hasQr: Boolean(fulcrum.hasQr),
+    floorId: fulcrum.floorId
+});
+
 export const useFulcrums = (floorId) => {
     const [fulcrums, setFulcrums] = useState([]);
     const [connections, setConnections] = useState([]);
@@ -73,6 +84,41 @@ export const useFulcrums = (floorId) => {
         return updatedFulcrum;
     }, [updateFulcrumAction]);
 
+    const moveFulcrum = useCallback(async (fulcrumId, position) => {
+        const currentFulcrum = fulcrums.find((item) => item.id === fulcrumId);
+        if (!currentFulcrum) {
+            return null;
+        }
+
+        const optimisticFulcrum = {
+            ...currentFulcrum,
+            x: position.x,
+            y: position.y
+        };
+
+        setFulcrums(prev => prev.map((item) =>
+            item.id === fulcrumId ? optimisticFulcrum : item
+        ));
+
+        try {
+            const updatedFulcrum = await updateFulcrumAction(
+                fulcrumId,
+                buildFulcrumSaveData(optimisticFulcrum)
+            );
+
+            setFulcrums(prev => prev.map((item) =>
+                item.id === fulcrumId ? updatedFulcrum : item
+            ));
+
+            return updatedFulcrum;
+        } catch (error) {
+            setFulcrums(prev => prev.map((item) =>
+                item.id === fulcrumId ? currentFulcrum : item
+            ));
+            throw error;
+        }
+    }, [fulcrums, updateFulcrumAction]);
+
     const deleteFulcrum = useCallback(async (fulcrumId) => {
         await deleteFulcrumAction(fulcrumId);
         setFulcrums(prev => prev.filter(f => f.id !== fulcrumId));
@@ -113,6 +159,7 @@ export const useFulcrums = (floorId) => {
         error,
         createFulcrum,
         updateFulcrum,
+        moveFulcrum,
         deleteFulcrum,
         addConnection,
         removeConnection,

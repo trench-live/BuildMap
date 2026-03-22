@@ -7,6 +7,7 @@ import ConnectionWeightsLayer from './components/ConnectionWeightsLayer';
 import FulcrumsLayer from './components/FulcrumsLayer';
 import useCanvasSize from './hooks/useCanvasSize';
 import useConnectionDrag from './hooks/useConnectionDrag';
+import useFulcrumMove from './hooks/useFulcrumMove';
 import useGridDrag from './hooks/useGridDrag';
 import { getRelativeCoordinates } from '../../hooks';
 import './SvgCanvas.css';
@@ -19,6 +20,7 @@ const SvgCanvas = ({
     svgSize,
     onFulcrumCreate,
     onFulcrumContextMenu,
+    onFulcrumMove,
     onConnectionCreate,
     onConnectionContextMenu,
     updateContainerSize
@@ -129,6 +131,21 @@ const SvgCanvas = ({
         fulcrums,
         onConnectionCreate,
         handleCanvasMouseDown
+    });
+
+    const {
+        effectiveFulcrums,
+        isMovingFulcrum,
+        movingFulcrumId,
+        handleFulcrumMoveStart
+    } = useFulcrumMove({
+        containerRef,
+        editorState,
+        imageRect,
+        gridMetrics,
+        fulcrums,
+        onFulcrumMove,
+        snapToGrid
     });
 
     const handleContextMenu = (e) => {
@@ -248,7 +265,7 @@ const SvgCanvas = ({
     return (
         <div
             ref={containerRef}
-            className={`svg-canvas ${editorState.isDragging ? 'dragging' : ''} ${isCreatingConnection ? 'creating-connection' : ''} ${isGridDragging ? 'grid-dragging' : ''}`}
+            className={`svg-canvas ${editorState.isDragging ? 'dragging' : ''} ${isCreatingConnection ? 'creating-connection' : ''} ${isGridDragging ? 'grid-dragging' : ''} ${editorState.moveFulcrumsEnabled ? 'move-fulcrums-mode' : ''} ${isMovingFulcrum ? 'fulcrum-dragging' : ''}`}
             onMouseDown={handleMouseDown}
             onContextMenu={handleContextMenu}
         >
@@ -310,7 +327,7 @@ const SvgCanvas = ({
                 <div className="fulcrums-overlay">
                     <ConnectionsLayer
                         groupedConnections={groupedConnections}
-                        fulcrums={fulcrums}
+                        fulcrums={effectiveFulcrums}
                         imageRect={imageRect}
                         hoveredConnection={hoveredConnection}
                         setHoveredConnection={setHoveredConnection}
@@ -319,7 +336,7 @@ const SvgCanvas = ({
                     />
                     <ConnectionWeightsLayer
                         groupedConnections={groupedConnections}
-                        fulcrums={fulcrums}
+                        fulcrums={effectiveFulcrums}
                         imageRect={imageRect}
                         hoveredConnection={hoveredConnection}
                         setHoveredConnection={setHoveredConnection}
@@ -328,13 +345,15 @@ const SvgCanvas = ({
                         uiScale={uiScale}
                     />
                     <FulcrumsLayer
-                        fulcrums={fulcrums}
+                        fulcrums={effectiveFulcrums}
                         imageRect={imageRect}
                         hoveredFulcrum={hoveredFulcrum}
                         setHoveredFulcrum={setHoveredFulcrum}
                         uiScale={uiScale}
+                        moveFulcrumsEnabled={editorState.moveFulcrumsEnabled}
+                        movingFulcrumId={movingFulcrumId}
                         onFulcrumContextMenu={onFulcrumContextMenu}
-                        onFulcrumDragStart={handleFulcrumDragStart}
+                        onFulcrumDragStart={editorState.moveFulcrumsEnabled ? handleFulcrumMoveStart : handleFulcrumDragStart}
                     />
                 </div>
             </div>

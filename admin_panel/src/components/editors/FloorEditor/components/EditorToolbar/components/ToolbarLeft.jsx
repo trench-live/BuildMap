@@ -4,10 +4,12 @@ import Button from '../../../../../common/Modal/components/Button/Button';
 const ToolbarLeft = ({
     onImageUpload,
     onResetView,
+    onToggleMoveFulcrums,
     onToggleGrid,
     onGridStepIncrease,
     onGridStepDecrease,
     scale,
+    moveFulcrumsEnabled,
     gridEnabled,
     gridLabel,
     hasContent,
@@ -48,6 +50,15 @@ const ToolbarLeft = ({
                     disabled={!hasContent}
                 >
                     {labels.resetView}
+                </Button>
+                <Button
+                    variant="secondary"
+                    size="small"
+                    onClick={onToggleMoveFulcrums}
+                    className={`mode-toggle${moveFulcrumsEnabled ? ' is-active' : ''}`}
+                    disabled={fulcrumsCount === 0}
+                >
+                    {labels.moveMode}
                 </Button>
             </div>
 

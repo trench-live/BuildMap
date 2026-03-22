@@ -14,6 +14,10 @@
     cursor: grabbing;
 }
 
+.svg-canvas.move-fulcrums-mode {
+    cursor: grab;
+}
+
 .svg-canvas.creating-connection {
     cursor: crosshair;
 }
@@ -105,6 +109,11 @@
 
 .svg-canvas.grid-dragging {
     cursor: none;
+}
+
+.svg-canvas.fulcrum-dragging,
+.svg-canvas.fulcrum-dragging .fulcrum-point {
+    cursor: grabbing;
 }
 
 .grid-overlay {

@@ -23,6 +23,7 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         selectedFulcrum: null,
         selectedConnection: null,
         dragStartFulcrum: null,
+        moveFulcrumsEnabled: false,
         gridEnabled: false,
         gridStep: GRID_STEP_DEFAULT,
         gridOffset: { x: 0, y: 0 }
@@ -62,6 +63,7 @@ export const useFloorEditor = (floor, onSave, onClose) => {
             selectedFulcrum: null,
             selectedConnection: null,
             dragStartFulcrum: null,
+            moveFulcrumsEnabled: prev.moveFulcrumsEnabled ?? false,
             gridEnabled: prev.gridEnabled ?? false,
             gridStep: clampGridStep(prev.gridStep ?? GRID_STEP_DEFAULT),
             gridOffset: savedGridOffset ?? normalizeGridOffset(prev.gridOffset)
@@ -179,6 +181,13 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         }));
     }, []);
 
+    const toggleMoveFulcrums = useCallback(() => {
+        setEditorState(prev => ({
+            ...prev,
+            moveFulcrumsEnabled: !prev.moveFulcrumsEnabled
+        }));
+    }, []);
+
     const increaseGridStep = useCallback(() => {
         setEditorState(prev => ({
             ...prev,
@@ -204,6 +213,7 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         startConnectionDrag,
         endConnectionDrag,
         toggleGrid,
+        toggleMoveFulcrums,
         increaseGridStep,
         decreaseGridStep,
         updateContainerSize,

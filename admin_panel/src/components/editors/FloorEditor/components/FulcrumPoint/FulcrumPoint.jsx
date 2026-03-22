@@ -7,6 +7,8 @@ const FulcrumPoint = ({
                           position,
                           isSelected = false,
                           isHovered = false,
+                          isMoveMode = false,
+                          isDragging = false,
                           uiScale = 1,
                           onMouseEnter,
                           onMouseLeave,
@@ -31,7 +33,7 @@ const FulcrumPoint = ({
         }
     };
 
-    const pointClass = `fulcrum-point ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''} ${fulcrum.type.toLowerCase()}`;
+    const pointClass = `fulcrum-point ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''} ${isMoveMode ? 'move-enabled' : ''} ${isDragging ? 'dragging' : ''} ${fulcrum.type.toLowerCase()}`;
 
     const posX = position?.x ?? fulcrum.x;
     const posY = position?.y ?? fulcrum.y;
