@@ -21,8 +21,10 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         lastMousePos: { x: 0, y: 0 },
         mode: EDITOR_MODES.VIEW,
         selectedFulcrum: null,
+        selectedFulcrumIds: [],
         selectedConnection: null,
         dragStartFulcrum: null,
+        moveFulcrumsEnabled: false,
         gridEnabled: false,
         gridStep: GRID_STEP_DEFAULT,
         gridOffset: { x: 0, y: 0 }
@@ -60,8 +62,10 @@ export const useFloorEditor = (floor, onSave, onClose) => {
             offset: { x: 0, y: 0 },
             mode: EDITOR_MODES.VIEW,
             selectedFulcrum: null,
+            selectedFulcrumIds: [],
             selectedConnection: null,
             dragStartFulcrum: null,
+            moveFulcrumsEnabled: prev.moveFulcrumsEnabled ?? false,
             gridEnabled: prev.gridEnabled ?? false,
             gridStep: clampGridStep(prev.gridStep ?? GRID_STEP_DEFAULT),
             gridOffset: savedGridOffset ?? normalizeGridOffset(prev.gridOffset)
@@ -179,6 +183,54 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         }));
     }, []);
 
+    const toggleMoveFulcrums = useCallback(() => {
+        setEditorState(prev => ({
+            ...prev,
+            moveFulcrumsEnabled: !prev.moveFulcrumsEnabled,
+            selectedFulcrumIds: prev.moveFulcrumsEnabled ? [] : prev.selectedFulcrumIds
+        }));
+    }, []);
+
+    const setSelectedFulcrumIds = useCallback((nextIds) => {
+        setEditorState(prev => ({
+            ...prev,
+            selectedFulcrumIds: Array.isArray(nextIds) ? nextIds : []
+        }));
+    }, []);
+
+    const clearSelectedFulcrums = useCallback(() => {
+        setEditorState(prev => {
+            if (!prev.selectedFulcrumIds?.length) {
+                return prev;
+            }
+
+            return {
+                ...prev,
+                selectedFulcrumIds: []
+            };
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!editorState.moveFulcrumsEnabled || !editorState.selectedFulcrumIds?.length) {
+            return undefined;
+        }
+
+        const handleKeyDown = (event) => {
+            if (event.key !== 'Escape') {
+                return;
+            }
+
+            setEditorState(prev => ({
+                ...prev,
+                selectedFulcrumIds: []
+            }));
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [editorState.moveFulcrumsEnabled, editorState.selectedFulcrumIds]);
+
     const increaseGridStep = useCallback(() => {
         setEditorState(prev => ({
             ...prev,
@@ -204,6 +256,9 @@ export const useFloorEditor = (floor, onSave, onClose) => {
         startConnectionDrag,
         endConnectionDrag,
         toggleGrid,
+        toggleMoveFulcrums,
+        setSelectedFulcrumIds,
+        clearSelectedFulcrums,
         increaseGridStep,
         decreaseGridStep,
         updateContainerSize,

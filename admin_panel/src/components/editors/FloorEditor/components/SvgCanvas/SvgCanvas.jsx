@@ -7,6 +7,7 @@ import ConnectionWeightsLayer from './components/ConnectionWeightsLayer';
 import FulcrumsLayer from './components/FulcrumsLayer';
 import useCanvasSize from './hooks/useCanvasSize';
 import useConnectionDrag from './hooks/useConnectionDrag';
+import useFulcrumMove from './hooks/useFulcrumMove';
 import useGridDrag from './hooks/useGridDrag';
 import { getRelativeCoordinates } from '../../hooks';
 import './SvgCanvas.css';
@@ -19,11 +20,13 @@ const SvgCanvas = ({
     svgSize,
     onFulcrumCreate,
     onFulcrumContextMenu,
+    onFulcrumsMove,
     onConnectionCreate,
     onConnectionContextMenu,
     updateContainerSize
 }) => {
     const containerRef = useRef(null);
+    const clearSelectionCandidateRef = useRef(null);
     const [hoveredFulcrum, setHoveredFulcrum] = useState(null);
     const [hoveredConnection, setHoveredConnection] = useState(null);
     const uiScale = useMemo(() => {
@@ -131,8 +134,29 @@ const SvgCanvas = ({
         handleCanvasMouseDown
     });
 
+    const {
+        effectiveFulcrums,
+        selectedFulcrumIds,
+        isMovingFulcrum,
+        movingFulcrumIds,
+        handleFulcrumMoveStart,
+        handleFulcrumClick
+    } = useFulcrumMove({
+        containerRef,
+        editorState,
+        setEditorState,
+        imageRect,
+        gridMetrics,
+        fulcrums,
+        onFulcrumsMove,
+        snapToGrid
+    });
+
     const handleContextMenu = (e) => {
         e.preventDefault();
+        if (editorState.moveFulcrumsEnabled && (e.ctrlKey || e.metaKey)) {
+            return;
+        }
         const container = containerRef.current;
         if (!container) return;
 
@@ -158,6 +182,65 @@ const SvgCanvas = ({
 
         onFulcrumCreate?.({ x: nextX, y: nextY }, e);
     };
+
+    const handleCanvasPointerDown = useCallback((event) => {
+        if (
+            editorState.moveFulcrumsEnabled
+            && editorState.selectedFulcrumIds?.length
+            && event.button === 0
+            && !event.ctrlKey
+            && !event.metaKey
+        ) {
+            clearSelectionCandidateRef.current = {
+                x: event.clientX,
+                y: event.clientY,
+                shouldClear: true
+            };
+        } else {
+            clearSelectionCandidateRef.current = null;
+        }
+
+        handleMouseDown(event);
+    }, [
+        editorState.moveFulcrumsEnabled,
+        editorState.selectedFulcrumIds,
+        handleMouseDown
+    ]);
+
+    const handleCanvasClick = useCallback((event) => {
+        const candidate = clearSelectionCandidateRef.current;
+        clearSelectionCandidateRef.current = null;
+        const target = event.target;
+
+        if (target instanceof Element) {
+            const isInteractiveElement = target.closest('.fulcrum-point')
+                || target.closest('.connection-line-element')
+                || target.closest('.connection-distance-label')
+                || target.closest('.grid-handle');
+            if (isInteractiveElement) {
+                return;
+            }
+        }
+
+        if (
+            !candidate?.shouldClear
+            || !editorState.moveFulcrumsEnabled
+            || !editorState.selectedFulcrumIds?.length
+            || event.ctrlKey
+            || event.metaKey
+        ) {
+            return;
+        }
+
+        setEditorState((prev) => ({
+            ...prev,
+            selectedFulcrumIds: []
+        }));
+    }, [
+        editorState.moveFulcrumsEnabled,
+        editorState.selectedFulcrumIds,
+        setEditorState
+    ]);
 
 
     const handleConnectionContextMenu = (connection, event) => {
@@ -245,11 +328,45 @@ const SvgCanvas = ({
         };
     }, [handleWheel, handleMouseMove, handleMouseUp]);
 
+    useEffect(() => {
+        const handlePointerMove = (event) => {
+            const candidate = clearSelectionCandidateRef.current;
+            if (!candidate?.shouldClear) {
+                return;
+            }
+
+            const deltaX = event.clientX - candidate.x;
+            const deltaY = event.clientY - candidate.y;
+            if (Math.hypot(deltaX, deltaY) > 4) {
+                clearSelectionCandidateRef.current = {
+                    ...candidate,
+                    shouldClear: false
+                };
+            }
+        };
+
+        const handlePointerUp = () => {
+            const candidate = clearSelectionCandidateRef.current;
+            if (!candidate?.shouldClear) {
+                clearSelectionCandidateRef.current = null;
+            }
+        };
+
+        document.addEventListener('mousemove', handlePointerMove);
+        document.addEventListener('mouseup', handlePointerUp, true);
+
+        return () => {
+            document.removeEventListener('mousemove', handlePointerMove);
+            document.removeEventListener('mouseup', handlePointerUp, true);
+        };
+    }, []);
+
     return (
         <div
             ref={containerRef}
-            className={`svg-canvas ${editorState.isDragging ? 'dragging' : ''} ${isCreatingConnection ? 'creating-connection' : ''} ${isGridDragging ? 'grid-dragging' : ''}`}
-            onMouseDown={handleMouseDown}
+            className={`svg-canvas ${editorState.isDragging ? 'dragging' : ''} ${isCreatingConnection ? 'creating-connection' : ''} ${isGridDragging ? 'grid-dragging' : ''} ${editorState.moveFulcrumsEnabled ? 'move-fulcrums-mode' : ''} ${isMovingFulcrum ? 'fulcrum-dragging' : ''}`}
+            onMouseDown={handleCanvasPointerDown}
+            onClick={handleCanvasClick}
             onContextMenu={handleContextMenu}
         >
             {!editorState.svgContent ? <CanvasBackground /> : null}
@@ -310,7 +427,7 @@ const SvgCanvas = ({
                 <div className="fulcrums-overlay">
                     <ConnectionsLayer
                         groupedConnections={groupedConnections}
-                        fulcrums={fulcrums}
+                        fulcrums={effectiveFulcrums}
                         imageRect={imageRect}
                         hoveredConnection={hoveredConnection}
                         setHoveredConnection={setHoveredConnection}
@@ -319,7 +436,7 @@ const SvgCanvas = ({
                     />
                     <ConnectionWeightsLayer
                         groupedConnections={groupedConnections}
-                        fulcrums={fulcrums}
+                        fulcrums={effectiveFulcrums}
                         imageRect={imageRect}
                         hoveredConnection={hoveredConnection}
                         setHoveredConnection={setHoveredConnection}
@@ -328,13 +445,17 @@ const SvgCanvas = ({
                         uiScale={uiScale}
                     />
                     <FulcrumsLayer
-                        fulcrums={fulcrums}
+                        fulcrums={effectiveFulcrums}
                         imageRect={imageRect}
                         hoveredFulcrum={hoveredFulcrum}
                         setHoveredFulcrum={setHoveredFulcrum}
                         uiScale={uiScale}
+                        selectedFulcrumIds={selectedFulcrumIds}
+                        moveFulcrumsEnabled={editorState.moveFulcrumsEnabled}
+                        movingFulcrumIds={movingFulcrumIds}
                         onFulcrumContextMenu={onFulcrumContextMenu}
-                        onFulcrumDragStart={handleFulcrumDragStart}
+                        onFulcrumClick={handleFulcrumClick}
+                        onFulcrumDragStart={editorState.moveFulcrumsEnabled ? handleFulcrumMoveStart : handleFulcrumDragStart}
                     />
                 </div>
             </div>

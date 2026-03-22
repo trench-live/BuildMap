@@ -7,10 +7,13 @@ const FulcrumPoint = ({
                           position,
                           isSelected = false,
                           isHovered = false,
+                          isMoveMode = false,
+                          isDragging = false,
                           uiScale = 1,
                           onMouseEnter,
                           onMouseLeave,
                           onContextMenu,
+                          onClick,
                           onDragStart
                       }) => {
     const handleMouseDown = (e) => {
@@ -23,15 +26,25 @@ const FulcrumPoint = ({
         }
     };
 
+    const handleClick = (e) => {
+        e.stopPropagation();
+        if (onClick) {
+            onClick(fulcrum, e);
+        }
+    };
+
     const handleContextMenu = (e) => {
         e.preventDefault();
         e.stopPropagation();
+        if (isMoveMode && (e.ctrlKey || e.metaKey)) {
+            return;
+        }
         if (onContextMenu) {
             onContextMenu(fulcrum, e);
         }
     };
 
-    const pointClass = `fulcrum-point ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''} ${fulcrum.type.toLowerCase()}`;
+    const pointClass = `fulcrum-point ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''} ${isMoveMode ? 'move-enabled' : ''} ${isDragging ? 'dragging' : ''} ${fulcrum.type.toLowerCase()}`;
 
     const posX = position?.x ?? fulcrum.x;
     const posY = position?.y ?? fulcrum.y;
@@ -49,6 +62,7 @@ const FulcrumPoint = ({
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
             onMouseDown={handleMouseDown}
+            onClick={handleClick}
             onContextMenu={handleContextMenu}
             title={`${fulcrum.name} (${fulcrum.type})`}
         >

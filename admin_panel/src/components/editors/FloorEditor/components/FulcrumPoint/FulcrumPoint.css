@@ -15,6 +15,14 @@
     user-select: none;
 }
 
+.fulcrum-point.move-enabled {
+    cursor: grab;
+}
+
+.fulcrum-point.move-enabled.dragging {
+    cursor: grabbing;
+}
+
 .fulcrum-point:hover {
     transform: translate(-50%, -50%) scale(calc(var(--point-scale, 1) * 1.2));
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
