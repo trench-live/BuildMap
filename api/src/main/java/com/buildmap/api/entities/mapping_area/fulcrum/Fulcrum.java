@@ -32,7 +32,7 @@ public class Fulcrum {
     @Column(nullable = false)
     private Double y;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = FulcrumTypeConverter.class)
     @Column(nullable = false)
     private FulcrumType type;
 

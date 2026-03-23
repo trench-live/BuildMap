@@ -257,7 +257,7 @@ const Navigation = () => {
         if (!areaFulcrums.length) return [];
         const query = searchValue.trim().toLowerCase();
         const candidates = areaFulcrums.filter(
-            (item) => item.id !== startFulcrum?.id && item.type !== 'CORRIDOR'
+            (item) => item.id !== startFulcrum?.id && item.type !== 'WAYPOINT'
         );
         if (!query) {
             return candidates

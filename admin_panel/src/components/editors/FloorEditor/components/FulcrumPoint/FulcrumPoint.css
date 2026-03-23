@@ -71,7 +71,7 @@
 
 /* Варианты для разных типов fulcrum */
 .fulcrum-point.room { border-color: #10b981; }
-.fulcrum-point.corridor { border-color: #6b7280; }
+.fulcrum-point.waypoint { border-color: #6b7280; }
 .fulcrum-point.stairs { border-color: #f59e0b; }
 .fulcrum-point.elevator { border-color: #8b5cf6; }
 .fulcrum-point.entrance { border-color: #ef4444; }
