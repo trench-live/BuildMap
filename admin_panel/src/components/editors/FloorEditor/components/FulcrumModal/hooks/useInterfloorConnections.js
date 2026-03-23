@@ -42,7 +42,7 @@ const useInterfloorConnections = ({
             .filter(item => !item.deleted)
             .filter(item => item.id !== currentFulcrumId)
             .filter(item => item.floorId !== currentFloorId)
-            .filter(item => item.type !== FULCRUM_TYPES.CORRIDOR)
+            .filter(item => item.type !== FULCRUM_TYPES.WAYPOINT)
             .map(item => {
                 const outgoing = outgoingConnections.get(item.id);
                 const incoming = incomingConnections.get(item.id);

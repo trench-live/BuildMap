@@ -1,27 +1,35 @@
-# Floor Editor - Система Fulcrums
+# Floor Editor
 
-## Обзор
-Редактор этажей с поддержкой создания точек (fulcrums) и связей между ними для системы indoor-навигации.
+Редактор этажей для настройки точек маршрутизации (`fulcrums`) и связей между ними.
 
-## Основные возможности
+## Основные действия
 
-### Точки (Fulcrums)
-- Создание: ПКМ по карте → форма создания
-- Редактирование: ПКМ по точке → форма редактирования
-- Перетаскивание: ЛКМ по точке для создания связей
-- Типы точек: Комната, Коридор, Лестница, Лифт, Вход, Зал, Туалет, Кухня, Ресепшен, Аварийный выход, Ориентир
+### Точки
+- Создание: ПКМ по карте
+- Редактирование: ПКМ по точке
+- Создание связи: зажать ЛКМ на точке и перетащить к другой точке
+- Режим перемещения: включить `Двигать точки`
 
-### Связи (Connections)
-- Создание: Зажать ЛКМ на точке и перетащить к другой точке
-- Редактирование: ПКМ по связи → форма редактирования веса
-- Вес связи: Влияет на расчет маршрутов (1.0 - нормально, 2.0 - сложнее, 0.5 - легче)
+### Типы точек
+- Waypoint
+- Комната
+- Лестница
+- Лифт
+- Вход
+- Зал
+- Туалет
+- Кухня
+- Ресепшен
+- Аварийный выход
+- Ориентир
+
+`Waypoint` это служебная промежуточная точка для построения маршрута. Обычно она используется для проходов, поворотов и промежуточных узлов графа.
 
 ## Использование
 
 ```jsx
 import FloorEditor from './components/editors/FloorEditor';
 
-// В компоненте родителя
 <FloorEditor
   floor={currentFloor}
   visible={isEditorOpen}
@@ -30,37 +38,29 @@ import FloorEditor from './components/editors/FloorEditor';
 />
 ```
 
-# Структура данных
-## Fulcrum (Точка)
+## Данные
+
+### Fulcrum
+
 ```javascript
 {
   id: Long,
-  name: String,        // Название (обязательно)
-  description: String, // Описание
-  x: Double,          // Координата X
-  y: Double,          // Координата Y
-  type: FulcrumType,  // Тип точки
-  floorId: Long       // ID этажа
+  name: String,
+  description: String,
+  x: Double,
+  y: Double,
+  type: FulcrumType,
+  floorId: Long
 }
 ```
 
-## Connection (Связь)
+### Connection
+
 ```javascript
 {
-  from: Long,         // ID исходной точки
-  to: Long,           // ID целевой точки
-  distanceMeters: Double,   // Длина в метрах
-  difficultyFactor: Double  // Коэффициент сложности (>= 1)
+  from: Long,
+  to: Long,
+  distanceMeters: Double,
+  difficultyFactor: Double
 }
-```
-
-# API методы
-**Система автоматически использует следующие API методы:**
-```
-fulcrumAPI.getByFloor(floorId) - загрузка точек этажа
-fulcrumAPI.create(fulcrumData) - создание точки
-fulcrumAPI.update(id, fulcrumData) - обновление точки
-fulcrumAPI.delete(id) - удаление точки
-fulcrumAPI.addConnection(id, connectionData) - добавление связи
-fulcrumAPI.removeConnection(fromId, toId) - удаление связи
 ```

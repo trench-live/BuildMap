@@ -269,7 +269,7 @@ public class NavigationService {
             if (candidate.getId().equals(pivot.getId())) continue;
             if (candidate.getFloor() == null || pivot.getFloor() == null) continue;
             if (!candidate.getFloor().getId().equals(pivot.getFloor().getId())) continue;
-            if (candidate.getType() == null || candidate.getType() == FulcrumType.CORRIDOR) continue;
+            if (candidate.getType() == null || candidate.getType() == FulcrumType.WAYPOINT) continue;
             if (excludeVerticals
                     && (candidate.getType() == FulcrumType.STAIRS || candidate.getType() == FulcrumType.ELEVATOR)) {
                 continue;
