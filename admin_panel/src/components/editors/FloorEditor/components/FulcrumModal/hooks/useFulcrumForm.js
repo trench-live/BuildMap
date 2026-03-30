@@ -2,8 +2,8 @@ import { useState, useCallback } from 'react';
 import { FACING_DIRECTIONS, FULCRUM_TYPES } from '../../../types/editorTypes';
 
 const DEFAULT_FULCRUM_NAMES = {
+    [FULCRUM_TYPES.WAYPOINT]: 'Waypoint',
     [FULCRUM_TYPES.ROOM]: 'Room',
-    [FULCRUM_TYPES.CORRIDOR]: 'Corridor',
     [FULCRUM_TYPES.STAIRS]: 'Stairs',
     [FULCRUM_TYPES.ELEVATOR]: 'Elevator',
     [FULCRUM_TYPES.ENTRANCE]: 'Entrance',
@@ -20,7 +20,7 @@ export const getDefaultFulcrumName = (type) => DEFAULT_FULCRUM_NAMES[type] || ty
 const buildInitialFormData = (data = null) => ({
     name: data?.name || '',
     description: data?.description || '',
-    type: data?.type || FULCRUM_TYPES.ROOM,
+    type: data?.type || FULCRUM_TYPES.WAYPOINT,
     facingDirection: data?.facingDirection || FACING_DIRECTIONS.UP,
     hasQr: Boolean(data?.hasQr),
     x: data?.x ?? 0,

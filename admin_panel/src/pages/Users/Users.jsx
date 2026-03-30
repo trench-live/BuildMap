@@ -63,6 +63,7 @@ const Users = () => {
         setFormData,
         deleteUser,
         deleteVisible,
+        deleteMode,
         openEdit,
         closeEdit,
         saveUser,
@@ -112,6 +113,7 @@ const Users = () => {
             return (
                 String(user.id).includes(normalizedQuery)
                 || (user.name || '').toLowerCase().includes(normalizedQuery)
+                || (user.login || '').toLowerCase().includes(normalizedQuery)
                 || (user.telegramId || '').toLowerCase().includes(normalizedQuery)
             );
         });
@@ -130,7 +132,7 @@ const Users = () => {
                         className="users-search"
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
-                        placeholder="Search by id, name, telegram id"
+                        placeholder="Search by id, name, login, telegram id"
                     />
                     <div className="users-filters">
                         <FilterDropdown
@@ -171,6 +173,7 @@ const Users = () => {
                             <tr>
                                 <th>ID</th>
                                 <th>Name</th>
+                                <th>Login</th>
                                 <th>Telegram ID</th>
                                 <th>Role</th>
                                 <th>Areas</th>
@@ -187,6 +190,7 @@ const Users = () => {
                                     <tr key={user.id}>
                                         <td>{user.id}</td>
                                         <td>{user.name}</td>
+                                        <td>{user.login || '-'}</td>
                                         <td>{user.telegramId}</td>
                                         <td>{user.role}</td>
                                         <td>{user.areasCount ?? 0}</td>
@@ -228,8 +232,21 @@ const Users = () => {
                                             )}
                                             <button
                                                 type="button"
+                                                className="btn btn-warning"
+                                                onClick={() => openDelete(user, 'safe')}
+                                                disabled={pendingUserId === user.id || isSelf || lastActiveAdmin}
+                                                title={
+                                                    isSelf
+                                                        ? 'You cannot delete yourself'
+                                                        : (lastActiveAdmin ? 'Cannot clear the last active admin' : '')
+                                                }
+                                            >
+                                                Clear account
+                                            </button>
+                                            <button
+                                                type="button"
                                                 className="btn btn-danger"
-                                                onClick={() => openDelete(user)}
+                                                onClick={() => openDelete(user, 'force')}
                                                 disabled={pendingUserId === user.id || isSelf || lastActiveAdmin}
                                                 title={
                                                     isSelf
@@ -245,7 +262,7 @@ const Users = () => {
                             })}
                             {filteredUsers.length === 0 && (
                                 <tr>
-                                    <td colSpan={7} className="users-empty">No users match the selected filters.</td>
+                                    <td colSpan={8} className="users-empty">No users match the selected filters.</td>
                                 </tr>
                             )}
                             </tbody>
@@ -278,7 +295,26 @@ const Users = () => {
                                         className="form-input"
                                         value={formData.telegramId}
                                         onChange={(event) => setFormData((prev) => ({ ...prev, telegramId: event.target.value }))}
-                                        required
+                                    />
+                                </label>
+
+                                <label className="form-label">
+                                    Login
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        value={formData.login}
+                                        onChange={(event) => setFormData((prev) => ({ ...prev, login: event.target.value }))}
+                                    />
+                                </label>
+
+                                <label className="form-label">
+                                    New password
+                                    <input
+                                        type="password"
+                                        className="form-input"
+                                        value={formData.password}
+                                        onChange={(event) => setFormData((prev) => ({ ...prev, password: event.target.value }))}
                                     />
                                 </label>
 
@@ -306,9 +342,15 @@ const Users = () => {
 
             <DeleteModal
                 visible={deleteVisible}
+                title={deleteMode === 'force' ? 'Delete account' : 'Clear account'}
                 itemName={deleteUser?.name}
                 itemType="user"
-                warningText="All related areas, floors and fulcrums will be marked deleted."
+                warningText={
+                    deleteMode === 'force'
+                        ? 'This permanently deletes the account and cascades removal of related areas, floors and fulcrums.'
+                        : 'This clears the account and marks related areas, floors and fulcrums as deleted. The user can sign in again later.'
+                }
+                confirmText={deleteMode === 'force' ? 'Delete' : 'Clear account'}
                 isProcessing={deleteVisible && pendingUserId === deleteUser?.id}
                 onConfirm={confirmDelete}
                 onCancel={closeDelete}

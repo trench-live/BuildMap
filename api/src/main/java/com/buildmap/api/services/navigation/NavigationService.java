@@ -5,8 +5,8 @@ import com.buildmap.api.dto.route.RouteRequestDto;
 import com.buildmap.api.dto.route.RouteStepDto;
 import com.buildmap.api.dto.route.RouteStepType;
 import com.buildmap.api.dto.route.mappers.RouteMapper;
-import com.buildmap.api.entities.mapping_area.fulcrum.Fulcrum;
 import com.buildmap.api.entities.mapping_area.fulcrum.FacingDirection;
+import com.buildmap.api.entities.mapping_area.fulcrum.Fulcrum;
 import com.buildmap.api.entities.mapping_area.fulcrum.FulcrumType;
 import com.buildmap.api.services.FloorService;
 import com.buildmap.api.services.FulcrumService;
@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,82 +28,50 @@ public class NavigationService {
     private final FulcrumService fulcrumService;
     private final RouteMapper routeMapper;
     private final DijkstraAlgorithm dijkstraAlgorithm;
+
     private static final double LANDMARK_RADIUS = 0.1;
 
     @Transactional(readOnly = true)
     public RouteDto findShortestPath(RouteRequestDto request) {
-        // 1. Получаем стартовую и конечную точки для определения зоны
         Fulcrum startFulcrum = fulcrumService.getById(request.getStartFulcrumId());
         Fulcrum endFulcrum = fulcrumService.getById(request.getEndFulcrumId());
 
-        // Проверяем, что точки принадлежат одной зоне
         Long startAreaId = startFulcrum.getFloor().getMappingArea().getId();
         Long endAreaId = endFulcrum.getFloor().getMappingArea().getId();
-
         if (!startAreaId.equals(endAreaId)) {
             throw new IllegalArgumentException("Start and end fulcrums must be in the same mapping area");
         }
 
-        Long areaId = startAreaId;
-
-        System.out.println("=== ВЫЧИСЛЕНИЕ МАРШРУТА ===");
-        System.out.println("Area: " + areaId + ", From: " + request.getStartFulcrumId() +
-                " (" + startFulcrum.getName() + ") To: " + request.getEndFulcrumId() +
-                " (" + endFulcrum.getName() + ")");
-
-        // 2. Получаем все этажи зоны
         List<com.buildmap.api.entities.mapping_area.Floor> floors =
-                floorService.getAllByMappingAreaId(areaId, false);
+                floorService.getAllByMappingAreaId(startAreaId, false);
 
-        // 3. Получаем ВСЕ точки ВСЕХ этажей
         List<Fulcrum> allFulcrums = floors.stream()
                 .flatMap(floor -> floor.getFulcrums().stream())
                 .filter(fulcrum -> !fulcrum.isDeleted())
                 .collect(Collectors.toList());
 
-        System.out.println("Найдено точек во всех этажах: " + allFulcrums.size());
-
-        // 4. Строим граф
         Graph graph = new Graph(allFulcrums);
-        System.out.println("Граф построен, узлов: " + graph.getNodes().size());
-
-        // 5. Валидируем запрос
         NavigationValidator.validateRequest(graph, request.getStartFulcrumId(), request.getEndFulcrumId());
 
-        // 6. Запускаем алгоритм
-        long startTime = System.currentTimeMillis();
         DijkstraAlgorithm.DijkstraResult result = dijkstraAlgorithm.findShortestPath(
-                graph, request.getStartFulcrumId(), request.getEndFulcrumId()
+                graph,
+                request.getStartFulcrumId(),
+                request.getEndFulcrumId()
         );
-        long endTime = System.currentTimeMillis();
-        System.out.println("Алгоритм выполнен за " + (endTime - startTime) + "ms");
 
-        // 7. Строим путь
         List<Fulcrum> path = PathBuilder.buildPath(result.previous(), graph, request.getEndFulcrumId());
-        System.out.println("Построен путь из " + path.size() + " точек");
-
-        // 8. Проверяем что путь найден
         if (!PathBuilder.isPathFound(path, request.getStartFulcrumId(), request.getEndFulcrumId())) {
             throw new IllegalArgumentException("No path found between the specified fulcrums");
         }
 
-        // 9. Преобразуем в DTO
         RouteDto routeDto = routeMapper.toRouteDto(
                 path,
-                result.distances().get(request.getEndFulcrumId()),
                 request.getStartFulcrumId(),
                 request.getEndFulcrumId()
         );
+        routeDto.setTotalCost(result.distances().get(request.getEndFulcrumId()));
+        routeDto.setTotalDistanceMeters(calculateTotalDistanceMeters(graph, path));
         routeDto.setSteps(buildSteps(graph, path));
-
-        // 10. Логируем результат
-        System.out.println("Маршрут готов, расстояние: " + routeDto.getTotalDistance());
-        System.out.println("Путь через этажи:");
-        path.forEach(fulcrum ->
-                System.out.println("  - " + fulcrum.getName() +
-                        " (Этаж " + fulcrum.getFloor().getLevel() +
-                        ": " + fulcrum.getFloor().getName() + ")")
-        );
 
         return routeDto;
     }
@@ -147,9 +116,9 @@ public class NavigationService {
                 steps.add(turnStep);
             }
 
-            Integer distance = estimateDistance(graph, from, to);
-            if (distance != null && distance > 0) {
-                appendForwardStep(steps, distance, from, to);
+            Double distanceMeters = estimateDistanceMeters(graph, from, to);
+            if (distanceMeters != null && distanceMeters > 0) {
+                appendForwardStep(steps, distanceMeters, from, to);
             }
 
             previousVector = segmentVector;
@@ -162,6 +131,7 @@ public class NavigationService {
     private RouteStepDto buildFloorChangeStep(Fulcrum from, Fulcrum to, Graph graph) {
         Integer fromLevel = from.getFloor() != null ? from.getFloor().getLevel() : null;
         Integer toLevel = to.getFloor() != null ? to.getFloor().getLevel() : null;
+
         String targetLabel;
         if (toLevel != null) {
             targetLabel = "этаж " + toLevel;
@@ -177,16 +147,19 @@ public class NavigationService {
         }
 
         String text = (goUp ? "Поднимитесь на " : "Спуститесь на ") + targetLabel;
+
         RouteStepDto step = new RouteStepDto();
         step.setType(goUp ? RouteStepType.CHANGE_FLOOR_UP : RouteStepType.CHANGE_FLOOR_DOWN);
         step.setText(text);
         step.setFromFulcrumId(from.getId());
         step.setToFulcrumId(to.getId());
         step.setFloorId(to.getFloor() != null ? to.getFloor().getId() : null);
+
         String landmark = buildLandmarkHint(to, facingToVector(to.getFacingDirection()), graph, true);
         if (landmark != null) {
             step.setText(text + ". " + landmark);
         }
+
         return step;
     }
 
@@ -217,20 +190,25 @@ public class NavigationService {
             appendLandmark(step, from, nextVector, graph, true);
             return step;
         }
+
         return null;
     }
 
-    private void appendForwardStep(List<RouteStepDto> steps, int distance, Fulcrum from, Fulcrum to) {
-        if (steps == null || distance <= 0) {
+    private void appendForwardStep(List<RouteStepDto> steps, double distanceMeters, Fulcrum from, Fulcrum to) {
+        if (steps == null || distanceMeters <= 0) {
             return;
         }
+
+        double normalized = roundMeters(distanceMeters);
+
         int lastIndex = steps.size() - 1;
         if (lastIndex >= 0) {
             RouteStepDto last = steps.get(lastIndex);
             if (last.getType() == RouteStepType.GO_FORWARD) {
-                int previous = parseForwardDistance(last.getText());
-                int sum = previous + distance;
-                last.setText("Пройдите " + sum);
+                double previous = last.getDistanceMeters() != null ? last.getDistanceMeters() : 0;
+                double sum = roundMeters(previous + normalized);
+                last.setDistanceMeters(sum);
+                last.setText("Пройдите " + formatMeters(sum) + " м");
                 if (to != null) {
                     last.setToFulcrumId(to.getId());
                     last.setFloorId(to.getFloor() != null ? to.getFloor().getId() : last.getFloorId());
@@ -238,28 +216,37 @@ public class NavigationService {
                 return;
             }
         }
+
         RouteStepDto step = new RouteStepDto();
         step.setType(RouteStepType.GO_FORWARD);
-        step.setText("Пройдите " + distance);
+        step.setDistanceMeters(normalized);
+        step.setText("Пройдите " + formatMeters(normalized) + " м");
         step.setFromFulcrumId(from != null ? from.getId() : null);
         step.setToFulcrumId(to != null ? to.getId() : null);
         step.setFloorId(from != null && from.getFloor() != null ? from.getFloor().getId() : null);
         steps.add(step);
     }
 
-    private int parseForwardDistance(String text) {
-        if (text == null) return 0;
-        String normalized = text.replaceAll("[^0-9]", "");
-        if (normalized.isEmpty()) return 0;
-        try {
-            return Integer.parseInt(normalized);
-        } catch (NumberFormatException e) {
+    private double calculateTotalDistanceMeters(Graph graph, List<Fulcrum> path) {
+        if (graph == null || path == null || path.size() < 2) {
             return 0;
         }
+
+        double total = 0;
+        for (int i = 0; i < path.size() - 1; i += 1) {
+            Double segment = estimateDistanceMeters(graph, path.get(i), path.get(i + 1));
+            if (segment != null && segment > 0) {
+                total += segment;
+            }
+        }
+
+        return roundMeters(total);
     }
 
     private void appendLandmark(RouteStepDto step, Fulcrum pivot, Vector facing, Graph graph, boolean excludeVerticals) {
-        if (step == null) return;
+        if (step == null) {
+            return;
+        }
         String landmark = buildLandmarkHint(pivot, facing, graph, excludeVerticals);
         if (landmark != null) {
             step.setText(step.getText() + ". " + landmark);
@@ -267,8 +254,12 @@ public class NavigationService {
     }
 
     private String buildLandmarkHint(Fulcrum pivot, Vector facing, Graph graph, boolean excludeVerticals) {
-        if (pivot == null || facing == null || facing.isZero() || graph == null) return null;
-        if (pivot.getFloor() == null) return null;
+        if (pivot == null || facing == null || facing.isZero() || graph == null) {
+            return null;
+        }
+        if (pivot.getFloor() == null) {
+            return null;
+        }
 
         Fulcrum best = null;
         double bestDist = Double.MAX_VALUE;
@@ -278,13 +269,16 @@ public class NavigationService {
             if (candidate.getId().equals(pivot.getId())) continue;
             if (candidate.getFloor() == null || pivot.getFloor() == null) continue;
             if (!candidate.getFloor().getId().equals(pivot.getFloor().getId())) continue;
-            if (candidate.getType() == null || candidate.getType() == FulcrumType.CORRIDOR) continue;
-            if (excludeVerticals && (candidate.getType() == FulcrumType.STAIRS || candidate.getType() == FulcrumType.ELEVATOR)) {
+            if (candidate.getType() == null || candidate.getType() == FulcrumType.WAYPOINT) continue;
+            if (excludeVerticals
+                    && (candidate.getType() == FulcrumType.STAIRS || candidate.getType() == FulcrumType.ELEVATOR)) {
                 continue;
             }
             String name = candidate.getName();
             if (name == null || name.isBlank()) continue;
-            if (candidate.getX() == null || candidate.getY() == null || pivot.getX() == null || pivot.getY() == null) continue;
+            if (candidate.getX() == null || candidate.getY() == null || pivot.getX() == null || pivot.getY() == null) {
+                continue;
+            }
 
             double dx = candidate.getX() - pivot.getX();
             double dy = candidate.getY() - pivot.getY();
@@ -292,16 +286,20 @@ public class NavigationService {
             if (dist > LANDMARK_RADIUS) continue;
             double dot = facing.x * dx + facing.y * dy;
             if (dot <= 0) continue;
+
             if (dist < bestDist) {
                 bestDist = dist;
                 best = candidate;
             }
         }
 
-        if (best == null) return null;
+        if (best == null) {
+            return null;
+        }
 
         Vector toCandidate = new Vector(best.getX() - pivot.getX(), best.getY() - pivot.getY());
         double cross = cross(facing, toCandidate);
+
         String side;
         if (Math.abs(cross) < 1e-6) {
             side = "Рядом";
@@ -310,6 +308,7 @@ public class NavigationService {
         } else {
             side = "Слева";
         }
+
         return side + " будет " + best.getName();
     }
 
@@ -317,31 +316,30 @@ public class NavigationService {
         RouteStepDto step = new RouteStepDto();
         step.setType(type);
         step.setText(text);
+        step.setDistanceMeters(null);
         step.setFromFulcrumId(from != null ? from.getId() : null);
         step.setToFulcrumId(to != null ? to.getId() : null);
         step.setFloorId(from != null && from.getFloor() != null ? from.getFloor().getId() : null);
         return step;
     }
 
-    private Integer estimateDistance(Graph graph, Fulcrum from, Fulcrum to) {
+    private Double estimateDistanceMeters(Graph graph, Fulcrum from, Fulcrum to) {
         if (graph == null || from == null || to == null) {
             return null;
         }
+
         List<Graph.Edge> edges = graph.getEdges(from.getId());
         if (edges != null) {
             for (Graph.Edge edge : edges) {
                 if (edge.targetId().equals(to.getId())) {
-                    if (edge.weight() == null) {
-                        return null;
-                    }
-                    return (int) Math.round(edge.weight());
+                    return edge.distanceMeters();
                 }
             }
         }
+
         double dx = to.getX() - from.getX();
         double dy = to.getY() - from.getY();
-        double distance = Math.hypot(dx, dy);
-        return (int) Math.round(distance);
+        return Math.hypot(dx, dy);
     }
 
     private Vector vectorBetween(Fulcrum from, Fulcrum to) {
@@ -380,6 +378,17 @@ public class NavigationService {
         return a.x * b.y - a.y * b.x;
     }
 
+    private double roundMeters(double value) {
+        return Math.round(value * 10.0) / 10.0;
+    }
+
+    private String formatMeters(double value) {
+        if (Math.abs(value - Math.rint(value)) < 1e-9) {
+            return String.valueOf((long) Math.rint(value));
+        }
+        return String.format(Locale.US, "%.1f", value);
+    }
+
     private static class Vector {
         private final double x;
         private final double y;
@@ -398,7 +407,6 @@ public class NavigationService {
         }
     }
 
-    // Вспомогательный метод для отладки
     public void testGraphBuilding(Long areaId) {
         List<com.buildmap.api.entities.mapping_area.Floor> floors =
                 floorService.getAllByMappingAreaId(areaId, false);
@@ -410,17 +418,16 @@ public class NavigationService {
 
         Graph graph = new Graph(allFulcrums);
 
-        System.out.println("=== ТЕСТ ПОСТРОЕНИЯ ГРАФА ===");
-        System.out.println("Этажей: " + floors.size());
-        System.out.println("Точек: " + allFulcrums.size());
-        System.out.println("Узлов в графе: " + graph.getNodes().size());
+        System.out.println("=== GRAPH DEBUG ===");
+        System.out.println("Floors: " + floors.size());
+        System.out.println("Fulcrums: " + allFulcrums.size());
+        System.out.println("Nodes in graph: " + graph.getNodes().size());
 
-        // Выводим информацию о связях
         graph.getNodes().values().forEach(fulcrum -> {
             List<Graph.Edge> edges = graph.getEdges(fulcrum.getId());
             if (!edges.isEmpty()) {
-                System.out.println(fulcrum.getName() + " (" + fulcrum.getFloor().getName() +
-                        ") -> " + edges.size() + " связей");
+                System.out.println(fulcrum.getName() + " (" + fulcrum.getFloor().getName() + ") -> "
+                        + edges.size() + " connections");
             }
         });
     }

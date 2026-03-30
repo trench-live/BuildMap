@@ -2,7 +2,8 @@ import { useState, useCallback } from 'react';
 
 export const useConnectionForm = (initialData = null) => {
     const [formData, setFormData] = useState({
-        weight: 1.0,
+        distanceMeters: 1.0,
+        difficultyFactor: 1.0,
         bidirectional: true,
         ...initialData
     });
@@ -10,29 +11,33 @@ export const useConnectionForm = (initialData = null) => {
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Валидация формы
     const validateForm = useCallback(() => {
         const newErrors = {};
 
-        const weight = parseFloat(formData.weight);
-        if (isNaN(weight) || weight <= 0) {
-            newErrors.weight = 'Вес должен быть положительным числом';
-        } else if (weight > 100) {
-            newErrors.weight = 'Вес не должен превышать 100';
+        const distanceMeters = parseFloat(formData.distanceMeters);
+        if (isNaN(distanceMeters) || distanceMeters <= 0) {
+            newErrors.distanceMeters = 'Distance must be a positive number';
+        } else if (distanceMeters > 10000) {
+            newErrors.distanceMeters = 'Distance must not exceed 10000 m';
+        }
+
+        const difficultyFactor = parseFloat(formData.difficultyFactor);
+        if (isNaN(difficultyFactor) || difficultyFactor < 1) {
+            newErrors.difficultyFactor = 'Difficulty factor must be >= 1';
+        } else if (difficultyFactor > 100) {
+            newErrors.difficultyFactor = 'Difficulty factor must not exceed 100';
         }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     }, [formData]);
 
-    // Обновление поля формы
     const updateField = useCallback((field, value) => {
         setFormData(prev => ({
             ...prev,
             [field]: value
         }));
 
-        // Очищаем ошибку при изменении поля
         if (errors[field]) {
             setErrors(prev => ({
                 ...prev,
@@ -41,10 +46,10 @@ export const useConnectionForm = (initialData = null) => {
         }
     }, [errors]);
 
-    // Сброс формы
     const resetForm = useCallback((newData = null) => {
         setFormData({
-            weight: 1.0,
+            distanceMeters: 1.0,
+            difficultyFactor: 1.0,
             bidirectional: true,
             ...newData
         });
@@ -52,10 +57,10 @@ export const useConnectionForm = (initialData = null) => {
         setIsSubmitting(false);
     }, []);
 
-    // Подготовка данных для отправки
     const getSubmitData = useCallback(() => {
         return {
-            weight: parseFloat(formData.weight),
+            distanceMeters: parseFloat(formData.distanceMeters),
+            difficultyFactor: parseFloat(formData.difficultyFactor),
             bidirectional: Boolean(formData.bidirectional)
         };
     }, [formData]);

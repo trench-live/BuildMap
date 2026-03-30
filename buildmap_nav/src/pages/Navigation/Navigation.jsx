@@ -22,28 +22,45 @@ const Navigation = () => {
 
     const [activeFloorId, setActiveFloorId] = useState(null);
     const [route, setRoute] = useState(null);
+    const [routeError, setRouteError] = useState(null);
+    const [routeErrorClosing, setRouteErrorClosing] = useState(false);
     const [selectedEndId, setSelectedEndId] = useState(null);
     const [searchValue, setSearchValue] = useState('');
     const [searchOpen, setSearchOpen] = useState(false);
     const [stepsOpen, setStepsOpen] = useState(true);
-    const [selectedStepKey, setSelectedStepKey] = useState(null);
+    const [selectedStepIndex, setSelectedStepIndex] = useState(null);
     const searchRef = useRef(null);
     const searchInputRef = useRef(null);
     const stepsRef = useRef(null);
 
     const handleDataReset = useCallback(() => {
         setRoute(null);
+        setRouteError(null);
+        setRouteErrorClosing(false);
         setActiveFloorId(null);
-    }, [setRoute, setActiveFloorId]);
+    }, [setRoute, setRouteError, setRouteErrorClosing, setActiveFloorId]);
 
     const handleRouteLoaded = useCallback(() => {
-        setSelectedStepKey(null);
-    }, [setSelectedStepKey]);
+        setRouteError(null);
+        setRouteErrorClosing(false);
+        setSelectedStepIndex(null);
+    }, [setRouteError, setRouteErrorClosing, setSelectedStepIndex]);
+
+    const handleRouteError = useCallback(() => {
+        setSelectedEndId(null);
+        setSelectedStepIndex(null);
+        setSearchValue('');
+        setSearchOpen(false);
+        setSearchParams((params) => {
+            const next = new URLSearchParams(params);
+            next.delete('to');
+            return next;
+        }, { replace: true });
+    }, [setSearchParams]);
 
     const {
         loading,
         error,
-        setError,
         floors,
         areaFulcrums,
         startFulcrum
@@ -53,13 +70,15 @@ const Navigation = () => {
         fulcrumId,
         selectedEndId,
         setRoute,
-        setError,
-        onRouteLoaded: handleRouteLoaded
+        setRouteError,
+        onRouteLoaded: handleRouteLoaded,
+        onRouteError: handleRouteError
     });
 
     const {
         focusTargets,
         focusSegments,
+        visitedSegments,
         focusAnimate,
         stepsPanelHeight,
         onStepClick,
@@ -70,18 +89,35 @@ const Navigation = () => {
         setActiveFloorId,
         stepsOpen,
         stepsRef,
-        setSelectedStepKey
+        setSelectedStepIndex
     });
 
     useEffect(() => {
         setSelectedEndId(toId ?? null);
-    }, [fulcrumId]);
+    }, [toId]);
 
     useEffect(() => {
         if (selectedEndId) {
             setStepsOpen(true);
         }
     }, [selectedEndId]);
+
+    useEffect(() => {
+        if (!routeError) return undefined;
+        setRouteErrorClosing(false);
+        const hideTimeoutId = window.setTimeout(() => {
+            setRouteErrorClosing(true);
+        }, 4700);
+        const clearTimeoutId = window.setTimeout(() => {
+            setRouteError(null);
+            setRouteErrorClosing(false);
+        }, 5000);
+
+        return () => {
+            window.clearTimeout(hideTimeoutId);
+            window.clearTimeout(clearTimeoutId);
+        };
+    }, [routeError]);
 
     useEffect(() => {
         if (!floors.length) return;
@@ -121,7 +157,7 @@ const Navigation = () => {
     }, []);
 
     useEffect(() => {
-        if (!selectedEndId) return;
+        if (!route) return;
         const handlePointerDown = (event) => {
             if (!stepsRef.current) return;
             if (stepsRef.current.contains(event.target)) return;
@@ -132,17 +168,34 @@ const Navigation = () => {
         return () => {
             window.removeEventListener('pointerdown', handlePointerDown);
         };
-    }, [selectedEndId]);
-
-    const activeFloor = useMemo(
-        () => floors.find((item) => item.id === activeFloorId) ?? null,
-        [floors, activeFloorId]
-    );
+    }, [route]);
 
     const activeMarkers = useMemo(() => {
         if (!activeFloorId) return [];
         if (route?.path?.length) {
-            return route.path.filter((item) => item.floorId === activeFloorId);
+            const markerIds = new Set();
+            const startPoint = route.path[0];
+            const endPoint = route.path[route.path.length - 1];
+
+            if (startPoint?.floorId === activeFloorId) {
+                markerIds.add(startPoint.id);
+            }
+            if (endPoint?.floorId === activeFloorId) {
+                markerIds.add(endPoint.id);
+            }
+
+            (route.steps || []).forEach((step) => {
+                if (!['TURN_LEFT', 'TURN_RIGHT', 'U_TURN'].includes(step.type)) {
+                    return;
+                }
+                if (step.fromFulcrumId) {
+                    markerIds.add(step.fromFulcrumId);
+                }
+            });
+
+            return route.path.filter(
+                (item) => item.floorId === activeFloorId && markerIds.has(item.id)
+            );
         }
         if (startFulcrum?.floorId === activeFloorId) {
             return [startFulcrum];
@@ -204,7 +257,7 @@ const Navigation = () => {
         if (!areaFulcrums.length) return [];
         const query = searchValue.trim().toLowerCase();
         const candidates = areaFulcrums.filter(
-            (item) => item.id !== startFulcrum?.id && item.type !== 'CORRIDOR'
+            (item) => item.id !== startFulcrum?.id && item.type !== 'WAYPOINT'
         );
         if (!query) {
             return candidates
@@ -245,7 +298,10 @@ const Navigation = () => {
     const handleSearchChange = (event) => {
         const value = event.target.value;
         setSearchValue(value);
+        setRouteError(null);
+        setRouteErrorClosing(false);
         setSelectedEndId(null);
+        setSelectedStepIndex(null);
         if (!value.trim()) {
             setSearchParams((params) => {
                 const next = new URLSearchParams(params);
@@ -257,6 +313,8 @@ const Navigation = () => {
     };
 
     const handleSelectDestination = (fulcrum) => {
+        setRouteError(null);
+        setRouteErrorClosing(false);
         setSelectedEndId(fulcrum.id);
         setSearchValue(fulcrum.name || '');
         setSearchOpen(false);
@@ -270,6 +328,14 @@ const Navigation = () => {
     const handleSearchFocus = () => {
         setSearchOpen(true);
     };
+
+    const handleDismissRouteError = useCallback(() => {
+        setRouteErrorClosing(true);
+        window.setTimeout(() => {
+            setRouteError(null);
+            setRouteErrorClosing(false);
+        }, 300);
+    }, []);
 
     if (loading) {
         return (
@@ -311,6 +377,26 @@ const Navigation = () => {
                 onSearchFocus={handleSearchFocus}
                 onSelectDestination={handleSelectDestination}
             />
+            {routeError && (
+                <div
+                    className={`navigation-route-error${routeErrorClosing ? ' is-closing' : ''}`}
+                    role="status"
+                    aria-live="polite"
+                >
+                    <div className="navigation-route-error-body">
+                        <strong>Route unavailable.</strong>
+                        <span>This destination is not reachable from your current point.</span>
+                    </div>
+                    <button
+                        type="button"
+                        className="navigation-route-error-dismiss"
+                        onClick={handleDismissRouteError}
+                        aria-label="Dismiss route error"
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
             <NavigationLayers
                 floors={floors}
                 activeFloorId={activeFloorId}
@@ -320,16 +406,17 @@ const Navigation = () => {
                 route={route}
                 focusTargets={focusTargets}
                 focusSegments={focusSegments}
+                visitedSegments={visitedSegments}
                 focusAnimate={focusAnimate}
                 stepsOpen={stepsOpen}
                 stepsPanelHeight={stepsPanelHeight}
             />
             <NavigationStepsPanel
-                selectedEndId={selectedEndId}
+                selectedEndId={route ? selectedEndId : null}
                 stepsOpen={stepsOpen}
                 stepsRef={stepsRef}
                 route={route}
-                selectedStepKey={selectedStepKey}
+                selectedStepIndex={selectedStepIndex}
                 onToggleSteps={() => setStepsOpen((prev) => !prev)}
                 onStepClick={onStepClick}
             />

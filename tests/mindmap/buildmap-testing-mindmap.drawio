@@ -1,0 +1,187 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.6.0">
+  <diagram id="buildmap-testing-mindmap" name="BuildMap Testing Mind Map">
+    <mxGraphModel dx="2563" dy="1128" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2600" pageHeight="1900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="root" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=20;" value="Тестирование дипломного проекта BuildMap" vertex="1">
+          <mxGeometry height="80" width="520" x="1630" y="960" as="geometry" />
+        </mxCell>
+        <mxCell id="mod" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=16;" value="1) Основные модули / функции продукта" vertex="1">
+          <mxGeometry height="70" width="380" x="1250" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="typ" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=16;" value="2) Типы тестирования" vertex="1">
+          <mxGeometry height="70" width="300" x="1180" y="965" as="geometry" />
+        </mxCell>
+        <mxCell id="rsk" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=16;" value="3) Риски и приоритеты" vertex="1">
+          <mxGeometry height="70" width="300" x="2150" y="1215" as="geometry" />
+        </mxCell>
+        <mxCell id="exp" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=16;" value="4) Идеи для exploratory testing" vertex="1">
+          <mxGeometry height="70" width="380" x="2270" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="m1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" value="Аутентификация и авторизация&lt;br/&gt;• Telegram/dev login&lt;br/&gt;• JWT&lt;br/&gt;• роли ADMIN/USER" vertex="1">
+          <mxGeometry height="100" width="360" x="730" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="m2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" value="Пользователи&lt;br/&gt;• CRUD&lt;br/&gt;• block/unblock&lt;br/&gt;• last active admin rule" vertex="1">
+          <mxGeometry height="100" width="360" x="730" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="m3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" value="Зоны (Mapping Areas)&lt;br/&gt;• CRUD&lt;br/&gt;• привязка к пользователям&lt;br/&gt;• soft delete" vertex="1">
+          <mxGeometry height="100" width="360" x="730" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="m4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" value="Этажи (Floors)&lt;br/&gt;• CRUD&lt;br/&gt;• уникальность level в зоне&lt;br/&gt;• SVG plan" vertex="1">
+          <mxGeometry height="100" width="360" x="730" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="m5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" value="Точки и связи (Fulcrums)&lt;br/&gt;• CRUD&lt;br/&gt;• distance + difficulty&lt;br/&gt;• межэтажные связи&lt;br/&gt;• QR флаг" vertex="1">
+          <mxGeometry height="110" width="360" x="730" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="m6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" value="Навигация&lt;br/&gt;• Dijkstra pathfinding&lt;br/&gt;• текстовые шаги маршрута&lt;br/&gt;• ошибки: нет пути/разные зоны" vertex="1">
+          <mxGeometry height="110" width="360" x="730" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="m7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" value="QR/PDF генерация&lt;br/&gt;• URL /navigation?fulcrum=&lt;br/&gt;• PDF для area&lt;br/&gt;• размер, шрифты, содержимое" vertex="1">
+          <mxGeometry height="110" width="360" x="730" y="770" as="geometry" />
+        </mxCell>
+        <mxCell id="m8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" value="UI: Admin Panel + Navigation UI&lt;br/&gt;• формы и валидации&lt;br/&gt;• фильтры/поиск&lt;br/&gt;• URL параметры (fulcrum, to)" vertex="1">
+          <mxGeometry height="110" width="360" x="730" y="900" as="geometry" />
+        </mxCell>
+        <mxCell id="t1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffaf0;strokeColor=#d6b656;" value="Функциональное тестирование&lt;br/&gt;API + ключевые UI сценарии" vertex="1">
+          <mxGeometry height="80" width="320" x="635" y="1160" as="geometry" />
+        </mxCell>
+        <mxCell id="t2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffaf0;strokeColor=#d6b656;" value="Unit&lt;br/&gt;алгоритм маршрута, валидации, маппинг" vertex="1">
+          <mxGeometry height="80" width="280" x="965" y="1160" as="geometry" />
+        </mxCell>
+        <mxCell id="t3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffaf0;strokeColor=#d6b656;" value="Integration (API/DB)&lt;br/&gt;контроллеры + безопасность + SQLite" vertex="1">
+          <mxGeometry height="80" width="340" x="1265" y="1160" as="geometry" />
+        </mxCell>
+        <mxCell id="t4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffaf0;strokeColor=#d6b656;" value="Безопасность&lt;br/&gt;доступ без токена, роли, блокировка, soft-delete" vertex="1">
+          <mxGeometry height="80" width="390" x="1635" y="1160" as="geometry" />
+        </mxCell>
+        <mxCell id="t5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffaf0;strokeColor=#d6b656;" value="Данные и БД&lt;br/&gt;целостность связей, каскады, уникальность, восстановление" vertex="1">
+          <mxGeometry height="80" width="410" x="635" y="1260" as="geometry" />
+        </mxCell>
+        <mxCell id="t6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffaf0;strokeColor=#d6b656;" value="UX/юзабилити&lt;br/&gt;понятность ошибок, читаемость route hints, сценарии поиска" vertex="1">
+          <mxGeometry height="80" width="390" x="1075" y="1260" as="geometry" />
+        </mxCell>
+        <mxCell id="t7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffaf0;strokeColor=#d6b656;" value="Нефункциональные проверки (точечно)&lt;br/&gt;стабильность и время ответа маршрутизации" vertex="1">
+          <mxGeometry height="80" width="390" x="1495" y="1260" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6e6;strokeColor=#b85450;" value="High (критично)&lt;br&gt;• неверный маршрут&lt;br&gt;• обход авторизации&lt;br&gt;&lt;div&gt;• QR/PDF несоответствия&lt;/div&gt;" vertex="1">
+          <mxGeometry height="110" width="360" x="1570" y="1410" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff0f0;strokeColor=#b85450;" value="Medium&lt;br&gt;• ошибки шагов маршрута&lt;div&gt;• потеря данных при удалении&lt;br&gt;• сбои в редакторе этажа&lt;/div&gt;" vertex="1">
+          <mxGeometry height="110" width="360" x="1950" y="1410" as="geometry" />
+        </mxCell>
+        <mxCell id="r3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff5f5;strokeColor=#b85450;" value="Low&lt;br/&gt;• визуальные дефекты&lt;br/&gt;• тексты/локализация&lt;br/&gt;• малозначимые UX-шероховатости" vertex="1">
+          <mxGeometry height="110" width="360" x="2330" y="1410" as="geometry" />
+        </mxCell>
+        <mxCell id="r4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff5f5;strokeColor=#b85450;fontStyle=0;" value="Приоритет автоматизации&lt;br&gt;1) High API/security&lt;br&gt;2) Навигационный движок&lt;br&gt;3) Остальные сценарии" vertex="1">
+          <mxGeometry height="110" width="320" x="2710" y="1410" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f0ff;strokeColor=#9673a6;" value="Случайные графы и поломанные связи&lt;br/&gt;(дубликаты, zero/negative distance, disconnected nodes)" vertex="1">
+          <mxGeometry height="90" width="430" x="1680" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f0ff;strokeColor=#9673a6;" value="Межэтажная навигация&lt;br/&gt;лестницы/лифты, переходы вверх/вниз, floor switch" vertex="1">
+          <mxGeometry height="90" width="430" x="1680" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f0ff;strokeColor=#9673a6;" value="Редактирование схемы и связей&lt;br/&gt;во время активной работы с данными" vertex="1">
+          <mxGeometry height="90" width="430" x="1680" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f0ff;strokeColor=#9673a6;" value="Пользовательские состояния&lt;br/&gt;blocked/deleted/restore + повторный вход" vertex="1">
+          <mxGeometry height="90" width="430" x="1680" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f0ff;strokeColor=#9673a6;" value="Крайние значения параметров&lt;br/&gt;distanceMeters, difficultyFactor, размер SVG" vertex="1">
+          <mxGeometry height="90" width="430" x="1680" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f0ff;strokeColor=#9673a6;" value="Отказы внешних зависимостей&lt;br/&gt;отсутствует TELEGRAM_BOT_TOKEN, проблемы CORS/JWT" vertex="1">
+          <mxGeometry height="90" width="430" x="1680" y="670" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" edge="1" parent="1" source="root" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;strokeColor=#82b366;" target="mod" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" edge="1" parent="1" source="root" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;strokeColor=#d6b656;" target="typ" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" edge="1" parent="1" source="root" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;strokeColor=#b85450;" target="rsk" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a4" edge="1" parent="1" source="root" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;strokeColor=#9673a6;" target="exp" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="b1" edge="1" parent="1" source="mod" style="endArrow=none;html=1;strokeColor=#6c8ebf;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="m1" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="b2" edge="1" parent="1" source="mod" style="endArrow=none;html=1;strokeColor=#6c8ebf;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="m2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="b3" edge="1" parent="1" source="mod" style="endArrow=none;html=1;strokeColor=#6c8ebf;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="m3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="b4" edge="1" parent="1" source="mod" style="endArrow=none;html=1;strokeColor=#6c8ebf;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="m4" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="b5" edge="1" parent="1" source="mod" style="endArrow=none;html=1;strokeColor=#6c8ebf;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="m5" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="b6" edge="1" parent="1" source="mod" style="endArrow=none;html=1;strokeColor=#6c8ebf;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="m6" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="b7" edge="1" parent="1" source="mod" style="endArrow=none;html=1;strokeColor=#6c8ebf;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="m7" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="b8" edge="1" parent="1" source="mod" style="endArrow=none;html=1;strokeColor=#6c8ebf;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="m8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" edge="1" parent="1" source="typ" style="endArrow=none;html=1;strokeColor=#d6b656;" target="t1" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" edge="1" parent="1" source="typ" style="endArrow=none;html=1;strokeColor=#d6b656;" target="t2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" edge="1" parent="1" source="typ" style="endArrow=none;html=1;strokeColor=#d6b656;" target="t3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c4" edge="1" parent="1" source="typ" style="endArrow=none;html=1;strokeColor=#d6b656;" target="t4" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c5" edge="1" parent="1" source="typ" style="endArrow=none;html=1;strokeColor=#d6b656;" target="t5" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" edge="1" parent="1" source="typ" style="endArrow=none;html=1;strokeColor=#d6b656;" target="t6" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" edge="1" parent="1" source="typ" style="endArrow=none;html=1;strokeColor=#d6b656;" target="t7" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" edge="1" parent="1" source="rsk" style="endArrow=none;html=1;strokeColor=#b85450;" target="r1" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" edge="1" parent="1" source="rsk" style="endArrow=none;html=1;strokeColor=#b85450;" target="r2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" edge="1" parent="1" source="rsk" style="endArrow=none;html=1;strokeColor=#b85450;" target="r3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d4" edge="1" parent="1" source="rsk" style="endArrow=none;html=1;strokeColor=#b85450;" target="r4" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f1" edge="1" parent="1" source="exp" style="endArrow=none;html=1;strokeColor=#9673a6;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="e1" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f2" edge="1" parent="1" source="exp" style="endArrow=none;html=1;strokeColor=#9673a6;" target="e2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f3" edge="1" parent="1" source="exp" style="endArrow=none;html=1;strokeColor=#9673a6;" target="e3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f4" edge="1" parent="1" source="exp" style="endArrow=none;html=1;strokeColor=#9673a6;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="e4" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f5" edge="1" parent="1" source="exp" style="endArrow=none;html=1;strokeColor=#9673a6;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="e5" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f6" edge="1" parent="1" source="exp" style="endArrow=none;html=1;strokeColor=#9673a6;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="e6" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

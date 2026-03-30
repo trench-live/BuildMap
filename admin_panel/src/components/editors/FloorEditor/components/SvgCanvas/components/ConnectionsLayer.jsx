@@ -27,13 +27,11 @@ const ConnectionsLayer = ({
                     connection={group.connections[0]}
                     fromFulcrum={fromPos}
                     toFulcrum={toPos}
-                    weight={group.weights[0]}
                     isHovered={isHovered}
                     connectionType={group.type}
                     onMouseEnter={() => setHoveredConnection(group.connections[0])}
                     onMouseLeave={() => setHoveredConnection(null)}
                     onContextMenu={onConnectionContextMenu}
-                    showWeight={false}
                 />
             );
         })}

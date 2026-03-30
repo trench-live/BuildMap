@@ -1,4 +1,3 @@
-// Режимы работы редактора
 export const EDITOR_MODES = {
     VIEW: 'view',
     CREATE_FULCRUM: 'create_fulcrum',
@@ -7,10 +6,9 @@ export const EDITOR_MODES = {
     EDIT_CONNECTION: 'edit_connection'
 };
 
-// Типы fulcrum
 export const FULCRUM_TYPES = {
+    WAYPOINT: 'WAYPOINT',
     ROOM: 'ROOM',
-    CORRIDOR: 'CORRIDOR',
     STAIRS: 'STAIRS',
     ELEVATOR: 'ELEVATOR',
     ENTRANCE: 'ENTRANCE',

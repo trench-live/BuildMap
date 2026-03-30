@@ -14,7 +14,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByDeletedFalse();
     List<User> findByDeletedTrue();
     boolean existsByTelegramId(String telegramId);
+    boolean existsByLogin(String login);
     Optional<User> findByTelegramId(String telegramId);
+    Optional<User> findByLogin(String login);
     Optional<User> findByIdAndDeletedFalseAndBlockedFalse(Long id);
     long countByRoleAndDeletedFalseAndBlockedFalse(Role role);
     long countByDeletedFalse();
@@ -25,13 +27,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
             SELECT u.id as id,
                    u.name as name,
                    u.telegramId as telegramId,
+                   u.login as login,
                    u.role as role,
                    u.deleted as deleted,
                    u.blocked as blocked,
                    COUNT(ma.id) as areasCount
             FROM User u
             LEFT JOIN u.mappingAreas ma ON ma.deleted = false
-            GROUP BY u.id, u.name, u.telegramId, u.role, u.deleted, u.blocked
+            GROUP BY u.id, u.name, u.telegramId, u.login, u.role, u.deleted, u.blocked
             ORDER BY u.id DESC
             """)
     List<UserAdminListProjection> findAdminListWithActiveAreasCount();

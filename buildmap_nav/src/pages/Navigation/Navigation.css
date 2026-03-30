@@ -149,6 +149,74 @@
     text-align: center;
 }
 
+.navigation-route-error {
+    position: absolute;
+    top: 76px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(520px, calc(100% - 32px));
+    padding: 10px 14px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    border-radius: 14px;
+    background: rgba(255, 247, 237, 0.96);
+    border: 1px solid #fdba74;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+    color: #9a3412;
+    z-index: 5;
+    animation: routeErrorIn 0.18s ease;
+    opacity: 1;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.navigation-route-error.is-closing {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px);
+}
+
+.navigation-route-error-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.navigation-route-error strong {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.navigation-route-error span {
+    font-size: 12.5px;
+    line-height: 1.4;
+}
+
+.navigation-route-error-dismiss {
+    border: none;
+    background: transparent;
+    color: #c2410c;
+    font-size: 20px;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+}
+
+.navigation-route-error-dismiss:hover {
+    color: #9a3412;
+}
+
+@keyframes routeErrorIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
 .navigation-layer {
     position: absolute;
     inset: 0;
@@ -382,6 +450,11 @@
 
     .navigation-search-input {
         padding: 11px 12px;
+    }
+
+    .navigation-route-error {
+        top: 66px;
+        width: calc(100% - 24px);
     }
 
     .floor-switcher {

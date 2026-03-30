@@ -59,6 +59,8 @@ api.interceptors.response.use(
 
 // API методы для аутентификации
 export const authAPI = {
+    login: (payload) => api.post('/api/auth/login', payload),
+    register: (payload) => api.post('/api/auth/register', payload),
     telegramLogin: (telegramData) => api.post('/api/auth/telegram', telegramData),
     logout: () => api.post('/api/auth/logout'),
     getMe: () => api.get('/api/auth/me'),

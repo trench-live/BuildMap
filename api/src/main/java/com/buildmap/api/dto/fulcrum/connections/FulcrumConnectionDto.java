@@ -5,5 +5,6 @@ import lombok.Data;
 @Data
 public class FulcrumConnectionDto {
     private Long connectedFulcrumId;
-    private Double weight;
+    private Double distanceMeters;
+    private Double difficultyFactor;
 }

@@ -14,6 +14,10 @@
     cursor: grabbing;
 }
 
+.svg-canvas.move-fulcrums-mode {
+    cursor: grab;
+}
+
 .svg-canvas.creating-connection {
     cursor: crosshair;
 }
@@ -107,6 +111,11 @@
     cursor: none;
 }
 
+.svg-canvas.fulcrum-dragging,
+.svg-canvas.fulcrum-dragging .fulcrum-point {
+    cursor: grabbing;
+}
+
 .grid-overlay {
     position: absolute;
     pointer-events: none;
@@ -181,7 +190,7 @@
     pointer-events: none;
 }
 
-.connection-weight-standalone {
+.connection-distance-label {
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 4px;
@@ -197,15 +206,15 @@
     transition: opacity 0.2s ease, transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
-.connection-weight-standalone.is-visible {
+.connection-distance-label.is-visible {
     opacity: 1;
     pointer-events: auto;
 }
 
-.connection-weight-standalone:hover {
+.connection-distance-label:hover {
     background: #f3f4f6;
     border-color: #3b82f6;
-    transform: translate(-50%, -50%) scale(calc(var(--weight-scale, 1) * 1.1));
+    transform: translate(-50%, -50%) scale(calc(var(--label-scale, 1) * 1.1));
     z-index: 26;
 }
 

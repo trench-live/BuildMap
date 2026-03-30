@@ -4,15 +4,18 @@ import Button from '../../../../../common/Modal/components/Button/Button';
 const ToolbarLeft = ({
     onImageUpload,
     onResetView,
+    onToggleMoveFulcrums,
     onToggleGrid,
     onGridStepIncrease,
     onGridStepDecrease,
     scale,
+    moveFulcrumsEnabled,
     gridEnabled,
     gridLabel,
     hasContent,
     fulcrumsCount,
     connectionsCount,
+    selectedFulcrumsCount,
     labels
 }) => {
     const handleImageUploadClick = () => {
@@ -49,6 +52,15 @@ const ToolbarLeft = ({
                 >
                     {labels.resetView}
                 </Button>
+                <Button
+                    variant="secondary"
+                    size="small"
+                    onClick={onToggleMoveFulcrums}
+                    className={`mode-toggle${moveFulcrumsEnabled ? ' is-active' : ''}`}
+                    disabled={fulcrumsCount === 0}
+                >
+                    {labels.moveMode}
+                </Button>
             </div>
 
             <div className="toolbar-group">
@@ -84,6 +96,7 @@ const ToolbarLeft = ({
                 <span className="stat-item">{labels.statScaleIcon} {Math.round(scale * 100)}%</span>
                 <span className="stat-item">{labels.statFulcrumIcon} {fulcrumsCount}</span>
                 <span className="stat-item">{labels.statConnectionIcon} {connectionsCount}</span>
+                <span className="stat-item">{labels.statSelectedLabel} {selectedFulcrumsCount}</span>
             </div>
         </div>
     );

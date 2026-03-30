@@ -6,6 +6,8 @@ import { userAPI } from '../../../services/api';
 const buildUpdatePayload = (formData, fallbackUser) => ({
     name: formData.name.trim(),
     telegramId: formData.telegramId.trim(),
+    login: formData.login.trim(),
+    password: formData.password,
     role: formData.role || fallbackUser.role
 });
 
@@ -20,9 +22,12 @@ export const useUsers = () => {
     const [editVisible, setEditVisible] = useState(false);
     const [deleteUser, setDeleteUser] = useState(null);
     const [deleteVisible, setDeleteVisible] = useState(false);
+    const [deleteMode, setDeleteMode] = useState('safe');
     const [formData, setFormData] = useState({
         name: '',
         telegramId: '',
+        login: '',
+        password: '',
         role: 'USER'
     });
 
@@ -51,6 +56,8 @@ export const useUsers = () => {
         setFormData({
             name: user.name || '',
             telegramId: user.telegramId || '',
+            login: user.login || '',
+            password: '',
             role: user.role || 'USER'
         });
         setEditVisible(true);
@@ -59,7 +66,7 @@ export const useUsers = () => {
     const closeEdit = () => {
         setEditVisible(false);
         setEditingUser(null);
-        setFormData({ name: '', telegramId: '', role: 'USER' });
+        setFormData({ name: '', telegramId: '', login: '', password: '', role: 'USER' });
     };
 
     const saveUser = async (event) => {
@@ -67,8 +74,8 @@ export const useUsers = () => {
         if (!editingUser) return;
 
         const payload = buildUpdatePayload(formData, editingUser);
-        if (!payload.name || !payload.telegramId) {
-            alert('Name and Telegram ID are required');
+        if (!payload.name || (!payload.telegramId && !payload.login)) {
+            alert('Name and at least one auth method are required');
             return;
         }
 
@@ -81,21 +88,27 @@ export const useUsers = () => {
         }
     };
 
-    const openDelete = (user) => {
+    const openDelete = (user, mode = 'safe') => {
         setDeleteUser(user);
+        setDeleteMode(mode);
         setDeleteVisible(true);
     };
 
     const closeDelete = () => {
         setDeleteVisible(false);
         setDeleteUser(null);
+        setDeleteMode('safe');
     };
 
     const confirmDelete = async () => {
         if (!deleteUser) return;
         try {
             setPendingUserId(deleteUser.id);
-            await userAPI.delete(deleteUser.id);
+            if (deleteMode === 'force') {
+                await userAPI.forceDelete(deleteUser.id);
+            } else {
+                await userAPI.delete(deleteUser.id);
+            }
             closeDelete();
             await loadUsers();
         } catch (deleteError) {
@@ -146,6 +159,7 @@ export const useUsers = () => {
         setFormData,
         deleteUser,
         deleteVisible,
+        deleteMode,
         openEdit,
         closeEdit,
         saveUser,

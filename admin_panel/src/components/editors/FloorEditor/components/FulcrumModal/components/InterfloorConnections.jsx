@@ -25,9 +25,11 @@ const InterfloorConnections = ({
                         <span>Point</span>
                         <span>Floor</span>
                         <span>From current</span>
-                        <span>Weight</span>
+                        <span>Distance (m)</span>
+                        <span>Factor</span>
                         <span>To current</span>
-                        <span>Weight</span>
+                        <span>Distance (m)</span>
+                        <span>Factor</span>
                     </div>
                     {connectionRows.length === 0 ? (
                         <div className="connections-empty">
@@ -44,25 +46,44 @@ const InterfloorConnections = ({
                                         checked={row.forwardEnabled}
                                         onChange={(e) => {
                                             updateConnectionRow(row.id, 'forwardEnabled', e.target.checked);
-                                            clearConnectionError(row.id, 'forwardWeight');
+                                            clearConnectionError(row.id, 'forwardDistanceMeters');
+                                            clearConnectionError(row.id, 'forwardDifficultyFactor');
                                         }}
                                     />
                                 </label>
-                                <div className="connections-weight">
+                                <div className="connections-metric">
+                                    <input
+                                        type="number"
+                                        min="0.1"
+                                        step="0.1"
+                                        value={row.forwardDistanceMeters}
+                                        disabled={!row.forwardEnabled}
+                                        onChange={(e) => {
+                                            updateConnectionRow(row.id, 'forwardDistanceMeters', e.target.value);
+                                            clearConnectionError(row.id, 'forwardDistanceMeters');
+                                        }}
+                                    />
+                                    {connectionErrors[row.id]?.forwardDistanceMeters ? (
+                                        <span className="error-message">
+                                            {connectionErrors[row.id].forwardDistanceMeters}
+                                        </span>
+                                    ) : null}
+                                </div>
+                                <div className="connections-metric">
                                     <input
                                         type="number"
                                         min="1"
                                         step="0.1"
-                                        value={row.forwardWeight}
+                                        value={row.forwardDifficultyFactor}
                                         disabled={!row.forwardEnabled}
                                         onChange={(e) => {
-                                            updateConnectionRow(row.id, 'forwardWeight', e.target.value);
-                                            clearConnectionError(row.id, 'forwardWeight');
+                                            updateConnectionRow(row.id, 'forwardDifficultyFactor', e.target.value);
+                                            clearConnectionError(row.id, 'forwardDifficultyFactor');
                                         }}
                                     />
-                                    {connectionErrors[row.id]?.forwardWeight ? (
+                                    {connectionErrors[row.id]?.forwardDifficultyFactor ? (
                                         <span className="error-message">
-                                            {connectionErrors[row.id].forwardWeight}
+                                            {connectionErrors[row.id].forwardDifficultyFactor}
                                         </span>
                                     ) : null}
                                 </div>
@@ -72,25 +93,44 @@ const InterfloorConnections = ({
                                         checked={row.backwardEnabled}
                                         onChange={(e) => {
                                             updateConnectionRow(row.id, 'backwardEnabled', e.target.checked);
-                                            clearConnectionError(row.id, 'backwardWeight');
+                                            clearConnectionError(row.id, 'backwardDistanceMeters');
+                                            clearConnectionError(row.id, 'backwardDifficultyFactor');
                                         }}
                                     />
                                 </label>
-                                <div className="connections-weight">
+                                <div className="connections-metric">
+                                    <input
+                                        type="number"
+                                        min="0.1"
+                                        step="0.1"
+                                        value={row.backwardDistanceMeters}
+                                        disabled={!row.backwardEnabled}
+                                        onChange={(e) => {
+                                            updateConnectionRow(row.id, 'backwardDistanceMeters', e.target.value);
+                                            clearConnectionError(row.id, 'backwardDistanceMeters');
+                                        }}
+                                    />
+                                    {connectionErrors[row.id]?.backwardDistanceMeters ? (
+                                        <span className="error-message">
+                                            {connectionErrors[row.id].backwardDistanceMeters}
+                                        </span>
+                                    ) : null}
+                                </div>
+                                <div className="connections-metric">
                                     <input
                                         type="number"
                                         min="1"
                                         step="0.1"
-                                        value={row.backwardWeight}
+                                        value={row.backwardDifficultyFactor}
                                         disabled={!row.backwardEnabled}
                                         onChange={(e) => {
-                                            updateConnectionRow(row.id, 'backwardWeight', e.target.value);
-                                            clearConnectionError(row.id, 'backwardWeight');
+                                            updateConnectionRow(row.id, 'backwardDifficultyFactor', e.target.value);
+                                            clearConnectionError(row.id, 'backwardDifficultyFactor');
                                         }}
                                     />
-                                    {connectionErrors[row.id]?.backwardWeight ? (
+                                    {connectionErrors[row.id]?.backwardDifficultyFactor ? (
                                         <span className="error-message">
-                                            {connectionErrors[row.id].backwardWeight}
+                                            {connectionErrors[row.id].backwardDifficultyFactor}
                                         </span>
                                     ) : null}
                                 </div>

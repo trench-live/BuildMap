@@ -1,5 +1,5 @@
 import React from 'react';
-import { getRoleDisplay, formatTelegramId } from '../../utils/userFormatters';
+import { getRoleDisplay, formatUserIdentity } from '../../utils/userFormatters';
 import './UserDetails.css';
 
 const UserDetails = ({ user }) => {
@@ -13,7 +13,7 @@ const UserDetails = ({ user }) => {
                     {getRoleDisplay(user.role)}
                 </span>
                 <span className="user-telegram">
-                    {formatTelegramId(user.telegramId)}
+                    {formatUserIdentity(user)}
                 </span>
             </div>
         </div>

@@ -6,6 +6,7 @@ public interface UserAdminListProjection {
     Long getId();
     String getName();
     String getTelegramId();
+    String getLogin();
     Role getRole();
     boolean isDeleted();
     boolean isBlocked();

@@ -219,3 +219,9 @@ application.yml
 
 # Docker data
 data/
+
+# Local Maven cache for temporary builds
+api/.m2repo/
+
+# Temporary lock files from Microsoft Office
+~$*.docx

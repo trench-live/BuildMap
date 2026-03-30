@@ -2,38 +2,35 @@ import React from 'react';
 import './FulcrumConnection.css';
 
 const FulcrumConnection = ({
-                               connection,
-                               fromFulcrum,
-                               toFulcrum,
-                               weight,
-                               isHovered = false,
-                               connectionType = 'unidirectional',
-                               showWeight = false, // Добавляем этот пропс
-                               onMouseEnter,
-                               onMouseLeave,
-                               onContextMenu
-                           }) => {
-    const handleContextMenu = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+    connection,
+    fromFulcrum,
+    toFulcrum,
+    isHovered = false,
+    connectionType = 'unidirectional',
+    onMouseEnter,
+    onMouseLeave,
+    onContextMenu
+}) => {
+    const handleContextMenu = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
         if (onContextMenu) {
-            onContextMenu(connection, e);
+            onContextMenu(connection, event);
         }
     };
 
-    const handleMouseEnter = (e) => {
-        e.stopPropagation();
+    const handleMouseEnter = (event) => {
+        event.stopPropagation();
         if (onMouseEnter) onMouseEnter();
     };
 
-    const handleMouseLeave = (e) => {
-        e.stopPropagation();
+    const handleMouseLeave = (event) => {
+        event.stopPropagation();
         if (onMouseLeave) onMouseLeave();
     };
 
     if (!fromFulcrum || !toFulcrum) return null;
 
-    // Расчет длины и угла линии
     const dx = toFulcrum.x - fromFulcrum.x;
     const dy = toFulcrum.y - fromFulcrum.y;
     const length = Math.sqrt(dx * dx + dy * dy);
@@ -60,7 +57,6 @@ const FulcrumConnection = ({
                 onContextMenu={handleContextMenu}
             />
 
-            {/* Для двунаправленных добавляем вторую стрелочку в начале */}
             {connectionType === 'bidirectional' && (
                 <div
                     className={`connection-line-element reverse-arrow${isShort ? ' is-short' : ''}`}
