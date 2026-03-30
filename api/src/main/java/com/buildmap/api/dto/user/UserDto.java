@@ -8,6 +8,7 @@ public class UserDto {
     private long id;
     private String name;
     private String telegramId;
+    private String login;
     private boolean deleted;
     private boolean blocked;
     private Role role;

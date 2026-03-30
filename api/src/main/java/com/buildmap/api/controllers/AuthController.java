@@ -1,5 +1,6 @@
 package com.buildmap.api.controllers;
 
+import com.buildmap.api.dto.auth.password.RegisterRequestDto;
 import com.buildmap.api.dto.auth.telegram.AuthResponseDto;
 import com.buildmap.api.dto.auth.telegram.TelegramAuthDto;
 import com.buildmap.api.dto.user.UserDto;
@@ -17,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,6 +30,7 @@ import java.util.Date;
 
 @RestController
 @RequestMapping("/api/auth")
+@Validated
 public class AuthController {
 
     @Autowired
@@ -149,6 +152,12 @@ public class AuthController {
         private String name;
     }
 
+    @Data
+    static class PasswordLoginRequest {
+        private String login;
+        private String password;
+    }
+
     @PostMapping("/telegram")
     public ResponseEntity<AuthResponseDto> telegramAuth(@RequestBody TelegramAuthDto authData) {
         if (!telegramAuthService.validateTelegramAuth(authData)) {
@@ -168,6 +177,33 @@ public class AuthController {
 
         String token = jwtService.generateToken(user.getId());
         UserDto userDto = userMapper.toDto(user);
+        return ResponseEntity.ok(new AuthResponseDto(token, userDto));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponseDto> passwordLogin(@RequestBody PasswordLoginRequest request) {
+        if (request.getLogin() == null || request.getLogin().isBlank()
+                || request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new ValidationException("Login and password are required");
+        }
+
+        User user = prepareUserForLogin(userService.getActiveByLogin(request.getLogin()));
+        if (!userService.matchesPassword(user, request.getPassword())) {
+            throw new ValidationException("Invalid login or password");
+        }
+
+        String token = jwtService.generateToken(user.getId());
+        UserDto userDto = userMapper.toDto(user);
+        return ResponseEntity.ok(new AuthResponseDto(token, userDto));
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponseDto> register(@jakarta.validation.Valid @RequestBody RegisterRequestDto request) {
+        User createdUser = prepareUserForLogin(
+                userService.register(request.getName(), request.getLogin(), request.getPassword())
+        );
+        String token = jwtService.generateToken(createdUser.getId());
+        UserDto userDto = userMapper.toDto(createdUser);
         return ResponseEntity.ok(new AuthResponseDto(token, userDto));
     }
 

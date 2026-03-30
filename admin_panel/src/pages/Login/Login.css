@@ -15,6 +15,93 @@
     font-size: 14px;
 }
 
+.auth-mode-switch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding: 4px;
+    border-radius: 10px;
+    background: #f3f4f6;
+}
+
+.auth-mode-button {
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #4b5563;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.auth-mode-button.is-active {
+    background: #ffffff;
+    color: #111827;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.password-login-form {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.password-login-form h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.password-login-form label {
+    font-size: 12px;
+    color: #555;
+}
+
+.password-login-form input {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.password-login-form button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    background: #1677ff;
+    color: #fff;
+    cursor: pointer;
+}
+
+.password-login-form button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.auth-divider {
+    position: relative;
+    margin: 18px 0 10px;
+    text-align: center;
+}
+
+.auth-divider::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: #e5e7eb;
+}
+
+.auth-divider span {
+    position: relative;
+    padding: 0 10px;
+    background: #fff;
+    color: #6b7280;
+    font-size: 12px;
+}
+
 .dev-login-form {
     margin-top: 24px;
     padding-top: 20px;

@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -55,6 +56,9 @@ class ApiSecurityIntegrationTest {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void cleanup() {
@@ -103,6 +107,47 @@ class ApiSecurityIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty())
                 .andExpect(jsonPath("$.user.telegramId").value(String.valueOf(telegramId)));
+    }
+
+    @Test
+    void passwordLoginReturnsTokenForValidCredentials() throws Exception {
+        User user = saveUser("Login User", "tg_login_user", Role.USER, false, false);
+        user.setLogin("login_user");
+        user.setPasswordHash(passwordEncoder.encode("secret123"));
+        userRepository.save(user);
+
+        String body = """
+                {
+                  "login": "login_user",
+                  "password": "secret123"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.user.login").value("login_user"));
+    }
+
+    @Test
+    void registerCreatesUserAndReturnsToken() throws Exception {
+        String body = """
+                {
+                  "name": "Registered User",
+                  "login": "registered_user",
+                  "password": "secret123"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.user.login").value("registered_user"))
+                .andExpect(jsonPath("$.user.role").value("USER"));
     }
 
     @Test

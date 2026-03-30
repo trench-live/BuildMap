@@ -8,6 +8,7 @@ public class UserAdminListDto {
     private long id;
     private String name;
     private String telegramId;
+    private String login;
     private Role role;
     private boolean deleted;
     private boolean blocked;
