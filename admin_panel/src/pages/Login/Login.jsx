@@ -10,6 +10,14 @@ import './Login.css';
 const Login = () => {
     const { isAuthenticated, login } = useAuth();
     const navigate = useNavigate();
+    const [mode, setMode] = useState('login');
+    const [loginValue, setLoginValue] = useState('');
+    const [passwordValue, setPasswordValue] = useState('');
+    const [registerName, setRegisterName] = useState('');
+    const [registerLogin, setRegisterLogin] = useState('');
+    const [registerPassword, setRegisterPassword] = useState('');
+    const [authLoading, setAuthLoading] = useState(false);
+    const [authError, setAuthError] = useState(null);
     const [devUserId, setDevUserId] = useState('1');
     const [devSecret, setDevSecret] = useState('dev');
     const [devLoading, setDevLoading] = useState(false);
@@ -17,7 +25,39 @@ const Login = () => {
 
     useTelegramAuth();
 
-    
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        setAuthLoading(true);
+        setAuthError(null);
+
+        try {
+            const response = mode === 'register'
+                ? await authAPI.register({
+                    name: registerName,
+                    login: registerLogin,
+                    password: registerPassword
+                })
+                : await authAPI.login({
+                    login: loginValue,
+                    password: passwordValue
+                });
+
+            if (response?.data?.token && response?.data?.user) {
+                login(response.data.token, response.data.user);
+            } else {
+                setAuthError(`Invalid response from ${mode}.`);
+            }
+        } catch (error) {
+            setAuthError(
+                error.response?.data?.message
+                || error.message
+                || (mode === 'register' ? 'Registration failed.' : 'Login failed.')
+            );
+        } finally {
+            setAuthLoading(false);
+        }
+    };
+
     const handleDevLogin = async (event) => {
         event.preventDefault();
         setDevLoading(true);
@@ -40,10 +80,8 @@ const Login = () => {
         }
     };
 
-useEffect(() => {
-        console.log('🔐 Auth status changed - isAuthenticated:', isAuthenticated);
+    useEffect(() => {
         if (isAuthenticated) {
-            console.log('✅ User authenticated, redirecting to /');
             navigate('/', { replace: true });
         }
     }, [isAuthenticated, navigate]);
@@ -52,7 +90,82 @@ useEffect(() => {
         <LoginCard>
             <div className="login-content">
                 <h2>Вход в систему</h2>
-                <p>Для доступа к панели управления войдите через Telegram</p>
+                <p>Для доступа к панели управления войдите удобным способом</p>
+
+                <div className="auth-mode-switch" role="tablist" aria-label="Auth mode switch">
+                    <button
+                        type="button"
+                        className={`auth-mode-button ${mode === 'login' ? 'is-active' : ''}`}
+                        onClick={() => {
+                            setMode('login');
+                            setAuthError(null);
+                        }}
+                    >
+                        Login
+                    </button>
+                    <button
+                        type="button"
+                        className={`auth-mode-button ${mode === 'register' ? 'is-active' : ''}`}
+                        onClick={() => {
+                            setMode('register');
+                            setAuthError(null);
+                        }}
+                    >
+                        Register
+                    </button>
+                </div>
+
+                <form className="password-login-form" onSubmit={handleSubmit}>
+                    {mode === 'register' && (
+                        <>
+                            <label htmlFor="register-name">Name</label>
+                            <input
+                                id="register-name"
+                                type="text"
+                                value={registerName}
+                                onChange={(event) => setRegisterName(event.target.value)}
+                                autoComplete="name"
+                            />
+                        </>
+                    )}
+
+                    <label htmlFor="auth-login">{mode === 'register' ? 'Login' : 'Login'}</label>
+                    <input
+                        id="auth-login"
+                        type="text"
+                        value={mode === 'register' ? registerLogin : loginValue}
+                        onChange={(event) => (
+                            mode === 'register'
+                                ? setRegisterLogin(event.target.value)
+                                : setLoginValue(event.target.value)
+                        )}
+                        autoComplete="username"
+                    />
+
+                    <label htmlFor="auth-password">Password</label>
+                    <input
+                        id="auth-password"
+                        type="password"
+                        value={mode === 'register' ? registerPassword : passwordValue}
+                        onChange={(event) => (
+                            mode === 'register'
+                                ? setRegisterPassword(event.target.value)
+                                : setPasswordValue(event.target.value)
+                        )}
+                        autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+                    />
+
+                    {authError && <div className="dev-login-error">{authError}</div>}
+                    <button type="submit" disabled={authLoading}>
+                        {authLoading
+                            ? (mode === 'register' ? 'Registering...' : 'Logging in...')
+                            : (mode === 'register' ? 'Create account' : 'Login with password')}
+                    </button>
+                </form>
+
+                <div className="auth-divider">
+                    <span>или</span>
+                </div>
 
                 <TelegramWidget />
 

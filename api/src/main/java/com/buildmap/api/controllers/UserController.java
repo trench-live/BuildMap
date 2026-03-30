@@ -32,8 +32,7 @@ public class UserController {
     public ResponseEntity<UserDto> create(@Valid @RequestBody UserSaveDto userDto) {
         User currentUser = authorizationService.getCurrentUser();
         authorizationService.requireAdmin(currentUser);
-        User user = userMapper.toEntity(userDto);
-        User created = userService.create(user);
+        User created = userService.create(userDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(userMapper.toDto(created));
     }
 

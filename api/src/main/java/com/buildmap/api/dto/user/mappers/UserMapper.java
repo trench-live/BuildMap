@@ -18,6 +18,7 @@ public interface UserMapper {
     @Mapping(target = "mappingAreas", ignore = true)
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "blocked", ignore = true)
+    @Mapping(target = "passwordHash", ignore = true)
     User toEntity(UserSaveDto dto);
 
     // Для обновления
@@ -25,5 +26,6 @@ public interface UserMapper {
     @Mapping(target = "mappingAreas", ignore = true)
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "blocked", ignore = true)
+    @Mapping(target = "passwordHash", ignore = true)
     void updateEntity(UserSaveDto dto, @MappingTarget User user);
 }

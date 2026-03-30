@@ -6,6 +6,8 @@ import { userAPI } from '../../../services/api';
 const buildUpdatePayload = (formData, fallbackUser) => ({
     name: formData.name.trim(),
     telegramId: formData.telegramId.trim(),
+    login: formData.login.trim(),
+    password: formData.password,
     role: formData.role || fallbackUser.role
 });
 
@@ -24,6 +26,8 @@ export const useUsers = () => {
     const [formData, setFormData] = useState({
         name: '',
         telegramId: '',
+        login: '',
+        password: '',
         role: 'USER'
     });
 
@@ -52,6 +56,8 @@ export const useUsers = () => {
         setFormData({
             name: user.name || '',
             telegramId: user.telegramId || '',
+            login: user.login || '',
+            password: '',
             role: user.role || 'USER'
         });
         setEditVisible(true);
@@ -60,7 +66,7 @@ export const useUsers = () => {
     const closeEdit = () => {
         setEditVisible(false);
         setEditingUser(null);
-        setFormData({ name: '', telegramId: '', role: 'USER' });
+        setFormData({ name: '', telegramId: '', login: '', password: '', role: 'USER' });
     };
 
     const saveUser = async (event) => {
@@ -68,8 +74,8 @@ export const useUsers = () => {
         if (!editingUser) return;
 
         const payload = buildUpdatePayload(formData, editingUser);
-        if (!payload.name || !payload.telegramId) {
-            alert('Name and Telegram ID are required');
+        if (!payload.name || (!payload.telegramId && !payload.login)) {
+            alert('Name and at least one auth method are required');
             return;
         }
 
