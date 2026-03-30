@@ -90,10 +90,15 @@ jobs:
           script: |
             set -e
 
-            mkdir -p ~/${{ inputs.deploy_path }}/data
-            chmod 775 ~/${{ inputs.deploy_path }}/data
-            [ -f ~/${{ inputs.deploy_path }}/data/buildmap.db ] && chmod 664 ~/${{ inputs.deploy_path }}/data/buildmap.db
-            cd ~/${{ inputs.deploy_path }}
+            DEPLOY_DIR=~/${{ inputs.deploy_path }}
+            DATA_DIR="$DEPLOY_DIR/data"
+
+            echo "$SUDO_PASS" | sudo -S mkdir -p "$DATA_DIR"
+            echo "$SUDO_PASS" | sudo -S chmod 775 "$DATA_DIR"
+            if [ -f "$DATA_DIR/buildmap.db" ]; then
+              echo "$SUDO_PASS" | sudo -S chmod 664 "$DATA_DIR/buildmap.db" || true
+            fi
+            cd "$DEPLOY_DIR"
 
             if [ -z "$CORS_ALLOWED_ORIGINS" ]; then
               CORS_ALLOWED_ORIGINS="http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001,https://buildmap.ru,https://www.buildmap.ru,https://admin.buildmap.ru,https://api.buildmap.ru,https://*.loca.lt,http://*.loca.lt"
