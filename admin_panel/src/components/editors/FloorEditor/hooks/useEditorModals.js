@@ -40,28 +40,68 @@ const useEditorModals = ({
         return parsed;
     };
 
+    const hasConnectionChanged = (
+        nextEnabled,
+        currentEnabled,
+        nextDistanceMeters,
+        currentDistanceMeters,
+        nextDifficultyFactor,
+        currentDifficultyFactor
+    ) => {
+        if (nextEnabled !== currentEnabled) {
+            return true;
+        }
+
+        if (!nextEnabled) {
+            return false;
+        }
+
+        return normalizeDistanceMeters(nextDistanceMeters) !== normalizeDistanceMeters(currentDistanceMeters)
+            || normalizeDifficultyFactor(nextDifficultyFactor) !== normalizeDifficultyFactor(currentDifficultyFactor);
+    };
+
     const syncInterfloorConnections = async (fulcrumId, rows = []) => {
         for (const row of rows) {
-            if (row.forwardEnabled) {
+            const forwardChanged = hasConnectionChanged(
+                row.forwardEnabled,
+                row.currentForwardEnabled,
+                row.forwardDistanceMeters,
+                row.currentForwardDistanceMeters,
+                row.forwardDifficultyFactor,
+                row.currentForwardDifficultyFactor
+            );
+
+            if (forwardChanged && row.currentForwardEnabled) {
                 await removeConnection(fulcrumId, row.id);
+            }
+
+            if (forwardChanged && row.forwardEnabled) {
                 await addConnection(fulcrumId, {
                     connectedFulcrumId: row.id,
                     distanceMeters: normalizeDistanceMeters(row.forwardDistanceMeters),
                     difficultyFactor: normalizeDifficultyFactor(row.forwardDifficultyFactor)
                 });
-            } else {
-                await removeConnection(fulcrumId, row.id);
             }
 
-            if (row.backwardEnabled) {
+            const backwardChanged = hasConnectionChanged(
+                row.backwardEnabled,
+                row.currentBackwardEnabled,
+                row.backwardDistanceMeters,
+                row.currentBackwardDistanceMeters,
+                row.backwardDifficultyFactor,
+                row.currentBackwardDifficultyFactor
+            );
+
+            if (backwardChanged && row.currentBackwardEnabled) {
                 await removeConnection(row.id, fulcrumId);
+            }
+
+            if (backwardChanged && row.backwardEnabled) {
                 await addConnection(row.id, {
                     connectedFulcrumId: fulcrumId,
                     distanceMeters: normalizeDistanceMeters(row.backwardDistanceMeters),
                     difficultyFactor: normalizeDifficultyFactor(row.backwardDifficultyFactor)
                 });
-            } else {
-                await removeConnection(row.id, fulcrumId);
             }
         }
     };
@@ -71,7 +111,7 @@ const useEditorModals = ({
             visible: true,
             mode: 'create',
             fulcrum: null,
-            position: position
+            position
         });
     };
 
@@ -82,7 +122,7 @@ const useEditorModals = ({
         setFulcrumModal({
             visible: true,
             mode: 'edit',
-            fulcrum: fulcrum,
+            fulcrum,
             position: null
         });
     };
@@ -92,8 +132,8 @@ const useEditorModals = ({
             visible: true,
             mode: 'create',
             connection: null,
-            fromFulcrum: fromFulcrum,
-            toFulcrum: toFulcrum,
+            fromFulcrum,
+            toFulcrum,
             isBidirectional: true
         });
     };
@@ -102,34 +142,34 @@ const useEditorModals = ({
         event.preventDefault();
         event.stopPropagation();
 
-        const fromFulcrum = fulcrums.find(f => f.id === connection.from);
-        const toFulcrum = fulcrums.find(f => f.id === connection.to);
-        const hasReverseConnection = connections.some(conn =>
-            conn.from === connection.to && conn.to === connection.from
+        const fromFulcrum = fulcrums.find((item) => item.id === connection.from);
+        const toFulcrum = fulcrums.find((item) => item.id === connection.to);
+        const hasReverseConnection = connections.some(
+            (item) => item.from === connection.to && item.to === connection.from
         );
 
         setConnectionModal({
             visible: true,
             mode: 'edit',
-            connection: connection,
-            fromFulcrum: fromFulcrum,
-            toFulcrum: toFulcrum,
+            connection,
+            fromFulcrum,
+            toFulcrum,
             isBidirectional: hasReverseConnection
         });
     };
 
     const handleFulcrumSave = async (payload) => {
         const { fulcrumData, connectionRows } = payload;
+
         try {
             if (fulcrumModal.mode === 'create') {
                 const newFulcrum = await createFulcrum(fulcrumData);
                 await syncInterfloorConnections(newFulcrum.id, connectionRows);
-                console.log('Fulcrum created:', newFulcrum);
             } else {
                 const updatedFulcrum = await updateFulcrum(fulcrumModal.fulcrum.id, fulcrumData);
                 await syncInterfloorConnections(updatedFulcrum.id, connectionRows);
-                console.log('Fulcrum updated');
             }
+
             setFulcrumModal(createFulcrumModalState());
         } catch (error) {
             alert(error.message);
@@ -154,8 +194,8 @@ const useEditorModals = ({
             const distanceMeters = normalizeDistanceMeters(connectionData.distanceMeters);
             const difficultyFactor = normalizeDifficultyFactor(connectionData.difficultyFactor);
             const bidirectional = connectionData.bidirectional;
-            const reverseExists = connections.some(conn =>
-                conn.from === toId && conn.to === fromId
+            const reverseExists = connections.some(
+                (item) => item.from === toId && item.to === fromId
             );
 
             if (connectionModal.mode === 'create') {
@@ -169,14 +209,13 @@ const useEditorModals = ({
                     if (reverseExists) {
                         await removeConnection(toId, fromId);
                     }
+
                     await addConnection(toId, {
                         connectedFulcrumId: fromId,
                         distanceMeters,
                         difficultyFactor
                     });
                 }
-
-                console.log('Connection created');
             } else {
                 await removeConnection(connectionModal.connection.from, connectionModal.connection.to);
                 await addConnection(fromId, {
@@ -189,6 +228,7 @@ const useEditorModals = ({
                     if (reverseExists) {
                         await removeConnection(toId, fromId);
                     }
+
                     await addConnection(toId, {
                         connectedFulcrumId: fromId,
                         distanceMeters,
@@ -197,9 +237,8 @@ const useEditorModals = ({
                 } else if (reverseExists) {
                     await removeConnection(toId, fromId);
                 }
-
-                console.log('Connection updated');
             }
+
             setConnectionModal(createConnectionModalState());
         } catch (error) {
             alert(error.message);
