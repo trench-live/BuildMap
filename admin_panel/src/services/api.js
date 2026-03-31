@@ -27,37 +27,31 @@ const api = axios.create({
     },
 });
 
-// Получаем токен из localStorage
 const getToken = () => {
     return localStorage.getItem('authToken');
 };
 
-// Интерцептор для добавления токена к запросам
 api.interceptors.request.use((config) => {
     const token = getToken();
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log(`🚀 API Call: ${config.method?.toUpperCase()} ${config.url}`);
     return config;
 });
 
-// Обработка ошибок
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Если токен невалидный, разлогиниваем пользователя
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
             window.location.href = '/login';
         }
-        console.error('❌ API Error:', error.response?.data || error.message);
+        console.error('API Error:', error.response?.data || error.message);
         return Promise.reject(error);
     }
 );
 
-// API методы для аутентификации
 export const authAPI = {
     login: (payload) => api.post('/api/auth/login', payload),
     register: (payload) => api.post('/api/auth/register', payload),
@@ -72,7 +66,6 @@ export const dashboardAPI = {
     getMyStats: () => api.get('/api/dashboard/me'),
 };
 
-// Остальные API методы остаются без изменений
 export const userAPI = {
     getAll: (deleted = false) => api.get(`/api/user?deleted=${deleted}`),
     getAdminList: () => api.get('/api/user/admin-list'),

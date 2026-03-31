@@ -5,17 +5,15 @@ import { isValidImageType, scheduleContainerUpdate } from './utils/imageUpload';
 export const useImageUpload = (setEditorState, updateContainerSize) => {
     const handleImageUpload = useCallback(async (file) => {
         if (!file) {
-            console.error('❌ No file provided to useImageUpload');
+            console.error('вќЊ No file provided to useImageUpload');
             return;
         }
 
-        // Проверяем тип файла
+        // РџСЂРѕРІРµСЂСЏРµРј С‚РёРї С„Р°Р№Р»Р°
         if (!isValidImageType(file.type)) {
-            alert('Неподдерживаемый формат файла. Используйте JPG, PNG, GIF или SVG.');
+            alert('РќРµРїРѕРґРґРµСЂР¶РёРІР°РµРјС‹Р№ С„РѕСЂРјР°С‚ С„Р°Р№Р»Р°. РСЃРїРѕР»СЊР·СѓР№С‚Рµ JPG, PNG, GIF РёР»Рё SVG.');
             return;
         }
-
-        console.log('📤 Uploading image:', file.name, file.type, file.size);
 
         try {
             const svgContent = await convertImageToSvg(file);
@@ -26,14 +24,12 @@ export const useImageUpload = (setEditorState, updateContainerSize) => {
                 backgroundImage: file
             }));
 
-            console.log('✅ Image converted to SVG successfully');
-
-            // Даем время на рендеринг, затем центрируем
+            // Р”Р°РµРј РІСЂРµРјСЏ РЅР° СЂРµРЅРґРµСЂРёРЅРі, Р·Р°С‚РµРј С†РµРЅС‚СЂРёСЂСѓРµРј
             scheduleContainerUpdate(updateContainerSize);
 
         } catch (error) {
-            console.error('❌ Error converting image to SVG:', error);
-            alert('Ошибка при загрузке изображения: ' + error.message);
+            console.error('вќЊ Error converting image to SVG:', error);
+            alert('РћС€РёР±РєР° РїСЂРё Р·Р°РіСЂСѓР·РєРµ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ: ' + error.message);
         }
     }, [setEditorState, updateContainerSize]);
 
