@@ -14,12 +14,12 @@ const useInterfloorConnections = ({
     const [connectionsError, setConnectionsError] = useState(null);
 
     const buildConnectionRows = useCallback((allFulcrums, floorNameById, currentFulcrumId, currentFloorId) => {
-        const currentFulcrum = allFulcrums.find(item => item.id === currentFulcrumId);
+        const currentFulcrum = allFulcrums.find((item) => item.id === currentFulcrumId);
         const outgoingConnections = new Map();
         const incomingConnections = new Map();
 
         if (currentFulcrum?.connections) {
-            currentFulcrum.connections.forEach(connection => {
+            currentFulcrum.connections.forEach((connection) => {
                 outgoingConnections.set(connection.connectedFulcrumId, {
                     distanceMeters: connection.distanceMeters,
                     difficultyFactor: connection.difficultyFactor
@@ -27,9 +27,13 @@ const useInterfloorConnections = ({
             });
         }
 
-        allFulcrums.forEach(item => {
+        allFulcrums.forEach((item) => {
             if (!item?.connections) return;
-            const incoming = item.connections.find(connection => connection.connectedFulcrumId === currentFulcrumId);
+
+            const incoming = item.connections.find(
+                (connection) => connection.connectedFulcrumId === currentFulcrumId
+            );
+
             if (incoming) {
                 incomingConnections.set(item.id, {
                     distanceMeters: incoming.distanceMeters,
@@ -39,24 +43,33 @@ const useInterfloorConnections = ({
         });
 
         return allFulcrums
-            .filter(item => !item.deleted)
-            .filter(item => item.id !== currentFulcrumId)
-            .filter(item => item.floorId !== currentFloorId)
-            .filter(item => item.type !== FULCRUM_TYPES.WAYPOINT)
-            .map(item => {
+            .filter((item) => !item.deleted)
+            .filter((item) => item.id !== currentFulcrumId)
+            .filter((item) => item.floorId !== currentFloorId)
+            .filter((item) => item.type !== FULCRUM_TYPES.WAYPOINT)
+            .map((item) => {
                 const outgoing = outgoingConnections.get(item.id);
                 const incoming = incomingConnections.get(item.id);
+                const forwardEnabled = outgoingConnections.has(item.id);
+                const backwardEnabled = incomingConnections.has(item.id);
+
                 return {
                     id: item.id,
                     name: item.name,
                     floorId: item.floorId,
                     floorName: floorNameById.get(item.floorId) || `Floor ${item.floorId}`,
-                    forwardEnabled: outgoingConnections.has(item.id),
+                    forwardEnabled,
+                    currentForwardEnabled: forwardEnabled,
                     forwardDistanceMeters: outgoing?.distanceMeters ?? 1,
+                    currentForwardDistanceMeters: outgoing?.distanceMeters ?? 1,
                     forwardDifficultyFactor: outgoing?.difficultyFactor ?? 1,
-                    backwardEnabled: incomingConnections.has(item.id),
+                    currentForwardDifficultyFactor: outgoing?.difficultyFactor ?? 1,
+                    backwardEnabled,
+                    currentBackwardEnabled: backwardEnabled,
                     backwardDistanceMeters: incoming?.distanceMeters ?? 1,
-                    backwardDifficultyFactor: incoming?.difficultyFactor ?? 1
+                    currentBackwardDistanceMeters: incoming?.distanceMeters ?? 1,
+                    backwardDifficultyFactor: incoming?.difficultyFactor ?? 1,
+                    currentBackwardDifficultyFactor: incoming?.difficultyFactor ?? 1
                 };
             })
             .sort((a, b) => {
@@ -76,6 +89,7 @@ const useInterfloorConnections = ({
         }
 
         let isMounted = true;
+
         const loadConnections = async () => {
             setConnectionsLoading(true);
             setConnectionsError(null);
@@ -86,10 +100,12 @@ const useInterfloorConnections = ({
                     fulcrumAPI.getByArea(mappingAreaId, false)
                 ]);
 
-                if (!isMounted) return;
+                if (!isMounted) {
+                    return;
+                }
 
                 const floorNameById = new Map();
-                floorsResponse.data.forEach(item => {
+                floorsResponse.data.forEach((item) => {
                     floorNameById.set(item.id, item.name);
                 });
 
@@ -103,7 +119,9 @@ const useInterfloorConnections = ({
                 setConnectionRows(rows);
                 setConnectionErrors({});
             } catch (error) {
-                if (!isMounted) return;
+                if (!isMounted) {
+                    return;
+                }
                 setConnectionsError(error.response?.data?.message || error.message || 'Failed to load connections.');
             } finally {
                 if (isMounted) {
@@ -120,8 +138,11 @@ const useInterfloorConnections = ({
     }, [visible, mappingAreaId, fulcrumId, floorId, buildConnectionRows]);
 
     const updateConnectionRow = (rowId, field, value) => {
-        setConnectionRows(prev => prev.map(row => {
-            if (row.id !== rowId) return row;
+        setConnectionRows((prev) => prev.map((row) => {
+            if (row.id !== rowId) {
+                return row;
+            }
+
             return {
                 ...row,
                 [field]: value
@@ -130,16 +151,21 @@ const useInterfloorConnections = ({
     };
 
     const clearConnectionError = (rowId, field) => {
-        setConnectionErrors(prev => {
-            if (!prev[rowId]) return prev;
+        setConnectionErrors((prev) => {
+            if (!prev[rowId]) {
+                return prev;
+            }
+
             const next = { ...prev[rowId] };
             delete next[field];
+
             const rest = { ...prev };
             if (Object.keys(next).length === 0) {
                 delete rest[rowId];
             } else {
                 rest[rowId] = next;
             }
+
             return rest;
         });
     };

@@ -12,7 +12,7 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
     const {
         editorState,
         setEditorState,
-        isSaving: floorSaving, // переименовываем, чтобы избежать конфликта
+        isSaving: floorSaving, // РїРµСЂРµРёРјРµРЅРѕРІС‹РІР°РµРј, С‡С‚РѕР±С‹ РёР·Р±РµР¶Р°С‚СЊ РєРѕРЅС„Р»РёРєС‚Р°
         handleSave: handleFloorSave,
         handleResetView,
         handleClearCanvas,
@@ -26,10 +26,10 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
 
     const { handleImageUpload } = useImageUpload(setEditorState);
 
-    // Локальное состояние для сохранения
+    // Р›РѕРєР°Р»СЊРЅРѕРµ СЃРѕСЃС‚РѕСЏРЅРёРµ РґР»СЏ СЃРѕС…СЂР°РЅРµРЅРёСЏ
     const [isSaving, setIsSaving] = useState(false);
 
-    // Подключаем систему fulcrums
+    // РџРѕРґРєР»СЋС‡Р°РµРј СЃРёСЃС‚РµРјСѓ fulcrums
     const {
         fulcrums,
         connections,
@@ -42,7 +42,7 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
         reloadFulcrums
     } = useFulcrums(floor?.id);
 
-    // Состояние для модальных окон
+    // РЎРѕСЃС‚РѕСЏРЅРёРµ РґР»СЏ РјРѕРґР°Р»СЊРЅС‹С… РѕРєРѕРЅ
     const {
         fulcrumModal,
         connectionModal,
@@ -73,24 +73,22 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
         }
     }, [visible, floor?.id, reloadFulcrums]);
 
-    // Функция сохранения с перезагрузкой fulcrums
+    // Р¤СѓРЅРєС†РёСЏ СЃРѕС…СЂР°РЅРµРЅРёСЏ СЃ РїРµСЂРµР·Р°РіСЂСѓР·РєРѕР№ fulcrums
     const handleSaveWithReload = useCallback(async () => {
         if (!editorState.svgContent.trim()) {
-            alert('Холст пуст. Загрузите изображение или создайте план.');
+            alert('РҐРѕР»СЃС‚ РїСѓСЃС‚. Р—Р°РіСЂСѓР·РёС‚Рµ РёР·РѕР±СЂР°Р¶РµРЅРёРµ РёР»Рё СЃРѕР·РґР°Р№С‚Рµ РїР»Р°РЅ.');
             return;
         }
 
         setIsSaving(true);
         try {
-            // Сохраняем этаж через существующий handleSave
+            // РЎРѕС…СЂР°РЅСЏРµРј СЌС‚Р°Р¶ С‡РµСЂРµР· СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ handleSave
             await handleFloorSave();
 
-            // Перезагружаем fulcrums после успешного сохранения
+            // РџРµСЂРµР·Р°РіСЂСѓР¶Р°РµРј fulcrums РїРѕСЃР»Рµ СѓСЃРїРµС€РЅРѕРіРѕ СЃРѕС…СЂР°РЅРµРЅРёСЏ
             await reloadFulcrums();
-
-            console.log('✅ Floor saved and fulcrums reloaded');
         } catch (error) {
-            alert('Ошибка сохранения: ' + (error.response?.data?.message || error.message));
+            alert('РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ: ' + (error.response?.data?.message || error.message));
         } finally {
             setIsSaving(false);
         }
@@ -141,7 +139,7 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                     />
                 </div>
 
-                {/* Модальное окно для fulcrum */}
+                {/* РњРѕРґР°Р»СЊРЅРѕРµ РѕРєРЅРѕ РґР»СЏ fulcrum */}
                 <FulcrumModal
                     visible={fulcrumModal.visible}
                     mode={fulcrumModal.mode}
@@ -154,7 +152,7 @@ const FloorEditor = ({ floor, visible, onClose, onSave }) => {
                     onClose={closeFulcrumModal}
                 />
 
-                {/* Модальное окно для связи */}
+                {/* РњРѕРґР°Р»СЊРЅРѕРµ РѕРєРЅРѕ РґР»СЏ СЃРІСЏР·Рё */}
                 <ConnectionModal
                     visible={connectionModal.visible}
                     mode={connectionModal.mode}

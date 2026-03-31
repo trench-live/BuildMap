@@ -11,15 +11,13 @@ export const convertImageToSvg = (file) => {
             try {
                 const imageData = e.target.result;
 
-                // Создаем объект изображения для получения его реальных размеров
+                // РЎРѕР·РґР°РµРј РѕР±СЉРµРєС‚ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ РµРіРѕ СЂРµР°Р»СЊРЅС‹С… СЂР°Р·РјРµСЂРѕРІ
                 const img = new Image();
                 img.onload = () => {
                     const width = img.naturalWidth || img.width || 800;
                     const height = img.naturalHeight || img.height || 600;
 
-                    console.log('Image dimensions:', { width, height });
-
-                    // Создаем SVG с viewBox по размеру исходного изображения
+                    // РЎРѕР·РґР°РµРј SVG СЃ viewBox РїРѕ СЂР°Р·РјРµСЂСѓ РёСЃС…РѕРґРЅРѕРіРѕ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ
                     const svgContent = `
                         <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
                             <image 
@@ -35,8 +33,7 @@ export const convertImageToSvg = (file) => {
                 };
 
                 img.onerror = () => {
-                    console.warn('Could not load image, using default dimensions');
-                    // Фоллбек на дефолтные размеры, если не удалось прочитать картинку
+                    // Р¤РѕР»Р»Р±РµРє РЅР° РґРµС„РѕР»С‚РЅС‹Рµ СЂР°Р·РјРµСЂС‹, РµСЃР»Рё РЅРµ СѓРґР°Р»РѕСЃСЊ РїСЂРѕС‡РёС‚Р°С‚СЊ РєР°СЂС‚РёРЅРєСѓ
                     const svgContent = `
                         <svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
                             <image 

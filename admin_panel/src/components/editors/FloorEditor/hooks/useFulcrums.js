@@ -20,15 +20,11 @@ export const useFulcrums = (floorId) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Обработчики успешных операций
-    const handleSuccess = useCallback((action, data) => {
-        console.log(`✅ ${action}:`, data);
-    }, []);
+    const handleSuccess = useCallback(() => {}, []);
 
-    // Обработчики ошибок
-    const handleError = useCallback((action, error) => {
-        console.error(`❌ ${action}:`, error);
-        setError(error.response?.data?.message || `Ошибка при выполнении ${action}`);
+    const handleError = useCallback((action, errorValue) => {
+        console.error(`${action}:`, errorValue);
+        setError(errorValue.response?.data?.message || `Ошибка при выполнении ${action}`);
     }, []);
 
     const {
@@ -39,29 +35,20 @@ export const useFulcrums = (floorId) => {
         removeConnection: removeConnectionAction
     } = useFulcrumActions(floorId, handleSuccess, handleError);
 
-    // Загрузка fulcrums для этажа
     const loadFulcrums = useCallback(async () => {
-        if (!floorId) return;
+        if (!floorId) {
+            return;
+        }
 
         setIsLoading(true);
         setError(null);
+
         try {
-            console.log('📥 Loading fulcrums for floor:', floorId);
             const response = await fulcrumAPI.getByFloor(floorId);
-            const fulcrumsData = response.data;
-
-            console.log('📋 Raw fulcrums from API:', fulcrumsData);
-
-            // Фильтруем удаленные точки (deleted: true)
-            const activeFulcrums = filterActiveFulcrums(fulcrumsData);
-
-            console.log('✅ Active fulcrums after filter:', activeFulcrums);
+            const activeFulcrums = filterActiveFulcrums(response.data);
 
             setFulcrums(activeFulcrums);
-
-            // Извлекаем connections из fulcrums
             setConnections(buildConnectionsFromFulcrums(activeFulcrums));
-
         } catch (err) {
             handleError('load_fulcrums_error', err);
         } finally {
@@ -69,18 +56,17 @@ export const useFulcrums = (floorId) => {
         }
     }, [floorId, handleError]);
 
-    // Обертки действий с обновлением локального состояния
     const createFulcrum = useCallback(async (fulcrumData) => {
         const newFulcrum = await createFulcrumAction(fulcrumData);
-        setFulcrums(prev => [...prev, newFulcrum]);
+        setFulcrums((prev) => [...prev, newFulcrum]);
         return newFulcrum;
     }, [createFulcrumAction]);
 
     const updateFulcrum = useCallback(async (fulcrumId, updateData) => {
         const updatedFulcrum = await updateFulcrumAction(fulcrumId, updateData);
-        setFulcrums(prev => prev.map(f =>
-            f.id === fulcrumId ? updatedFulcrum : f
-        ));
+        setFulcrums((prev) => prev.map((item) => (
+            item.id === fulcrumId ? updatedFulcrum : item
+        )));
         return updatedFulcrum;
     }, [updateFulcrumAction]);
 
@@ -131,7 +117,7 @@ export const useFulcrums = (floorId) => {
         });
 
         if (updatedById.size > 0) {
-            setFulcrums(prev => prev.map((item) =>
+            setFulcrums((prev) => prev.map((item) =>
                 updatedById.get(item.id) || item
             ));
         }
@@ -147,31 +133,37 @@ export const useFulcrums = (floorId) => {
 
     const deleteFulcrum = useCallback(async (fulcrumId) => {
         await deleteFulcrumAction(fulcrumId);
-        setFulcrums(prev => prev.filter(f => f.id !== fulcrumId));
-        // Также удаляем связанные connections
-        setConnections(prev => prev.filter(conn =>
+        setFulcrums((prev) => prev.filter((item) => item.id !== fulcrumId));
+        setConnections((prev) => prev.filter((conn) =>
             conn.from !== fulcrumId && conn.to !== fulcrumId
         ));
     }, [deleteFulcrumAction]);
 
     const addConnection = useCallback(async (fromFulcrumId, connectionData) => {
         await addConnectionAction(fromFulcrumId, connectionData);
-        setConnections(prev => [...prev, {
-            from: fromFulcrumId,
-            to: connectionData.connectedFulcrumId,
-            distanceMeters: connectionData.distanceMeters,
-            difficultyFactor: connectionData.difficultyFactor
-        }]);
+        setConnections((prev) => {
+            const nextConnection = {
+                from: fromFulcrumId,
+                to: connectionData.connectedFulcrumId,
+                distanceMeters: connectionData.distanceMeters,
+                difficultyFactor: connectionData.difficultyFactor
+            };
+
+            const filtered = prev.filter((conn) => !(
+                conn.from === nextConnection.from && conn.to === nextConnection.to
+            ));
+
+            return [...filtered, nextConnection];
+        });
     }, [addConnectionAction]);
 
     const removeConnection = useCallback(async (fromFulcrumId, toFulcrumId) => {
         await removeConnectionAction(fromFulcrumId, toFulcrumId);
-        setConnections(prev => prev.filter(conn =>
-            !(conn.from === fromFulcrumId && conn.to === toFulcrumId)
-        ));
+        setConnections((prev) => prev.filter((conn) => !(
+            conn.from === fromFulcrumId && conn.to === toFulcrumId
+        )));
     }, [removeConnectionAction]);
 
-    // Загружаем fulcrums при изменении floorId
     useEffect(() => {
         if (floorId) {
             loadFulcrums();
