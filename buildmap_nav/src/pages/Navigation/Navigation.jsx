@@ -184,12 +184,22 @@ const Navigation = () => {
                 markerIds.add(endPoint.id);
             }
 
-            (route.steps || []).forEach((step) => {
-                if (!['TURN_LEFT', 'TURN_RIGHT', 'U_TURN'].includes(step.type)) {
-                    return;
+            for (let index = 0; index < route.path.length - 1; index += 1) {
+                const from = route.path[index];
+                const to = route.path[index + 1];
+                if (from.floorId !== to.floorId) {
+                    if (from.floorId === activeFloorId) {
+                        markerIds.add(from.id);
+                    }
+                    if (to.floorId === activeFloorId) {
+                        markerIds.add(to.id);
+                    }
                 }
-                if (step.fromFulcrumId) {
-                    markerIds.add(step.fromFulcrumId);
+            }
+
+            (focusTargets || []).forEach((target) => {
+                if (target?.floorId === activeFloorId) {
+                    markerIds.add(target.id);
                 }
             });
 
@@ -201,7 +211,7 @@ const Navigation = () => {
             return [startFulcrum];
         }
         return [];
-    }, [route, startFulcrum, activeFloorId]);
+    }, [route, startFulcrum, activeFloorId, focusTargets]);
 
     const activeSegments = useMemo(() => {
         if (!route?.path?.length || !activeFloorId) return [];
@@ -217,11 +227,11 @@ const Navigation = () => {
     }, [route, activeFloorId]);
 
     const focusFulcrum = useMemo(() => {
-        if (activeMarkers.length) {
-            return activeMarkers[0];
+        if (startFulcrum?.floorId === activeFloorId) {
+            return startFulcrum;
         }
         return null;
-    }, [activeMarkers]);
+    }, [startFulcrum, activeFloorId]);
 
     const floorLabelMap = useMemo(() => {
         const map = new Map();
