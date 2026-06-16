@@ -6,5 +6,6 @@ public enum RouteStepType {
     U_TURN,
     GO_FORWARD,
     CHANGE_FLOOR_UP,
-    CHANGE_FLOOR_DOWN
+    CHANGE_FLOOR_DOWN,
+    ARRIVE
 }
