@@ -126,7 +126,11 @@ const useFocusState = ({
         setSelectedStepIndex(stepIndex);
         const targetIds = [];
         const isTurnStep = ['TURN_LEFT', 'TURN_RIGHT', 'U_TURN'].includes(step.type);
-        if (isTurnStep) {
+        // Turn steps now carry the walk that follows them, so a turn with a distance
+        // highlights its segment like a plain walk; a bare turn stays pivot-only.
+        const hasDistance = typeof step.distanceMeters === 'number' && step.distanceMeters > 0;
+        const pivotOnly = isTurnStep && !hasDistance;
+        if (pivotOnly) {
             if (step.fromFulcrumId) targetIds.push(step.fromFulcrumId);
         } else {
             if (step.fromFulcrumId) targetIds.push(step.fromFulcrumId);
@@ -140,7 +144,7 @@ const useFocusState = ({
         const normalizedStartIndex = fromIndex >= 0 && toIndex >= 0 ? Math.min(fromIndex, toIndex) : -1;
         const normalizedEndIndex = fromIndex >= 0 && toIndex >= 0 ? Math.max(fromIndex, toIndex) : -1;
         let segments = [];
-        if (!isTurnStep) {
+        if (!pivotOnly) {
             if (normalizedStartIndex >= 0 && normalizedEndIndex >= 0) {
                 segments = buildSegmentsRange(path, normalizedStartIndex, normalizedEndIndex);
             } else {
@@ -151,7 +155,7 @@ const useFocusState = ({
                 }
             }
         }
-        const visitedEndIndex = isTurnStep ? fromIndex : normalizedEndIndex;
+        const visitedEndIndex = pivotOnly ? fromIndex : normalizedEndIndex;
         const prefixSegments = visitedEndIndex >= 0
             ? buildSegmentsRange(path, 0, visitedEndIndex)
             : [];
