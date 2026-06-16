@@ -48,7 +48,6 @@ const useFocusState = ({
         if (pendingFocus.floorId && pendingFocus.floorId !== activeFloorId) {
             setFocusTargets([]);
             setFocusSegments([]);
-            setVisitedSegments([]);
             return;
         }
         const targetFloorId = pendingFocus.floorId || activeFloorId;
@@ -59,11 +58,8 @@ const useFocusState = ({
         const segments = (pendingFocus.segments || []).filter(
             ([from, to]) => !targetFloorId || (from.floorId === targetFloorId && to.floorId === targetFloorId)
         );
-        const visited = (pendingFocus.visitedSegments || []).filter(
-            ([from, to]) => !targetFloorId || (from.floorId === targetFloorId && to.floorId === targetFloorId)
-        );
         setFocusSegments(segments);
-        setVisitedSegments(visited);
+        setVisitedSegments(pendingFocus.visitedSegments || []);
         setFocusAnimate(pendingFocus.animate !== false);
         lastAppliedFocusKeyRef.current = buildFocusKey(pendingFocus);
         setPendingFocus(null);
@@ -86,7 +82,6 @@ const useFocusState = ({
         if (mismatch) {
             setFocusTargets([]);
             setFocusSegments([]);
-            setVisitedSegments([]);
         }
     }, [activeFloorId, focusTargets]);
 
@@ -171,7 +166,6 @@ const useFocusState = ({
         if (floorId && floorId !== activeFloorId) {
             setFocusTargets([]);
             setFocusSegments([]);
-            setVisitedSegments([]);
             setPendingFocus(focusPayload);
             setActiveFloorId(floorId);
         } else {
@@ -185,7 +179,6 @@ const useFocusState = ({
         if (lastFocus && lastFocus.floorId !== floorId) {
             setFocusTargets([]);
             setFocusSegments([]);
-            setVisitedSegments([]);
         }
     }, [lastFocus, setActiveFloorId]);
 

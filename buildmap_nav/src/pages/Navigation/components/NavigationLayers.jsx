@@ -18,6 +18,9 @@ const NavigationLayers = ({
     <div className="navigation-layers">
         {floors.map((floorItem) => {
             const isActive = floorItem.id === activeFloorId;
+            const floorVisitedSegments = (visitedSegments || []).filter(
+                ([from, to]) => from.floorId === floorItem.id && to.floorId === floorItem.id
+            );
             return (
                 <div
                     key={floorItem.id}
@@ -32,7 +35,7 @@ const NavigationLayers = ({
                             endFulcrumId={isActive ? route?.endFulcrumId : null}
                             focusTargets={isActive ? focusTargets : []}
                             focusSegments={isActive ? focusSegments : []}
-                            visitedSegments={isActive ? visitedSegments : []}
+                            visitedSegments={floorVisitedSegments}
                             focusAnimate={isActive ? focusAnimate : true}
                             focusYOffset={stepsOpen ? stepsPanelHeight : 0}
                         />
