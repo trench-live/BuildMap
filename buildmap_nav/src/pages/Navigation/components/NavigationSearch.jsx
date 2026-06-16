@@ -15,7 +15,7 @@ const NavigationSearch = ({
         <input
             type="search"
             className={`navigation-search-input${searchOpen ? ' is-open' : ''}`}
-            placeholder="Search destination"
+            placeholder="Найти маршрут"
             value={searchValue}
             onChange={onSearchChange}
             onFocus={onSearchFocus}

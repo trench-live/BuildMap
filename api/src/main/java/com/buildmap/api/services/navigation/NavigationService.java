@@ -82,8 +82,17 @@ public class NavigationService {
             return steps;
         }
 
+        // The destination is the goal, not a passing landmark, so it is excluded from
+        // mid-route hints and announced once at the end as an arrival step instead.
+        Fulcrum destination = path.get(path.size() - 1);
+        Long destinationId = destination != null ? destination.getId() : null;
+
         Vector previousVector = null;
         boolean previousWasFloorChange = false;
+
+        // The movement step currently accumulating distance, kept alongside the pieces
+        // needed to regenerate its text as more straight segments are appended.
+        Movement movement = null;
 
         for (int i = 0; i < path.size() - 1; i += 1) {
             Fulcrum from = path.get(i);
@@ -93,9 +102,10 @@ public class NavigationService {
                     && !from.getFloor().getId().equals(to.getFloor().getId());
 
             if (floorChanged) {
-                steps.add(buildFloorChangeStep(from, to, graph));
+                steps.add(buildFloorChangeStep(from, to, graph, destinationId));
                 previousVector = null;
                 previousWasFloorChange = true;
+                movement = null;
                 continue;
             }
 
@@ -111,24 +121,91 @@ public class NavigationService {
                 baseVector = facingToVector(from.getFacingDirection());
             }
 
-            RouteStepDto turnStep = buildTurnStep(baseVector, segmentVector, from, to, graph);
-            if (turnStep != null) {
-                steps.add(turnStep);
-            }
-
+            RouteStepType turnType = detectTurnType(baseVector, segmentVector);
             Double distanceMeters = estimateDistanceMeters(graph, from, to);
-            if (distanceMeters != null && distanceMeters > 0) {
-                appendForwardStep(steps, distanceMeters, from, to);
+            double segmentMeters = (distanceMeters != null && distanceMeters > 0)
+                    ? roundMeters(distanceMeters) : 0;
+
+            if (turnType != null) {
+                String landmark = buildLandmarkHint(from, segmentVector, graph, true, destinationId);
+                if (landmark != null) {
+                    // A turn that reveals a landmark stays its own step so the hint is not
+                    // pushed past the distance: "Поверните направо. Слева будет уборная".
+                    Movement turn = new Movement(turnType, turnPhrase(turnType), landmark);
+                    turn.step.setFromFulcrumId(from.getId());
+                    turn.step.setFloorId(from.getFloor() != null ? from.getFloor().getId() : null);
+                    applyMovement(turn, 0, to);
+                    steps.add(turn.step);
+
+                    // The segment distance starts a fresh movement, like a plain walk.
+                    movement = null;
+                    if (segmentMeters > 0) {
+                        movement = new Movement(RouteStepType.GO_FORWARD, null, null);
+                        movement.step.setFromFulcrumId(from.getId());
+                        movement.step.setFloorId(from.getFloor() != null ? from.getFloor().getId() : null);
+                        applyMovement(movement, segmentMeters, to);
+                        steps.add(movement.step);
+                    }
+                } else {
+                    // A turn without a landmark folds the segment in: "Поверните налево и пройдите N м".
+                    movement = new Movement(turnType, turnPhrase(turnType), null);
+                    movement.step.setFromFulcrumId(from.getId());
+                    movement.step.setFloorId(from.getFloor() != null ? from.getFloor().getId() : null);
+                    applyMovement(movement, segmentMeters, to);
+                    steps.add(movement.step);
+                }
+            } else if (movement != null) {
+                // Straight continuation: fold this segment into the running movement.
+                applyMovement(movement, segmentMeters, to);
+            } else if (segmentMeters > 0) {
+                // A plain walk with no preceding turn stays "Пройдите N м".
+                movement = new Movement(RouteStepType.GO_FORWARD, null, null);
+                movement.step.setFromFulcrumId(from.getId());
+                movement.step.setFloorId(from.getFloor() != null ? from.getFloor().getId() : null);
+                applyMovement(movement, segmentMeters, to);
+                steps.add(movement.step);
             }
 
             previousVector = segmentVector;
             previousWasFloorChange = false;
         }
 
+        RouteStepDto arrival = buildArrivalStep(destination);
+        if (arrival != null) {
+            steps.add(arrival);
+        }
+
         return steps;
     }
 
-    private RouteStepDto buildFloorChangeStep(Fulcrum from, Fulcrum to, Graph graph) {
+    private void applyMovement(Movement movement, double segmentMeters, Fulcrum to) {
+        movement.distanceMeters = roundMeters(movement.distanceMeters + segmentMeters);
+        movement.step.setDistanceMeters(movement.distanceMeters > 0 ? movement.distanceMeters : null);
+        movement.step.setText(buildMovementText(movement.turnPhrase, movement.distanceMeters, movement.landmark));
+        if (to != null) {
+            movement.step.setToFulcrumId(to.getId());
+            if (to.getFloor() != null) {
+                movement.step.setFloorId(to.getFloor().getId());
+            }
+        }
+    }
+
+    private String buildMovementText(String turnPhrase, double distanceMeters, String landmark) {
+        String base;
+        if (turnPhrase != null) {
+            base = distanceMeters > 0
+                    ? turnPhrase + " и пройдите " + formatMeters(distanceMeters) + " м"
+                    : turnPhrase;
+        } else {
+            base = "Пройдите " + formatMeters(distanceMeters) + " м";
+        }
+        if (landmark != null) {
+            base = base + ". " + landmark;
+        }
+        return base;
+    }
+
+    private RouteStepDto buildFloorChangeStep(Fulcrum from, Fulcrum to, Graph graph, Long destinationId) {
         Integer fromLevel = from.getFloor() != null ? from.getFloor().getLevel() : null;
         Integer toLevel = to.getFloor() != null ? to.getFloor().getLevel() : null;
 
@@ -155,7 +232,7 @@ public class NavigationService {
         step.setToFulcrumId(to.getId());
         step.setFloorId(to.getFloor() != null ? to.getFloor().getId() : null);
 
-        String landmark = buildLandmarkHint(to, facingToVector(to.getFacingDirection()), graph, true);
+        String landmark = buildLandmarkHint(to, facingToVector(to.getFacingDirection()), graph, true, destinationId);
         if (landmark != null) {
             step.setText(text + ". " + landmark);
         }
@@ -163,7 +240,7 @@ public class NavigationService {
         return step;
     }
 
-    private RouteStepDto buildTurnStep(Vector baseVector, Vector nextVector, Fulcrum from, Fulcrum to, Graph graph) {
+    private RouteStepType detectTurnType(Vector baseVector, Vector nextVector) {
         if (baseVector == null || baseVector.isZero() || nextVector == null || nextVector.isZero()) {
             return null;
         }
@@ -172,59 +249,27 @@ public class NavigationService {
         if (angle <= 20.0) {
             return null;
         }
-
         if (angle >= 135.0) {
-            RouteStepDto step = buildStep(RouteStepType.U_TURN, "Развернитесь", from, to);
-            appendLandmark(step, from, nextVector, graph, true);
-            return step;
+            return RouteStepType.U_TURN;
         }
 
         double cross = cross(baseVector, nextVector);
         if (cross > 0) {
-            RouteStepDto step = buildStep(RouteStepType.TURN_RIGHT, "Поверните направо", from, to);
-            appendLandmark(step, from, nextVector, graph, true);
-            return step;
+            return RouteStepType.TURN_RIGHT;
         }
         if (cross < 0) {
-            RouteStepDto step = buildStep(RouteStepType.TURN_LEFT, "Поверните налево", from, to);
-            appendLandmark(step, from, nextVector, graph, true);
-            return step;
+            return RouteStepType.TURN_LEFT;
         }
-
         return null;
     }
 
-    private void appendForwardStep(List<RouteStepDto> steps, double distanceMeters, Fulcrum from, Fulcrum to) {
-        if (steps == null || distanceMeters <= 0) {
-            return;
-        }
-
-        double normalized = roundMeters(distanceMeters);
-
-        int lastIndex = steps.size() - 1;
-        if (lastIndex >= 0) {
-            RouteStepDto last = steps.get(lastIndex);
-            if (last.getType() == RouteStepType.GO_FORWARD) {
-                double previous = last.getDistanceMeters() != null ? last.getDistanceMeters() : 0;
-                double sum = roundMeters(previous + normalized);
-                last.setDistanceMeters(sum);
-                last.setText("Пройдите " + formatMeters(sum) + " м");
-                if (to != null) {
-                    last.setToFulcrumId(to.getId());
-                    last.setFloorId(to.getFloor() != null ? to.getFloor().getId() : last.getFloorId());
-                }
-                return;
-            }
-        }
-
-        RouteStepDto step = new RouteStepDto();
-        step.setType(RouteStepType.GO_FORWARD);
-        step.setDistanceMeters(normalized);
-        step.setText("Пройдите " + formatMeters(normalized) + " м");
-        step.setFromFulcrumId(from != null ? from.getId() : null);
-        step.setToFulcrumId(to != null ? to.getId() : null);
-        step.setFloorId(from != null && from.getFloor() != null ? from.getFloor().getId() : null);
-        steps.add(step);
+    private String turnPhrase(RouteStepType type) {
+        return switch (type) {
+            case TURN_LEFT -> "Поверните налево";
+            case TURN_RIGHT -> "Поверните направо";
+            case U_TURN -> "Развернитесь";
+            default -> null;
+        };
     }
 
     private double calculateTotalDistanceMeters(Graph graph, List<Fulcrum> path) {
@@ -243,17 +288,26 @@ public class NavigationService {
         return roundMeters(total);
     }
 
-    private void appendLandmark(RouteStepDto step, Fulcrum pivot, Vector facing, Graph graph, boolean excludeVerticals) {
-        if (step == null) {
-            return;
+    private RouteStepDto buildArrivalStep(Fulcrum destination) {
+        if (destination == null) {
+            return null;
         }
-        String landmark = buildLandmarkHint(pivot, facing, graph, excludeVerticals);
-        if (landmark != null) {
-            step.setText(step.getText() + ". " + landmark);
-        }
+        RouteStepDto step = new RouteStepDto();
+        step.setType(RouteStepType.ARRIVE);
+        step.setDistanceMeters(null);
+        step.setFromFulcrumId(destination.getId());
+        step.setToFulcrumId(destination.getId());
+        step.setFloorId(destination.getFloor() != null ? destination.getFloor().getId() : null);
+
+        String name = destination.getName();
+        step.setText(name != null && !name.isBlank()
+                ? "Вы на месте: " + name
+                : "Вы на месте");
+        return step;
     }
 
-    private String buildLandmarkHint(Fulcrum pivot, Vector facing, Graph graph, boolean excludeVerticals) {
+    private String buildLandmarkHint(Fulcrum pivot, Vector facing, Graph graph, boolean excludeVerticals,
+                                     Long destinationId) {
         if (pivot == null || facing == null || facing.isZero() || graph == null) {
             return null;
         }
@@ -267,6 +321,7 @@ public class NavigationService {
         for (Fulcrum candidate : graph.getNodes().values()) {
             if (candidate == null || candidate.getId() == null) continue;
             if (candidate.getId().equals(pivot.getId())) continue;
+            if (destinationId != null && candidate.getId().equals(destinationId)) continue;
             if (candidate.getFloor() == null || pivot.getFloor() == null) continue;
             if (!candidate.getFloor().getId().equals(pivot.getFloor().getId())) continue;
             if (candidate.getType() == null || candidate.getType() == FulcrumType.WAYPOINT) continue;
@@ -300,27 +355,13 @@ public class NavigationService {
         Vector toCandidate = new Vector(best.getX() - pivot.getX(), best.getY() - pivot.getY());
         double cross = cross(facing, toCandidate);
 
-        String side;
+        // A landmark dead ahead has no clear side; skip the hint rather than say "Рядом".
         if (Math.abs(cross) < 1e-6) {
-            side = "Рядом";
-        } else if (cross > 0) {
-            side = "Справа";
-        } else {
-            side = "Слева";
+            return null;
         }
+        String side = cross > 0 ? "Справа" : "Слева";
 
         return side + " будет " + best.getName();
-    }
-
-    private RouteStepDto buildStep(RouteStepType type, String text, Fulcrum from, Fulcrum to) {
-        RouteStepDto step = new RouteStepDto();
-        step.setType(type);
-        step.setText(text);
-        step.setDistanceMeters(null);
-        step.setFromFulcrumId(from != null ? from.getId() : null);
-        step.setToFulcrumId(to != null ? to.getId() : null);
-        step.setFloorId(from != null && from.getFloor() != null ? from.getFloor().getId() : null);
-        return step;
     }
 
     private Double estimateDistanceMeters(Graph graph, Fulcrum from, Fulcrum to) {
@@ -404,6 +445,19 @@ public class NavigationService {
 
         private boolean isZero() {
             return Math.abs(x) < 1e-9 && Math.abs(y) < 1e-9;
+        }
+    }
+
+    private static class Movement {
+        private final RouteStepDto step = new RouteStepDto();
+        private final String turnPhrase;
+        private final String landmark;
+        private double distanceMeters;
+
+        private Movement(RouteStepType type, String turnPhrase, String landmark) {
+            this.step.setType(type);
+            this.turnPhrase = turnPhrase;
+            this.landmark = landmark;
         }
     }
 
